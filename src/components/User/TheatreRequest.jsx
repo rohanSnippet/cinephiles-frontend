@@ -170,7 +170,7 @@ const TheatreRequest = () => {
   const uniqueCities = getUniqueCities(cities); // Filter unique cities
 
   return (
-    <div>
+    <div className="bg-gradient-to-br from-black to-black/80 min-h-screen">
       <div className="mx-[60vh] ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
         <IoIosSend size={32} className="ml-8" /> THEATRE REQUEST
       </div>
@@ -178,7 +178,7 @@ const TheatreRequest = () => {
       <div className="text-center">
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Steps indicator */}
-          <ul className="steps mb-8">
+          <ul className="steps mb-8 text-white poppins-medium">
             {steps.map((stepObj, index) => (
               <button
                 onClick={() => changeCurStep(index)}

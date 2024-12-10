@@ -133,7 +133,7 @@ const Signup = () => {
   };
 
   return (
-    <div className=" h-full w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700  rounded-xl ">
+    <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700  rounded-xl ">
       <div className="relative bg-gradient-to-br from-black/90 via-black/50 to-black/40 py-36 rounded-xl pt-16 px-[15%] w-full shadow-gray-700 shadow-2xl">
         <h2 className="text-center justify-center text-white text-xl mb-8 poppins-semibold">
           Sign Up
