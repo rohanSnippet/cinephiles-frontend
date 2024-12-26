@@ -161,7 +161,8 @@ const VideoEditorTimeline = ({ screen, selectedDate, isSelected }) => {
   };
   const deleteShow = async (s) => {
     try {
-      const res = await axiosSecure.delete(`show/delete-show?id=${s.id}`);
+      console.log(s.id)
+      const res = await axiosSecure.delete(`/show/delete-show/${s.id}`);
       if (res.status === 200) {
         Swal.fire({
           title: "Show deleted",

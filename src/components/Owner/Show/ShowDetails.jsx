@@ -23,6 +23,7 @@ const ShowDetails = () => {
   const [lastShow, setLastShow] = useState();
   const [currMovie, setCurrMovie] = useState();
   const [showStart, setShowStart] = useState();
+  const [showEnd, setShowEnd] = useState();
 
   const [values, setValues] = useState({
     showDate: "",
@@ -169,7 +170,6 @@ const ShowDetails = () => {
 
   const handleAddNewShow = async () => {
     let endTime = addRuntimeToStartTime(values.start, currMovie.runtime);
-
     const {
       value: formValues,
       isDenied,
@@ -265,7 +265,8 @@ const ShowDetails = () => {
       if (isConfirmed) {
         values.start = formValues.startInput;
         values.price = formValues.prices;
-
+       console.log(showEnd);
+       
         try {
           const res = await axiosSecure.post(`/show/create`, values);
           if (res) {

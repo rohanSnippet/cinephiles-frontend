@@ -119,7 +119,7 @@ const AllShows = () => {
 
     getDates();
   }, []);
-  console.log(shows);
+ 
   useEffect(() => {
     if (shows.length > 0) {
       const newUniqueShowDates = [
