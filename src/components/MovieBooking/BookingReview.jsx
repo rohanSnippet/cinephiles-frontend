@@ -147,7 +147,7 @@ const handleRedirect = async () => {
         orderId: selectedData.user.substring(0,4)+Date.now(),
         orderAmount: selectedData.price*selectedData.seatsId.length,
         customerId: selectedData.user,
-        customerPhone: "1111111111",
+        customerPhone: "0000000000",
       },
       {
         headers: {
