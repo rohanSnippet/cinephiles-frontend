@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAxiosSecure from "../Hooks/AxiosSecure";
+import { cashfree } from "../Services/cashfree";
 
 const BookingReview = () => {
   const [time, setTime] = useState(0);
@@ -8,7 +9,6 @@ const BookingReview = () => {
   const navigate = useNavigate();
   const { selectedData, movie } = location.state || {}; // Safely destructure selectedData
   const axiosSecure = useAxiosSecure();
-
   const handleTimeout = async () => {
     try {
       const response = await axiosSecure.delete(
@@ -101,7 +101,7 @@ const BookingReview = () => {
     return null; // Prevent rendering
   }
 
-  const handleBooking = async () => {
+  /* const handleBooking = async () => {
     try {
       const response = await axiosSecure.post(
         `/bookings/book-seats`,
@@ -114,7 +114,75 @@ const BookingReview = () => {
     } catch (error) {
       console.error("Error hitting API on timeout:", error);
     }
-  };
+  }; */
+
+
+  /*   const handleBooking = async () => {
+        try {
+            const paymentRequest = {
+                amount: 1.0, // Example payment amount
+                customerId: '123',
+                customerPhone: '9999999999'
+            };
+
+            // Send request to your backend to create an order
+            const response = await axiosSecure.post('/payment/createOrder', paymentRequest);
+            console.log(respnose);
+
+            const orderId = response.data;
+            setOrderId(orderId);
+
+            // Redirect user to Cashfree payment page (or use Cashfree's SDK if needed)
+            window.location.href = `https://test.cashfree.com/checkout/pg/${orderId}`;
+        } catch (error) {
+            console.error('Error creating order:', error);
+        }
+    }; */
+    
+const handleRedirect = async () => {
+  try {
+    const response = await axiosSecure.post(
+      '/payment/create-session',
+      {
+        orderId: selectedData.user.substring(0,4)+Date.now(),
+        orderAmount: selectedData.price*selectedData.seatsId.length,
+        customerId: selectedData.user,
+        customerPhone: "1111111111",
+      },
+      {
+        headers: {
+          'x-client-id': 'TEST1034155514be0f85af06d50db23755514301',
+          'x-client-secret': 'cfsk_ma_test_7a5bedaf521e805a0c3aab500a4b0444_1bac70da',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-version': '2023-08-01',
+        },
+      }
+    );
+
+    // Directly handle the response, as axios automatically parses JSON           payment_session_id
+    console.log('Success:', response.data); // Use the session ID from the response
+
+    let checkoutOptions = {
+      paymentSessionId: response.data.payment_session_id,
+      returnUrl:
+        "http://localhost:5173",
+    };
+    cashfree.checkout(checkoutOptions).then(function (result) {
+      if (result.error) {
+        alert(result.error.message);
+      }
+      if (result.redirect) {
+        console.log("Redirection");
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+
+    
 
   return (
     <div className="flex w-[100%] h-screen">
@@ -145,7 +213,7 @@ const BookingReview = () => {
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
-              onClick={handleBooking}
+              onClick={handleRedirect}
             >
               Book Now
             </button>
