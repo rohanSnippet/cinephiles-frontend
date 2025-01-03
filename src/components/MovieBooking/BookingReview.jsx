@@ -145,7 +145,7 @@ const BookingReview = () => {
     
         let checkoutOptions = {
           paymentSessionId: response.data.payment_session_id,
-          returnUrl: "http://localhost:5173",
+          returnUrl: "http://localhost:5173/booking-confirmation",
         };
     
         // Calling checkout with a promise-based approach
@@ -154,9 +154,9 @@ const BookingReview = () => {
             alert(result.error.message);
           }
           if (result.redirect) {
+            console.log(result)
             console.log("Redirection happening...");
-            // Assuming the payment is successful after the redirection
-            // Call the onPaymentCompleted function here
+           
             handleBooking();
           }
         });

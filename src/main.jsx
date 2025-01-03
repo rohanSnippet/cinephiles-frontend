@@ -38,6 +38,7 @@ import UsersInfo from "./components/Admin/UsersInfo/UsersInfo";
 import AllMovies from "./components/User/AllMovies";
 import EditMovie from "./components/Admin/MoviesInfo/EditMovie";
 import Orders from "./components/User/Orders";
+import Confirmation from "./components/MovieBooking/Confirmation";
 
 const router = createBrowserRouter([
   {
@@ -103,6 +104,10 @@ const router = createBrowserRouter([
       {
         path: "/All-Movies",
         element: <AllMovies />,
+      },
+      {
+        path: "/booking-confirmation",
+        element: <Confirmation />,
       },
     ],
   },
