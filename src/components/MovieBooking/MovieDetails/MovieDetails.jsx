@@ -127,7 +127,7 @@ const MovieDetails = () => {
               </p>
             </div>
             <div className="m-20 absolute left-[40%]">
-              {isShowAvl && (
+            
                 <button
                   onClick={handleGetTheatres}
                   className="btn bg-slate-950/60 shadow-md hover:-translate-y-1 hover:scale-x-105 transition-all duration-300 ease-in-out shadow-slate-800/90 w-64 border-none hover:bg-white/60 hover:text-black rounded-lg text-white overflow-hidden"
@@ -141,7 +141,7 @@ const MovieDetails = () => {
                     Book &nbsp;Tickets
                   </span>
                 </button>
-              )}
+          
             </div>
           </div>
           {/* poster */}
