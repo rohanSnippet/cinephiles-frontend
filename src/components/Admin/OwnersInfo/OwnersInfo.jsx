@@ -37,51 +37,67 @@ const OwnersInfo = () => {
       {/* all theatres with owners */}
       {allOwners.map((owner, i) => {
         return (
-          <div className="collapse mt-4 collapse-arrow bg-gradient-to-br from-black/50 via-gray-900/40 to-slate-900  rounded-lg mx-auto w-[95%]">
-            <input type="checkbox" />
-            <div
-              key={i}
-              className="collapse-title relative mx-auto flex ring-white/30 ring-1"
-            >
-              <div className="text-lg poppins-bold pl-8 pt-1 text-white">
-                {i + 1}
-              </div>
-              <div className="absolute left-[7%] justify-around pt-1 flex gap-x-1">
-                {" "}
-                <div className=" poppins-bold text-xl text-white ">
+          <div className="collapse mt-4 collapse-arrow bg-gradient-to-br from-black/50 via-gray-900/40 to-slate-900 rounded-lg mx-auto w-[95%]">
+          <input type="checkbox" />
+          <div
+            key={i}
+            className="collapse-title relative mx-auto flex items-center justify-between ring-white/30 ring-1 w-full"
+          >
+            {/* Title Section */}
+            <div className="flex items-center gap-4 pl-8 pt-1">
+              <div className="text-lg poppins-bold text-white">{i + 1}</div>
+              <div className="flex items-center gap-2">
+                <div className="poppins-bold text-xl text-white">
                   {owner.user.firstName}
                 </div>
-                <div className=" poppins-bold text-xl  text-white ">
+                <div className="poppins-bold text-xl text-white">
                   {owner.user.lastName}
                 </div>
               </div>
-              <div className="flex justify-evenly gap-x-2 absolute poppins-light text-md  left-[35%] pt-1  text-white/90 ">
-                <IoIosMail size={24} /> {owner.user.username}
+            </div>
+        
+            {/* Username and Mail Section */}
+            <div className="flex items-center gap-2 justify-center">
+              <div className="flex items-center gap-x-2 poppins-light text-md text-white/90">
+                <IoIosMail size={24} />
+                {owner.user.username}
               </div>
-              <div className="absolute poppins-light text-md  left-[55%] pt-1  text-white/90 ">
+            </div>
+        
+            {/* Phone Section */}
+            <div className="flex justify-end items-center gap-2 pr-8">
+              <div className="poppins-light text-md text-white/90">
                 {owner.user.phone || "Contact Not Provided"}
               </div>
-              <div className="absolute flex poppins-semibold text-lg  left-[75%] pt-1  text-white ">
+            </div>
+        
+            {/* Theatre Count Section */}
+            <div className="flex justify-end items-center gap-2 pr-8">
+              <div className="poppins-semibold text-lg text-white">
                 {owner.theatres.length} Theatre(s)
               </div>
             </div>
-            <div className="collapse-content">
-              {owner.theatres.map((theatre, i) => {
-                return (
-                  <div className="text-md gap-x-52 px-auto mt-4 border-e-white/20 flex roboto-bold text-white/70 ">
-                    <div>{i + 1}</div>
-                    <div className="flex gap-x-2">
-                      {" "}
-                      <div> {theatre.name}</div>{" "}
-                      <div className="roboto-light"> {theatre.city}</div>
-                    </div>
-                    <div className=""> {theatre.tscreens} Screen(s)</div>
-                    <div className="roboto-regular"> {theatre.contact}</div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
+        
+          {/* Collapse Content: Theatre List */}
+          <div className="collapse-content w-[95%] mx-auto">
+            {owner.theatres.map((theatre, index) => (
+              <div
+                key={index}
+                className="text-md gap-x-52 px-auto mt-4 border-e-white/20 flex roboto-bold text-white/70 "
+              >
+                <div>{index + 1}</div>
+                <div className="text-center">
+                  <div>{theatre.name}</div>
+                  <div className="roboto-light text-sm">{theatre.city}</div>
+                </div>
+                <div>{theatre.tscreens} Screen(s)</div>
+                <div className="roboto-regular">{theatre.contact}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
         );
       })}
     </div>

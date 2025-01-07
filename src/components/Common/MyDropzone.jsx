@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { uploadImageToCloud } from "../Services/cloudinary";
+import { uploadImageToCloud } from "../Services/cloudinaryConfig";
 
-const MyDropzone = ({ setImage, closeDialog, name, saveImage }) => {
+const MyDropzone = ({ setImage, closeDialog /* name */ /* saveImage */ }) => {
   const [loading, setLoading] = useState(false);
 
   const onDrop = useCallback(
@@ -10,13 +10,11 @@ const MyDropzone = ({ setImage, closeDialog, name, saveImage }) => {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setLoading(true); // Start loading when file is dropped
-
         try {
           const res = await uploadImageToCloud(file, "cinephiles-movie-poster");
           const cloudinaryData = await res.json(); // Parse the response
-
           setImage(cloudinaryData.url);
-          saveImage(cloudinaryData.url, name);
+         // saveImage(cloudinaryData.url, name);
           closeDialog(); // Close dialog after saving
         } catch (error) {
           console.error("Error uploading the image:", error);
@@ -25,7 +23,7 @@ const MyDropzone = ({ setImage, closeDialog, name, saveImage }) => {
         }
       }
     },
-    [setImage, closeDialog, name, saveImage]
+    [setImage, closeDialog]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });

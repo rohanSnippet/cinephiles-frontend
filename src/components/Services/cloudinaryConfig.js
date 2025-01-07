@@ -1,3 +1,5 @@
+import { SHA1 } from "crypto-js";
+
 const cloudURL = `https://api.cloudinary.com/v1_1/cinephiles-app/image`;
 
 export const uploadImageToCloud = async (image, folder_name) => {
@@ -23,3 +25,4 @@ export const uploadImageToCloud = async (image, folder_name) => {
     }
   }
 };
+

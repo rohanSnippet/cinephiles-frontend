@@ -140,19 +140,19 @@ const BookingReview = () => {
           }
         );
     
-        // Directly handle the response, as axios automatically parses JSON
+        // Directly handle the response, as axios automatically parses JSON            returnUrl: "http://localhost:5173/booking-confirmation",
         console.log('Success:', response.data); // Use the session ID from the response
     
         let checkoutOptions = {
           paymentSessionId: response.data.payment_session_id,
-          returnUrl: "http://localhost:5173/booking-confirmation",
+         
         };
     
         // Calling checkout with a promise-based approach
         cashfree.checkout(checkoutOptions).then(function (result) {
           if (result.error) {
             alert(result.error.message);
-          }
+          }n 
           if (result.redirect) {
             console.log(result)
             console.log("Redirection happening...");
@@ -213,7 +213,7 @@ const BookingReview = () => {
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
-              onClick={handleRedirect}
+              onClick={handleBooking}
             >
               Book Now
             </button>
