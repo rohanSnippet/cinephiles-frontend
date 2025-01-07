@@ -1,15 +1,17 @@
-import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, redirect, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { AuthContext } from "../Context/AuthProvider";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithubAlt } from "react-icons/fa";
 import insta from "../../assets/insta.png";
+import supabase from "../Services/supabaseConfig";
 
 const Signup = () => {
   const { createUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [session, setSession] = useState(null)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -130,124 +132,165 @@ const Signup = () => {
 
   const handleEye = () => {
     setVisible(!visible);
-  };
+  }; 
 
-  return (
-    <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl ">
-      <div className="relative bg-gradient-to-br from-black/90 via-black/50 to-black/40 py-36 rounded-xl pt-16 px-[15%] w-full shadow-gray-700 shadow-2xl">
-        <h2 className="text-center justify-center text-white text-xl mb-8 poppins-semibold">
-          Sign Up
-        </h2>
-        <form method="dialog" onSubmit={handleSubmit}>
-          <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
-            <input
-              type="text"
-              name="firstName"
-              className="grow roboto-regular"
-              required
-              onChange={handleChange}
-              value={formData.firstName}
-              placeholder="Enter Your First Name"
-            />
-            {errors.firstName && <p className="errors">{errors.firstName}</p>}
-          </label>
-          <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
-            <input
-              type="text"
-              name="lastName"
-              className="grow roboto-regular"
-              required
-              onChange={handleChange}
-              value={formData.lastName}
-              placeholder="Enter Your Last Name"
-            />
-            {errors.lastName && <p className="errors">{errors.lastName}</p>}
-          </label>
-          <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
-            <input
-              type="email"
-              name="email"
-              className="grow roboto-regular"
-              onChange={handleChange}
-              value={formData.email}
-              required
-              placeholder="Email"
-            />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="h-4 w-4 opacity-70"
-            >
-              <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
-              <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
-            </svg>
-            {errors.email && <p className="errors">{errors.email}</p>}
-          </label>
-          {visible ? (
-            <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
-              <input
-                type="password"
-                name="password"
-                className="grow roboto-regular"
-                required
-                onChange={handleChange}
-                value={formData.password}
-                minLength={6}
-                placeholder="Enter password"
-              />
-              <GoEye onClick={handleEye} className="cursor-pointer" />
-              {errors.password && <p className="errors">{errors.password}</p>}
-            </label>
-          ) : (
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+   
+    return () => subscription.unsubscribe()
+  }, [])
+console.log(session?.user?.email?.user_metadata);
+
+    const signout = async()=> {
+      const {error} = await supabase.auth.signOut()
+    }
+
+    const signUp = async()=>{
+      await supabase.auth.signInWithOAuth({
+        provider:'google',
+      });
+    }
+   /* if (!session) {
+      return ( <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl "><Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }}  socialLayout="horizontal"/> </div>)
+    }
+    else {
+      return (<div><h2>Welcome {session?.user?.email} !!</h2>
+      <button onClick={signout}>Sign Out</button></div>)
+    } */
+
+  if(!session){
+    return (
+      <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl ">
+         <div className="relative bg-gradient-to-br from-black/90 via-black/50 to-black/40 py-36 rounded-xl pt-16 px-[15%] w-full shadow-gray-700 shadow-2xl">
+          <h2 className="text-center justify-center text-white text-xl mb-8 poppins-semibold">
+            Sign Up
+          </h2>
+          <form method="dialog" onSubmit={handleSubmit}>
             <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
               <input
                 type="text"
-                name="password"
+                name="firstName"
                 className="grow roboto-regular"
                 required
                 onChange={handleChange}
-                value={formData.password}
-                minLength={6}
-                placeholder="Enter password"
+                value={formData.firstName}
+                placeholder="Enter Your First Name"
               />
-              <GoEyeClosed onClick={handleEye} className="cursor-pointer" />
-              {errors.password && <p className="errors">{errors.password}</p>}
+              {errors.firstName && <p className="errors">{errors.firstName}</p>}
             </label>
-          )}
-          <button
-            type="submit"
-            className="bg-gradient-to-br from-white via-white/90 to-gray-300 hover:scale-110 transition-transform duration-300 px-4 py-1 rounded-2xl text-black poppins-regular shadow-md shadow-slate-500 mt-0 hover:text-black/80"
-            disabled={loading}
-          >
-            {loading ? "Signing up..." : "Sign Up"}
-          </button>
-          {errors.general && <p className="errors">{errors.general}</p>}
-          <Link
-            to="/login"
-            className=" absolute px-4 py-1 mt-10 left-[30%] rounded-2xl text-white text-md roboto-light underline hover:text-blue-500"
-          >
-            Already have an account? Login.
-          </Link>
-          {errors.general && <p className="errors">{errors.general}</p>}
+            <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
+              <input
+                type="text"
+                name="lastName"
+                className="grow roboto-regular"
+                required
+                onChange={handleChange}
+                value={formData.lastName}
+                placeholder="Enter Your Last Name"
+              />
+              {errors.lastName && <p className="errors">{errors.lastName}</p>}
+            </label>
+            <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
+              <input
+                type="email"
+                name="email"
+                className="grow roboto-regular"
+                onChange={handleChange}
+                value={formData.email}
+                required
+                placeholder="Email"
+              />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                className="h-4 w-4 opacity-70"
+              >
+                <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
+                <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
+              </svg>
+              {errors.email && <p className="errors">{errors.email}</p>}
+            </label>
+            {visible ? (
+              <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
+                <input
+                  type="password"
+                  name="password"
+                  className="grow roboto-regular"
+                  required
+                  onChange={handleChange}
+                  value={formData.password}
+                  minLength={6}
+                  placeholder="Enter password"
+                />
+                <GoEye onClick={handleEye} className="cursor-pointer" />
+                {errors.password && <p className="errors">{errors.password}</p>}
+              </label>
+            ) : (
+              <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
+                <input
+                  type="text"
+                  name="password"
+                  className="grow roboto-regular"
+                  required
+                  onChange={handleChange}
+                  value={formData.password}
+                  minLength={6}
+                  placeholder="Enter password"
+                />
+                <GoEyeClosed onClick={handleEye} className="cursor-pointer" />
+                {errors.password && <p className="errors">{errors.password}</p>}
+              </label>
+            )}
+            <button
+              type="submit"
+              className="bg-gradient-to-br from-white via-white/90 to-gray-300 hover:scale-110 transition-transform duration-300 px-4 py-1 rounded-2xl text-black poppins-regular shadow-md shadow-slate-500 mt-0 hover:text-black/80"
+              disabled={loading}
+            >
+              {loading ? "Signing up..." : "Sign Up"}
+            </button>
+            {errors.general && <p className="errors">{errors.general}</p>}
+            <Link
+              to="/login"
+              className=" absolute px-4 py-1 mt-10 left-[30%] rounded-2xl text-white text-md roboto-light underline hover:text-blue-500"
+            >
+              Already have an account? Login.
+            </Link>
+            {errors.general && <p className="errors">{errors.general}</p>}
+            {" "}
+          </form>
           <span className="flex justify-center absolute left-[34%] bottom-[8%] space-x-12">
-            <FcGoogle
-              size={34}
-              className="bg-white rounded-full cursor-pointer"
-            />
-            <FaGithubAlt
-              size={34}
-              className="text-black bg-white rounded-full cursor-pointer"
-            />
-            <span className=" bg-white rounded-full p-[6px] cursor-pointer">
-              {" "}
-              <img src={insta} className="w-[25px] h-[25px] bg-white" />
+            <button type="" onClick={signUp}>
+              <FcGoogle
+                size={34}
+                className="bg-white rounded-full cursor-pointer"
+              />
+            </button>
+              <FaGithubAlt
+                size={34}
+                className="text-black bg-white rounded-full cursor-pointer"
+              />
+              <span className=" bg-white rounded-full p-[6px] cursor-pointer">
+                {" "}
+                <img src={insta} className="w-[25px] h-[25px] bg-white" />
+              </span>
+              
             </span>
-          </span>{" "}
-        </form>
+        </div> 
+        
       </div>
-    </div>
-  );
+    );
+  }else{
+ return( <div><h2>Welcome {session?.user?.user_metadata?.full_name} !! </h2><button onClick={signout}>Sign Out</button></div>)
+  }
 };
 
 export default Signup;

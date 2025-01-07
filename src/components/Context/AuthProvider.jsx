@@ -48,36 +48,7 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("access-token");
   }
 
-  /* const handleOAuthRedirect = async () => {
-    // Assuming you get redirected here after OAuth success
-    const token = getOAuthTokenFromUrl(); // Implement this function to extract token from URL
-
-    if (token) {
-      try {
-        // Now you will get user data along with the token
-        const response = await fetch("/api/oauth/success", {
-          // Your backend endpoint to handle success
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const userData = await response.json();
-
-        // Store user data in context and local storage
-        setUserData({ username: userData.username, token: userData.token });
-        localStorage.setItem("access-token", userData.token);
-        localStorage.setItem("username", userData.username);
-        const tokenPayload = JSON.parse(atob(userData.token.split(".")[1]));
-        const tokenExpiry = tokenPayload.exp * 1000;
-        localStorage.setItem("token-expiry", tokenExpiry);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    }
-  }; */
-
   useEffect(() => {
-    // handleOAuthRedirect();
     const storedUser = localStorage.getItem("username");
     const storedToken = localStorage.getItem("access-token");
 
@@ -89,7 +60,7 @@ const AuthProvider = ({ children }) => {
     } else if (storedUser && storedToken) {
       setUserData({ username: storedUser, token: storedToken });
     }
-  }, []); // Run once on component mount
+  }, []);
 
   const authInfo = {
     createUser,
