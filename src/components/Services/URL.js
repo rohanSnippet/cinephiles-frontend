@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export const baseURL = `http://localhost:8082`; // Ensure correct API base URL
+export const frontURL = `http://localhost:5173`; // Ensure correct API base URL
 
 // User login
 export const userLogin = async (username, password) => {

@@ -9,9 +9,8 @@ import insta from "../../assets/insta.png";
 import supabase from "../Services/supabaseConfig";
 
 const Signup = () => {
-  const { createUser } = useContext(AuthContext);
+  const { createUser, signUpNewUser , session , signUpWithGoogle,signOutGoogle} = useContext(AuthContext);
   const navigate = useNavigate();
-  const [session, setSession] = useState(null)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -71,7 +70,7 @@ const Signup = () => {
     setErrors({ ...errors, [e.target.name]: "" });
   };
 
-  const handleSubmit = async (e) => {
+   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -79,10 +78,12 @@ const Signup = () => {
     } else {
       setLoading(true);
       try {
+        const result = await signUpNewUser(formData.firstName,formData.lastName,formData.email,formData.password); 
+        console.log(result.user.user_metadata.first_name)
         const response = await createUser(
-          formData.firstName,
-          formData.lastName,
-          formData.email, // Ensure this is passed correctly
+          result.user.user_metadata.first_name,
+          result.user.user_metadata.last_name,
+          result.user.user_metadata.email, // Ensure this is passed correctly
           formData.password
         );
         console.log(response.data);
@@ -128,35 +129,21 @@ const Signup = () => {
         setLoading(false);
       }
     }
-  };
+  }; 
 
   const handleEye = () => {
+
     setVisible(!visible);
   }; 
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+   const signUp = async()=>{
+    const res = await signUpWithGoogle();
    
-    return () => subscription.unsubscribe()
-  }, [])
-console.log(session?.user?.email?.user_metadata);
+   }
 
-    const signout = async()=> {
-      const {error} = await supabase.auth.signOut()
-    }
-
-    const signUp = async()=>{
-      await supabase.auth.signInWithOAuth({
-        provider:'google',
-      });
+    const signout = async()=>{
+      const res = await signOutGoogle();
+      console.log(res)
     }
    /* if (!session) {
       return ( <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl "><Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }}  socialLayout="horizontal"/> </div>)
