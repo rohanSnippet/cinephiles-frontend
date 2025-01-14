@@ -4,11 +4,13 @@ import RecentMovies from "./RecentMovies.jsx";
 import ExploreGeneres from "./ExploreGeneres.jsx";
 import Experiences from "./Experiences.jsx";
 import Footer from "../Footer.jsx";
+import useAxiosSecure from "../Hooks/AxiosSecure.jsx";
+import { frontURL } from "../Services/URL.js";
 
 const Home = () => {
   const recentMoviesRef = useRef(null);
+  const axiosSecure = useAxiosSecure()
   const [showArrow, setShowArrow] = useState(true);
-
   const handleScrollAndHideArrow = () => {
     if (recentMoviesRef.current) {
       recentMoviesRef.current.scrollIntoView({ behavior: "smooth" });
@@ -30,6 +32,8 @@ const Home = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+
 
   return (
     <div className=" bg-gradient-to-b from-black via-gray-950 to-black w-full h-[100vh] pt-3">

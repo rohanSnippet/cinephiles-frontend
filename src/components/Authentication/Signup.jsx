@@ -6,10 +6,10 @@ import { GoEye, GoEyeClosed } from "react-icons/go";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithubAlt } from "react-icons/fa";
 import insta from "../../assets/insta.png";
-import supabase from "../Services/supabaseConfig";
+import useAxiosSecure from "../Hooks/AxiosSecure";
 
 const Signup = () => {
-  const { createUser, signUpNewUser , session , signUpWithGoogle,signOutGoogle} = useContext(AuthContext);
+  const { createUser} = useContext(AuthContext);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
@@ -20,7 +20,7 @@ const Signup = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(true);
-
+  const axiosSecure = useAxiosSecure();
   // Toast success
   const Toast = Swal.mixin({
     toast: true,
@@ -78,12 +78,10 @@ const Signup = () => {
     } else {
       setLoading(true);
       try {
-        const result = await signUpNewUser(formData.firstName,formData.lastName,formData.email,formData.password); 
-        console.log(result.user.user_metadata.first_name)
         const response = await createUser(
-          result.user.user_metadata.first_name,
-          result.user.user_metadata.last_name,
-          result.user.user_metadata.email, // Ensure this is passed correctly
+          formData.firstName,
+          formData.lastName,
+          formData.email, // Ensure this is passed correctly
           formData.password
         );
         console.log(response.data);
@@ -136,24 +134,13 @@ const Signup = () => {
     setVisible(!visible);
   }; 
 
-   const signUp = async()=>{
-    const res = await signUpWithGoogle();
-   
-   }
 
-    const signout = async()=>{
-      const res = await signOutGoogle();
-      console.log(res)
-    }
-   /* if (!session) {
-      return ( <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl "><Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }}  socialLayout="horizontal"/> </div>)
-    }
-    else {
-      return (<div><h2>Welcome {session?.user?.email} !!</h2>
-      <button onClick={signout}>Sign Out</button></div>)
-    } */
+  const googleSignUp = async()=>{
+    
+    window.location.href = "http://localhost:8082/oauth2/authorization/google";
+  }
 
-  if(!session){
+  
     return (
       <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl ">
          <div className="relative bg-gradient-to-br from-black/90 via-black/50 to-black/40 py-36 rounded-xl pt-16 px-[15%] w-full shadow-gray-700 shadow-2xl">
@@ -255,8 +242,9 @@ const Signup = () => {
             {" "}
           </form>
           <span className="flex justify-center absolute left-[34%] bottom-[8%] space-x-12">
-            <button type="" onClick={signUp}>
+            <button type="" onClick={googleSignUp}>
               <FcGoogle
+
                 size={34}
                 className="bg-white rounded-full cursor-pointer"
               />
@@ -275,9 +263,6 @@ const Signup = () => {
         
       </div>
     );
-  }else{
- return( <div><h2>Welcome {session?.user?.user_metadata?.full_name} !! </h2><button onClick={signout}>Sign Out</button></div>)
-  }
 };
 
 export default Signup;

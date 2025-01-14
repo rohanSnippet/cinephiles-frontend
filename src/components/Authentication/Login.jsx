@@ -1,12 +1,13 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useAxiosSecure from "../Hooks/AxiosSecure";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 import { FcGoogle } from "react-icons/fc";
 import insta from "../../assets/insta.png";
 import { AuthContext } from "../Context/AuthProvider";
 import { FaGithubAlt } from "react-icons/fa";
+import axios from "axios";
 
 const Login = () => {
   const [user, setUser] = useState({ username: "", password: "" });
@@ -117,10 +118,6 @@ const Login = () => {
   };
   const handleEye = () => setVisible(!visible);
 
-  /*  useEffect(() => {
-    // No need to log location unless needed
-  }, []); */
-
   return (
     <div className="relative h-[100vh] w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
       <div className="absolute h-[55vh] w-[80vh] ml-[30%] mt-[10%] rounded-xl bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600">
@@ -198,6 +195,8 @@ const Login = () => {
           </form>
         </div>
       </div>
+
+   
     </div>
   );
 };
