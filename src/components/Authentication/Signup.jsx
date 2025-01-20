@@ -9,7 +9,7 @@ import insta from "../../assets/insta.png";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 
 const Signup = () => {
-  const { createUser} = useContext(AuthContext);
+  const { createUser,googleSignUp} = useContext(AuthContext);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
@@ -135,11 +135,6 @@ const Signup = () => {
   }; 
 
 
-  const googleSignUp = async()=>{
-    
-    window.location.href = "http://localhost:8082/oauth2/authorization/google";
-  }
-
   
     return (
       <div className="min-h-screen w-[40%] my-[12vh] mx-[30%] justify-center align-middle text-center   rounded-xl ">
@@ -242,7 +237,7 @@ const Signup = () => {
             {" "}
           </form>
           <span className="flex justify-center absolute left-[34%] bottom-[8%] space-x-12">
-            <button type="" onClick={googleSignUp}>
+            <button type="" onClick={googleSignUp }>
               <FcGoogle
 
                 size={34}

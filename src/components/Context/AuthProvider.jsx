@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import {  SignUpUser, userLogin } from "../Services/URL";
+import axios from "axios";
 
 export const AuthContext = createContext();
 
@@ -9,7 +10,6 @@ const AuthProvider = ({ children }) => {
     username: "",
     token: "",
   });
-  
 
   /**************  Form based signup and login methods *************************/
   const createUser = async (firstName, lastName, username, password) => {
@@ -36,6 +36,11 @@ const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
+    //****************** OAuth2 Methods **********************************/
+ const googleSignUp =()=>{
+  window.location.href = "http://localhost:8082/oauth2/authorization/google";
+ }
 
   //****************** Refresh token Methods **********************************/
   const isTokenExpired = () => {
@@ -64,7 +69,19 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
- 
+  useEffect(() => {
+   
+    const getSession = ()=>{
+      axios.get(`http://localhost:8082/auth/user-info`,{withCredentials:true}).then((res)=>{
+        console.log(res.data)
+      }).catch(err=>{
+        console.error(err)
+      })
+    }
+
+  getSession();    
+
+  }, []);
 
   const authInfo = {
     createUser,
@@ -72,7 +89,7 @@ const AuthProvider = ({ children }) => {
     signIn,
     city,
     setCity,
- 
+    googleSignUp
   };
 
   return (

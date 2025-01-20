@@ -6,8 +6,11 @@ import Experiences from "./Experiences.jsx";
 import Footer from "../Footer.jsx";
 import useAxiosSecure from "../Hooks/AxiosSecure.jsx";
 import { frontURL } from "../Services/URL.js";
+import axios from "axios";
+import { SignUp } from "@supabase/auth-ui-react";
 
 const Home = () => {
+  const [user, setUser] = useState(null)
   const recentMoviesRef = useRef(null);
   const axiosSecure = useAxiosSecure()
   const [showArrow, setShowArrow] = useState(true);
@@ -32,8 +35,6 @@ const Home = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
-
-
 
   return (
     <div className=" bg-gradient-to-b from-black via-gray-950 to-black w-full h-[100vh] pt-3">
