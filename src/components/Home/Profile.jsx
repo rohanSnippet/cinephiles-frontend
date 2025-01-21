@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import useAdmin from "../Hooks/useAdmin";
 import useOwner from "../Hooks/useOwner";
 import { CiUser } from "react-icons/ci";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../Context/AuthProvider";
 
 const Profile = () => {
+  const {session,setSession} = useContext(AuthContext);
   const username = localStorage.getItem("username");
   const [user, setUser] = useState(null);
   const axiosSecure = useAxiosSecure();
@@ -22,7 +24,34 @@ const Profile = () => {
     getUser();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async() => {
+    if(session){
+    
+        try {
+          const response = await fetch("http://localhost:8082/auth/logout", {
+            method: "POST",
+            credentials: "include", // Include cookies if used
+          });
+      
+          if (response.ok) {
+            // Clear local storage and state
+            localStorage.removeItem("access-token");
+            localStorage.removeItem("username");
+            setSession(null);
+            setUserData({
+              username: "",
+              token: "",
+            });
+  
+            // Redirect to login page
+            window.location.href = "http://localhost:5173/";
+          } else {
+            console.error("Logout failed");
+          }
+        } catch (error) {
+          console.error("An error occurred during logout", error);
+        }
+    }
     localStorage.removeItem("access-token");
     localStorage.removeItem("username");
     const Toast = Swal.mixin({

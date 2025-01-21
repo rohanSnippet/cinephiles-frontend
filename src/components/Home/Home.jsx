@@ -4,15 +4,10 @@ import RecentMovies from "./RecentMovies.jsx";
 import ExploreGeneres from "./ExploreGeneres.jsx";
 import Experiences from "./Experiences.jsx";
 import Footer from "../Footer.jsx";
-import useAxiosSecure from "../Hooks/AxiosSecure.jsx";
-import { frontURL } from "../Services/URL.js";
-import axios from "axios";
-import { SignUp } from "@supabase/auth-ui-react";
+
 
 const Home = () => {
-  const [user, setUser] = useState(null)
   const recentMoviesRef = useRef(null);
-  const axiosSecure = useAxiosSecure()
   const [showArrow, setShowArrow] = useState(true);
   const handleScrollAndHideArrow = () => {
     if (recentMoviesRef.current) {
