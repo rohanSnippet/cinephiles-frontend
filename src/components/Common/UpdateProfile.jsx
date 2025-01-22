@@ -106,7 +106,6 @@ const UpdateProfile = () => {
         setCurrUser(response.data);
         setUpdatedUser(response.data);
         setPublicId(response.data.publicId);
-        // console.log(response.data.publicId);
       } catch (error) {
         console.error("Error fetching user data", error);
       }
@@ -118,8 +117,8 @@ const UpdateProfile = () => {
     document.getElementById("my_modal_1").close();
   };    
 
-  console.log(currUser)
-  console.log("Updated User : ",updatedUser)
+   console.log(currUser)
+  // console.log("Updated User : ",updatedUser)
   
 
   const deleteImage =()=>{
