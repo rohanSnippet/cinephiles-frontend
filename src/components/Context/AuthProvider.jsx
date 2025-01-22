@@ -6,7 +6,7 @@ export const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
   const [city, setCity] = useState();
-  const[session, setSession] = useState()
+  const [session, setSession] = useState()
   const [userData, setUserData] = useState({
     username: "",
     token: "",
@@ -55,7 +55,10 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("username");
     localStorage.removeItem("access-token");
   }
-
+ /*  if(session==undefined){
+    localStorage.removeItem("access-token")
+    localStorage.removeItem("username")
+  } */
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
     const storedToken = localStorage.getItem("access-token");
@@ -77,9 +80,8 @@ const AuthProvider = ({ children }) => {
         console.log(res.data)
          localStorage.setItem("username",res.data.email)
              setSession(res.data)
-                console.log(res.data)
+              //  console.log(res.data)
               setUserData(prevData=>({...prevData,username:res.data.email}))
-             
       }).catch(err=>{
         console.error(err)
       })
@@ -96,15 +98,10 @@ const AuthProvider = ({ children }) => {
     if (response.ok) {
         const data = await response.json();
         const token = data.token;
-    console.log("Got the token :",data)
+    // console.log("Got the token :",data)
   
       localStorage.setItem('access-token', token);
       setUserData(prevData=>({...prevData,token:token}))
-     
-        
-       
-
-        //window.location.href = 'http://localhost:5173/';
     } else {
         console.error('Failed to authenticate ');
     }
