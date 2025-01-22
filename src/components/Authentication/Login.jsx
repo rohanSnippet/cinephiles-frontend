@@ -15,7 +15,7 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
-  const { userData, signIn } = useContext(AuthContext);
+  const { signIn, googleSignUp } = useContext(AuthContext);
   const axiosSecure = useAxiosSecure();
 
   // Using optional chaining with default values to avoid destructure errors
@@ -124,6 +124,7 @@ const Login = () => {
         <span className="flex justify-center absolute left-[35%] top-[15%] space-x-12">
           <button onClick={handleGoogleLogin}>
             <FcGoogle
+            onClick={googleSignUp}
               size={34}
               className="bg-white rounded-full cursor-pointer"
             />
