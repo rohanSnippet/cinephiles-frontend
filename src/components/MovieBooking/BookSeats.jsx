@@ -65,8 +65,12 @@ const BookSeats = () => {
     fetchScreen();
   }, [fetchScreen]);
 
+
+  //Seat click logic
   const handleSeatClick = (tierIndex, seatIndex) => {
     const rowSeats = updatedScreen.tiers[tierIndex].seats;
+
+    //console.log(rowSeats)
     let remainingSeatsNeeded = tickets - selectedSeats.length;
 
     if (remainingSeatsNeeded <= 0) {
@@ -88,16 +92,22 @@ const BookSeats = () => {
       }
     }
     const newSelectedSeatIds = [];
+//console.log(seatIndex)
 
     //if (seatIndex + remainingSeatsNeeded <= rowSeats.length) {
     let tempSeat = null;
     for (let i = 0; i < remainingSeatsNeeded; i++) {
+      console.log(seatIndex+i)
+      if(rowSeats[seatIndex+i]==undefined) {
+        //console.log("break the statement for :"+seatIndex+i)
+        break;
+      }
       const currentSeat = rowSeats[seatIndex + i];
-      // console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
+      //  console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
       if (tempSeat == null) {
         tempSeat = currentSeat.seatId.replace(/\D/g, "");
       }
-      if (tempSeat > currentSeat.seatId.replace(/\D/g, "")) {
+      if (tempSeat > parseInt(currentSeat.seatId.replace(/\D/g, ""))) {
         break;
       }
       const isBlocked = show.blocked.includes(currentSeat.seatId);
@@ -109,6 +119,7 @@ const BookSeats = () => {
         // console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
         newSelectedSeatIds.push(seatId);
       } else {
+       
         break;
       }
     }
@@ -205,7 +216,8 @@ const BookSeats = () => {
   if (!updatedScreen) {
     return <p>Loading screen data...</p>;
   }
-  console.log(selectedShow);
+  //console.log(updatedScreen.tiers[0])
+ // console.log(selectedShow);
   const handleSeatStatus = (seat) => {
     if (show?.blocked.includes(seat.seatId)) return "BLOCKED";
     if (show?.booked.includes(seat.seatId)) return "BOOKED";
@@ -384,7 +396,7 @@ const BookSeats = () => {
                     const seatId = `${index}-${seatIndex}`;
                     const isSelected = selectedSeats.includes(seatId);
                     const seatStatus = handleSeatStatus(seat);
-
+                    
                     return (
                       <React.Fragment key={seatId}>
                         {isFirstInRow && (

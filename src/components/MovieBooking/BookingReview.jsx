@@ -29,6 +29,7 @@ const BookingReview = () => {
     const fetchRemainingTime = async () => {
       if (!selectedData) return; // Ensure selectedData is present
       try {
+        console.log(selectedData.showId ,"  ", selectedData.user)
         const response = await axiosSecure.get(
           `/bookings/remaining-time?showId=${selectedData.showId}&user=${selectedData.user}`
         );

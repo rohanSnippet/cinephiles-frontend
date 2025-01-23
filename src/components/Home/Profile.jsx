@@ -30,6 +30,7 @@ const Profile = () => {
   }, [username]);
 
   const handleLogout = async () => {
+    console.log(session, "clicked")
     if (session) {
       try {
         const response = await fetch("http://localhost:8082/auth/logout", {
