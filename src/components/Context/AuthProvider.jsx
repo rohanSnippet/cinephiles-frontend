@@ -71,8 +71,14 @@ const AuthProvider = ({ children }) => {
     } else if (storedUser && storedToken) {
       setUserData({ username: storedUser, token: storedToken });
     }
-  }, []);
 
+   /*  if(!session){
+      localStorage.removeItem("access-token")
+      localStorage.removeItem("username")
+      setUserData({username:"",token:""})
+    } */
+  }, []);
+console.log(session)
   useEffect(() => {
    
      const getSession = ()=>{
