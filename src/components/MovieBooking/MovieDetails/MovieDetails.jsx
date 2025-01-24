@@ -9,7 +9,7 @@ import useAxiosSecure from "../../Hooks/AxiosSecure";
 
 const MovieDetails = () => {
   const navigate = useNavigate();
-  const {userData} = useContext(AuthContext);
+  const { userData } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
   const location = useLocation();
   const [activeVideo, setActiveVideo] = useState(null);
@@ -22,7 +22,7 @@ const MovieDetails = () => {
   const { item, previousPath } = location.state;
   const releaseDateObj = new Date(item.releaseDate);
   const axiosSecure = useAxiosSecure();
-  
+
   useEffect(() => {
     // Scroll to the top when the component mounts
     window.scrollTo(0, 0);
@@ -56,27 +56,29 @@ const MovieDetails = () => {
       console.log(error);
     }
   };
-   
 
   useEffect(() => {
     const getShowAvlability = async () => {
       try {
-        const res = await axiosSecure.get(`/show/get-show-avl/${item.id}/${userData.username}`);
+        const res = await axiosSecure.get(
+          `/show/get-show-avl/${item.id}/${userData.username}`
+        );
         console.log(res.data); // Check the structure of `res` here to make sure it's returning what's expected
-       setIsShowAvl(res.data)
+        setIsShowAvl(res.data);
       } catch (error) {
         console.log(error);
         setIsShowAvl(res.data); // In case of an error, assume button should not be shown
       }
     };
-  
+
     getShowAvlability();
-  }, [item.id, userData.username]);  // Make sure this effect re-runs when `item.id` or `userData.username` changes
-  
+  }, [item.id, userData.username]); // Make sure this effect re-runs when `item.id` or `userData.username` changes
+
   useEffect(() => {
     scrapeActors();
     scrapeCrew();
   }, []);
+console.log(item.trailers)
 
   return (
     <div className="h-full w-full">
@@ -127,21 +129,19 @@ const MovieDetails = () => {
               </p>
             </div>
             <div className="m-20 absolute left-[40%]">
-            
-                <button
-                  onClick={handleGetTheatres}
-                  className="btn bg-slate-950/60 shadow-md hover:-translate-y-1 hover:scale-x-105 transition-all duration-300 ease-in-out shadow-slate-800/90 w-64 border-none hover:bg-white/60 hover:text-black rounded-lg text-white overflow-hidden"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span className="scale-100 text-xl poppins-bold transform transition-transform duration-100">
-                    Book &nbsp;Tickets
-                  </span>
-                </button>
-          
+              <button
+                onClick={handleGetTheatres}
+                className="btn bg-slate-950/60 shadow-md hover:-translate-y-1 hover:scale-x-105 transition-all duration-300 ease-in-out shadow-slate-800/90 w-64 border-none hover:bg-white/60 hover:text-black rounded-lg text-white overflow-hidden"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="scale-100 text-xl poppins-bold transform transition-transform duration-100">
+                  Book &nbsp;Tickets
+                </span>
+              </button>
             </div>
           </div>
           {/* poster */}
@@ -308,10 +308,11 @@ const MovieDetails = () => {
 
           <div className="ml-32 ">
             {/* Filtered trailers based on selected language */}
-            {Object.entries(item.trailers).filter(
+            {/*   {Object.entries(item.trailers).filter(
               ([trailerLang]) =>
                 selectedLanguage === "All" || trailerLang === selectedLanguage
             ).length > 0 ? (
+              
               // If there are filtered trailers, render them
               Object.entries(item.trailers)
                 .filter(
@@ -341,6 +342,54 @@ const MovieDetails = () => {
                 style={{ width: 700, height: 385 }}
               >
                 <p className="align-middle">No Vedios in {selectedLanguage}</p>
+              </div>
+            )} */}
+            {item.trailers.filter(
+              (trailer) =>
+                selectedLanguage === "All" || trailer.language === selectedLanguage
+            ).length > 0 ? (
+              // If there are filtered trailers, render them
+              item.trailers
+                .filter(
+                  (trailer) =>
+                    selectedLanguage === "All" ||
+                    trailer.language === selectedLanguage
+                )
+                .map((trailer, i) => (
+                  <div key={i} className="my-4">
+                    <h3 className="text-xl font-semibold text-white">
+                      {trailer.language} Trailers:
+                    </h3>
+                    <div className="flex flex-wrap space-x-4 mt-2">
+                      {trailer.trailerUrl.map((link, idx) => (
+                        <div key={idx} className="flex flex-col items-center">
+                          <iframe
+                            onClick={() => setActiveVideo(link)}
+                            className="rounded-md mt-2"
+                            width="700"
+                            height="365"
+                            src={`https://www.youtube.com/embed/${link.substring(
+                              17
+                            )}`}
+                            title="YouTube video player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
+                          ></iframe>
+                          <p className="text-white mt-2">Trailer {idx + 1}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+            ) : (
+              // If no trailers match, show "No videos" message
+              <div
+                className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center bg-slate-800"
+                style={{ width: 700, height: 385 }}
+              >
+                <p className="align-middle">No Videos in {selectedLanguage}</p>
               </div>
             )}
           </div>
