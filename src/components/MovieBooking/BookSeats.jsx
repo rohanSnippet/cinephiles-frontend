@@ -70,7 +70,7 @@ const BookSeats = () => {
   const handleSeatClick = (tierIndex, seatIndex) => {
     const rowSeats = updatedScreen.tiers[tierIndex].seats;
 
-    //console.log(rowSeats)
+
     let remainingSeatsNeeded = tickets - selectedSeats.length;
 
     if (remainingSeatsNeeded <= 0) {
@@ -207,7 +207,7 @@ const BookSeats = () => {
     }));
   }, [selectedSeats, updatedScreen]);
   // console.log(userSeats, "and ", username, "and show: ", show);
-  //console.log(userSeats);
+ //console.log(updatedScreen);
 
   useEffect(() => {
     setSelectedSeats([]);
