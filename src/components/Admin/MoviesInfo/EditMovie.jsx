@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
@@ -16,63 +16,9 @@ import { SiTicktick } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
 import languages from "../../../assets/languages.json";
 import Select from "react-select";
+import { isEqual } from "lodash";
 
 const EditMovie = () => {
-  const [movie, setMovie] = useState({});
-  const [trailers, setTrailers] = useState({});
-  const [trailerLang, setTrailerLang] = useState("");
-  const [trailerURL, setTrailerURL] = useState("");
-  const [crew, setCrew] = useState([]);
-  const [cast, setCast] = useState({});
-  const [name, setName] = useState("");
-  const [roles, setRoles] = useState([]);
-  const [actor, setActor] = useState("");
-  const [char, setChar] = useState("");
-  const [posterImage, setPosterImage] = useState("");
-  const [bannerImage, setBannerImage] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { selectedMovie } = location.state;
-
-  const form = useForm({
-    defaultValues: {
-      title: selectedMovie?.title || "",
-      runtime: selectedMovie?.runtime || null,
-      description: selectedMovie?.description || "",
-      certification: selectedMovie?.certification || "",
-      genre: selectedMovie?.genre || [],
-      languages: selectedMovie?.languages || [],
-      formats: selectedMovie?.formats || [],
-      ratings: selectedMovie?.ratings || 0,
-      votes: selectedMovie?.votes || 0,
-      likes: selectedMovie?.likes || 0,
-      cast: selectedMovie?.cast || {},
-      crew: selectedMovie?.crew || [],
-      poster: selectedMovie?.poster || "",
-      banner: selectedMovie?.banner || "",
-      trailers: selectedMovie?.trailers || {},
-      releaseDate: selectedMovie?.releaseDate || "",
-      bookingOpen: selectedMovie?.bookingOpen || false,
-      promoted: selectedMovie?.promoted || false,
-    },
-  });
-  const axiosSecure = useAxiosSecure();
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    getValues,
-    watch,
-    control,
-    formState: { errors },
-  } = form;
-  const certificationValue = watch("certification");
-  const posterValue = watch("poster");
-
-  const isAddTrailerDisabled = !(trailerLang && trailerURL);
-  const isAddCrewDisabled = !(name && roles.length > 0);
-  const isAddCastDisabled = !(char && actor);
   const genres = [
     { label: "Action", value: "action" },
     { label: "Comedy", value: "comedy" },
@@ -83,7 +29,6 @@ const EditMovie = () => {
     { label: "Adventure", value: "adventure" },
     { label: "Sci-Fi", value: "sci-Fi" },
   ];
-
   const formats = [
     { label: "2D", value: "2D" },
     { label: "3D", value: "3D" },
@@ -100,10 +45,66 @@ const EditMovie = () => {
     { label: "Screenplay", value: "Screenplay" },
     { label: "Dialog Writer", value: "Dialog Writer" },
   ];
+  const [movie, setMovie] = useState({});
+  const [trailers, setTrailers] = useState({});
+  const [trailerLang, setTrailerLang] = useState("");
+  const [trailerURL, setTrailerURL] = useState("");
+  const [crew, setCrew] = useState([]);
+  const [cast, setCast] = useState({});
+  const [name, setName] = useState("");
+  const [roles, setRoles] = useState([]);
+  const [actor, setActor] = useState("");
+  const [char, setChar] = useState("");
+  const [posterImage, setPosterImage] = useState("");
+  const [bannerImage, setBannerImage] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { selectedMovie } = location.state;
+  const axiosSecure = useAxiosSecure();
+
+  const defaultValues = {
+    title: selectedMovie?.title || "",
+    runtime: selectedMovie?.runtime || null,
+    description: selectedMovie?.description || "",
+    certification: selectedMovie?.certification || "",
+    genre: selectedMovie?.genre || [],
+    languages: selectedMovie?.languages || [],
+    formats: selectedMovie?.formats || [],
+    ratings: selectedMovie?.ratings || 0,
+    votes: selectedMovie?.votes || 0,
+    likes: selectedMovie?.likes || 0,
+    cast: selectedMovie?.cast || {},
+    crew: selectedMovie?.crew || [],
+    poster: selectedMovie?.poster || "",
+    banner: selectedMovie?.banner || "",
+    trailers: selectedMovie?.trailers || {},
+    releaseDate: selectedMovie?.releaseDate || "",
+    bookingOpen: selectedMovie?.bookingOpen || false,
+    promoted: selectedMovie?.promoted || false,
+  };
+  
+  const form = useForm({ defaultValues });
+  
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    getValues,
+    watch,
+    control,
+    formState: { errors },
+  } = form;
+
+  const certificationValue = watch("certification");
+  const isAddTrailerDisabled = !(trailerLang && trailerURL);
+  const isAddCrewDisabled = !(name && roles.length > 0);
+  const isAddCastDisabled = !(char && actor);
+  const bookingOpenValue = watch("bookingOpen")
+  const promotedValue = watch("promoted")
 
   const onSubmit = (data) => {
     const runtime = parseInt(data.runtime, 10);
-    const certification = data.certificationValue;
+    // const certification = data.certificationValue;
 
     const genre = data.genre.map(
       (g) => g.charAt(0).toUpperCase() + g.slice(1).toLowerCase()
@@ -186,13 +187,15 @@ const EditMovie = () => {
     setCrew(selectedMovie.crew);
   }, [movie, setValue]);
 
-  const handleLangChange = (event) => {
+  //Trailers //
+  const handleLangChange = async (event) => {
     setTrailerLang(event.target.value);
   };
 
   const handleURLChange = (event) => {
     setTrailerURL(event.target.value);
   };
+
   const handleAddTrailer = () => {
     if (trailerLang && trailerURL) {
       const updatedTrailers = {
@@ -206,12 +209,45 @@ const EditMovie = () => {
       setTrailerURL("");
     }
   };
+  const handleDeleteTrailer = (language, urlToDelete) => {
+    // Create a deep copy of the trailers array to avoid mutating state directly
+    const updatedTrailers = trailers.map((trailer) => {
+      if (trailer.language === language) {
+        // Filter out the URL to delete
+        return {
+          ...trailer,
+          trailerUrl: trailer.trailerUrl.filter((url) => url !== urlToDelete),
+        };
+      }
+      return trailer;
+    });
+  
+    // Remove objects with empty trailerUrl arrays
+    const filteredTrailers = updatedTrailers.filter(
+      (trailer) => trailer.trailerUrl.length > 0
+    );
+  
+    // Update the state and form value
+    setTrailers(filteredTrailers);
+    setValue("trailers", filteredTrailers);
+  
+  };
+  
+
+const getYouTubeVideoId = (url) => {
+  const regex = /(?:https?:\/\/(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/))([^"&?\/\s]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null; // Return the video ID if found, otherwise null
+};
+  // cast and crew //
+  //crew
   const handleNameChange = (event) => {
     setName(event.target.value);
   };
   const handleRolesChange = (selectedOptions) => {
     setRoles(selectedOptions.map((option) => option.value));
   };
+  //cast
   const handleActorChange = (event) => {
     setActor(event.target.value);
   };
@@ -244,29 +280,6 @@ const EditMovie = () => {
       setRoles([]);
     }
   };
-
-  const saveImage = async (image, name) => {
-    if (name === "poster") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        poster: image,
-      }));
-      console.log(image ? "Banner saved" : "Banner set to null");
-    } else if (name === "banner") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        banner: image,
-      }));
-      console.log(image ? "Banner saved" : "Banner set to null");
-    }
-  };
-
-  const closeDialog1 = () => {
-    document.getElementById("my_modal_1").close();
-  };
-  const closeDialog2 = () => {
-    document.getElementById("my_modal_2").close();
-  };
   const handleRemoveCrew = (index, team) => {
     if (team == "crew") {
       const updatedCrew = crew.filter((_, idx) => idx !== index);
@@ -281,6 +294,22 @@ const EditMovie = () => {
       delete updatedCast[castKeyToRemove]; // Delete the key-value pair
       setCast(updatedCast); // Update the cast state
       setValue("cast", updatedCast);
+    }
+  };
+  //Poster and banner
+  const saveImage = async (image, name) => {
+    if (name === "poster") {
+      setMovie((prevMovie) => ({
+        ...prevMovie,
+        poster: image,
+      }));
+      console.log(image ? "Banner saved" : "Banner set to null");
+    } else if (name === "banner") {
+      setMovie((prevMovie) => ({
+        ...prevMovie,
+        banner: image,
+      }));
+      console.log(image ? "Banner saved" : "Banner set to null");
     }
   };
   const removeImage = (name) => {
@@ -298,6 +327,14 @@ const EditMovie = () => {
       setBannerImage("");
     }
   };
+  const closeDialog1 = () => {
+    document.getElementById("my_modal_1").close();
+  };
+  const closeDialog2 = () => {
+    document.getElementById("my_modal_2").close();
+  };
+ 
+  //styles
   const textFieldStyles = {
     "& .MuiOutlinedInput-root": {
       "& fieldset": {
@@ -358,6 +395,7 @@ const EditMovie = () => {
       color: "#fff",
     }),
   };
+
 
   return (
     <div>
@@ -778,16 +816,18 @@ const EditMovie = () => {
                           className="w-[45vh] outline-none"
                           value={trailerLang}
                           onChange={(e) => {
+                          
                             handleLangChange(e);
                             field.onChange(e);
                           }}
                           variant="outlined"
                           sx={textFieldStyles}
                         >
-                          {languages.map((bs) => (
+                          {languages.map((bs, i) => (
                             <MenuItem
                               sx={{ fontFamily: "poppins" }}
-                              key={bs.value}
+                              // key={bs.value}
+                              key={i}
                               value={bs.value}
                             >
                               {bs.label}
@@ -832,7 +872,7 @@ const EditMovie = () => {
               </thead>
             </table>
             {/* Display added trailers */}
-            {Object.keys(trailers).length > 0 && (
+            {trailers.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="table table-zebra">
                   {/* head */}
@@ -846,16 +886,37 @@ const EditMovie = () => {
                   </thead>
                   <tbody>
                     {/* row 1 */}
-                    {Object.entries(trailers).map(([language, url], idx) => (
-                      <tr key={idx}>
-                        <th>{idx + 1}</th>
-                        <td>{language}</td>
-                        <td>{url}</td>
-                        <td>
-                          <button /* onClick={handleDelete} */>Delete</button>
-                        </td>
-                      </tr>
-                    ))}
+                    {trailers.map((trailer, idx) =>
+                      trailer.trailerUrl.map((url, urlIdx) => (
+                        <tr key={`${idx}-${urlIdx}`}>
+                          <th>{idx + 1}</th>
+                          <td>{trailer.language}</td>
+                          <td>
+                            {/* You can embed the thumbnail from the YouTube URL */}
+                            <img
+                              src={`https://img.youtube.com/vi/${getYouTubeVideoId(
+                                url
+                              )}/0.jpg`} // Get the thumbnail image
+                              alt="Trailer Thumbnail"
+                              style={{
+                                width: "100px",
+                                height: "auto",
+                                marginRight: "10px",
+                              }}
+                            />
+                           
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() =>handleDeleteTrailer(trailer.language,trailer.trailerUrl[urlIdx])}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1056,7 +1117,7 @@ const EditMovie = () => {
           </div>
 
           <div className="flex mb-2 justify-center gap-x-10">
-            <div className="w-[40vh] text-center rounded-lg border-2 bg-slate-900 hover:bg-gray-700 border-gray-600 text-white">
+            <div className={`w-[40vh] text-center rounded-lg border-2 hover:bg-gray-700 ${bookingOpenValue?`bg-green-400/60 border-green-600`:`bg-red-800/60 border-red-600/60`}  text-white`}>
               <label htmlFor="" className="poppins-semibold">
                 Bookings Open
               </label>{" "}
@@ -1067,7 +1128,7 @@ const EditMovie = () => {
                 color="info"
               />
             </div>
-            <div className="w-[40vh] text-center rounded-lg border-2 bg-slate-900 hover:bg-gray-700 border-gray-600 text-white">
+            <div className={`w-[40vh] text-center rounded-lg border-2 ${promotedValue?`bg-green-400/60 border-green-600`:`bg-red-800/60 border-red-600/60`} hover:bg-gray-700 text-white`}>
               <label htmlFor="" className="poppins-semibold">
                 Promoted
               </label>{" "}
@@ -1079,10 +1140,10 @@ const EditMovie = () => {
               />
             </div>
           </div>
-
-          <button type="submit" className="btn bg-blue-500 text-white w-full">
+          { <button type="submit" className="btn bg-blue-500 text-white w-full">
             Save Movie
           </button>
+          }
         </form>
         {/* {modal for banner} */}
         <dialog id="my_modal_2" className="modal">

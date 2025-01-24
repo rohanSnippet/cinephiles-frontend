@@ -17,7 +17,7 @@ import languages from "../../../assets/languages.json";
 
 const SaveMovie = () => {
   const [movie, setMovie] = useState({});
-  const [trailers, setTrailers] = useState({});
+  const [trailers, setTrailers] = useState([]);
   const [trailerLang, setTrailerLang] = useState("");
   const [trailerURL, setTrailerURL] = useState("");
   const [crew, setCrew] = useState([]);
@@ -105,7 +105,7 @@ const SaveMovie = () => {
 
     const transformCrew = { ...data.crew };
     const crew = transformCrewObject(transformCrew);
-
+    const trailers = transformTrailersObject(data.trailers)
     const releaseDate = new Date(data.releaseDate).toISOString().split("T")[0];
 
     const movieData = {
@@ -123,7 +123,7 @@ const SaveMovie = () => {
       crew,
       poster: data.poster,
       banner: data.banner,
-      trailers: data.trailers,
+      trailers,
       releaseDate,
       bookingOpen: data.bookingOpen,
       promoted: data.promoted,
@@ -172,13 +172,19 @@ const SaveMovie = () => {
       roles: roles,
     }));
   };
+  const transformTrailersObject = (trailers) => {
+    return Object.entries(trailers).map(([language, urls]) => ({
+      language: language,
+      trailerUrl: urls,
+    }));
+  };
   const handleLangChange = (event) => {
     setTrailerLang(event.target.value);
   };
   const handleURLChange = (event) => {
     setTrailerURL(event.target.value);
   };
-  const handleAddTrailer = () => {
+  /*  const handleAddTrailer = () => {
     if (trailerLang && trailerURL) {
       const updatedTrailers = {
         ...getValues("trailers"),
@@ -190,7 +196,40 @@ const SaveMovie = () => {
       setTrailerLang("");
       setTrailerURL("");
     }
+  }; */
+  const handleAddTrailer = () => {
+    if (trailerLang && trailerURL) {
+      const updatedTrailers = {
+        ...trailers,
+        [trailerLang]: trailers[trailerLang]
+          ? [...trailers[trailerLang], trailerURL] // Append to existing array
+          : [trailerURL], // Create a new array if none exists
+      };
+
+      setTrailers(updatedTrailers);
+      setValue("trailers", updatedTrailers);
+
+      // Reset input fields
+      setTrailerLang("");
+      setTrailerURL("");
+    }
   };
+
+  const handleDeleteTrailer = (language, urlToDelete) => {
+    const updatedTrailers = {
+      ...trailers,
+      [language]: trailers[language].filter((url) => url !== urlToDelete),
+    };
+
+    // Remove the key if no URLs are left
+    if (updatedTrailers[language].length === 0) {
+      delete updatedTrailers[language];
+    }
+
+    setTrailers(updatedTrailers);
+    setValue("trailers", updatedTrailers);
+  };
+
   const handleNameChange = (event) => {
     setName(event.target.value);
   };
@@ -289,6 +328,7 @@ const SaveMovie = () => {
       color: "gray",
     },
   };
+
   return (
     <div>
       <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
@@ -715,16 +755,35 @@ const SaveMovie = () => {
                   </thead>
                   <tbody>
                     {/* row 1 */}
-                    {Object.entries(trailers).map(([language, url], idx) => (
+                    {/*  {Object.entries(trailers).map(([language, url], idx) => (
                       <tr key={idx}>
                         <th>{idx + 1}</th>
                         <td>{language}</td>
                         <td>{url}</td>
                         <td>
-                          <button /* onClick={handleDelete} */>Delete</button>
+                          <button type="button" onClick={()=>handleDeleteTrailer(language,url)} >Delete</button>
                         </td>
                       </tr>
-                    ))}
+                    ))} */}
+                    {Object.entries(trailers).map(([language, urls], langIdx) =>
+                      urls.map((url, urlIdx) => (
+                        <tr key={`${langIdx}-${urlIdx}`}>
+                          <th>
+                            {langIdx + 1}.{urlIdx + 1}
+                          </th>
+                          <td>{language}</td>
+                          <td>{url}</td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTrailer(language, url)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
