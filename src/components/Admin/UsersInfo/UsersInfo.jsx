@@ -5,6 +5,7 @@ import { IoIosMail } from "react-icons/io";
 import { MdAdminPanelSettings } from "react-icons/md";
 import { GrUserManager } from "react-icons/gr";
 import { FaUser } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 
 const UsersInfo = () => {
   const [allUsers, setAllUsers] = useState([]);
@@ -56,7 +57,7 @@ const UsersInfo = () => {
               </div>
             </div>
             <div className="flex justify-evenly gap-x-2 absolute poppins-light text-md  left-[30%] pt-1  text-white/90 ">
-              <IoIosMail size={24} /> {user.username}
+             {user.provider=="google"?  <FcGoogle size={24} /> :<IoIosMail size={24} /> }{user.username}
             </div>
             <div className="absolute poppins-light text-md  left-[50%] pt-1  text-white/90 ">
               {user.phone || "Contact Not Provided"}

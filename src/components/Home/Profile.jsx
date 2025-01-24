@@ -30,8 +30,8 @@ const Profile = () => {
   }, [username]);
 
   const handleLogout = async () => {
-    console.log(session, "clicked")
-    if (session) {
+    
+  
       try {
         const response = await fetch("http://localhost:8082/auth/logout", {
           method: "POST",
@@ -53,13 +53,11 @@ const Profile = () => {
           setTimeout(() => {
             window.location.href = "http://localhost:5173/";
           }, 1000);
-        } else {
-          console.error("Logout failed");
-        }
+        } 
       } catch (error) {
         console.error("An error occurred during logout", error);
       }
-    }
+    
   };
 console.log(user)
   const [isAdmin, isAdminLoading] = useAdmin();
