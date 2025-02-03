@@ -160,9 +160,13 @@ console.log(item.trailers)
               onClick={() => document.getElementById("my_modal_2").showModal()}
               className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular"
             >
-              {Object.values(item.trailers).includes("tba")
+             {/*  {Object.values(item.trailers).includes("tba")
                 ? `No Trailer(s)`
-                : `(${Object.entries(item.trailers).length}) Trailers`}
+                : `(${Object.entries(item.trailers).length}) Trailer(s)`} */}
+              {item.trailers.length > 0 
+  ? `${item.trailers.reduce((total, trailer) => total + trailer.trailerUrl.length, 0)} Trailer(s)` 
+  : ''}
+
             </button>
 
             <div className="absolute bg-black bg-opacity-50 h-8 w-full rounded-b-xl bottom-0"></div>
