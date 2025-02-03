@@ -7,7 +7,7 @@ const BookingReview = () => {
   const [time, setTime] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedData, movie } = location.state || {}; // Safely destructure selectedData
+  const { selectedData, movie } = location.state || {};
   const axiosSecure = useAxiosSecure();
   const handleTimeout = async () => {
     try {
@@ -23,8 +23,6 @@ const BookingReview = () => {
       return { error: true, message: error.message }; // Or return null/error object
     }
   };
-
-  // Fetch the remaining time when the component mounts
   useEffect(() => {
     const fetchRemainingTime = async () => {
       if (!selectedData) return; // Ensure selectedData is present
@@ -56,70 +54,23 @@ const BookingReview = () => {
 
     return () => clearInterval(interval);
   }, [selectedData, axiosSecure]);
-
   const handleBackNavigation = async () => {
     const response = await handleTimeout(); // Wait for API response
     if (response?.status === 200) {
       // navigate("/all-shows", { state: { item: movie } });
     }
   };
-
-  /* (function (window, location) {
-    history.replaceState(
-      null,
-      document.title,
-      location.pathname + "#!/stealingyourhistory"
-    );
-    history.pushState(null, document.title, location.pathname);
-
-    window.addEventListener(
-      "popstate",
-      function () {
-        if (location.hash === "#!/stealingyourhistory") {
-          history.replaceState(null, document.title, location.pathname);
-          setTimeout(function () {
-            location.replace("http://www.programadoresweb.net/");
-          }, 0);
-        }
-      },
-      false
-    );
-  })(window, location);
-   */
   window.addEventListener("popstate", handleBackNavigation);
-
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return { minutes, secs };
   };
-
   const { minutes, secs } = formatTime(time);
-
-  // Redirect if selectedData is not present
   if (!selectedData) {
     navigate(`/all-shows`, { state: { item: movie } });
-    return null; // Prevent rendering
+    return null; 
   }
-
-  /* const handleBooking = async () => {
-    try {
-      const response = await axiosSecure.post(
-        `/bookings/book-seats`,
-        selectedData
-      );
-      if (response.status === 200) {
-        console.log("Seats Booked successfully:", response.data);
-        navigate("/");
-      }
-    } catch (error) {
-      console.error("Error hitting API on timeout:", error);
-    }
-  }; */
-
-
- 
-    
     const handleRedirect = async () => {
       try {
         const response = await axiosSecure.post(
@@ -146,14 +97,14 @@ const BookingReview = () => {
     
         let checkoutOptions = {
           paymentSessionId: response.data.payment_session_id,
-         
+          returnUrl:'http://localhost:5173/'
         };
     
         // Calling checkout with a promise-based approach
         cashfree.checkout(checkoutOptions).then(function (result) {
           if (result.error) {
             alert(result.error.message);
-          }n 
+          } 
           if (result.redirect) {
             console.log(result)
             console.log("Redirection happening...");
@@ -166,7 +117,6 @@ const BookingReview = () => {
         console.error('Error:', error);
       }
     };
-    
     const handleBooking = async () => {
       try {
         const response = await axiosSecure.post(
@@ -175,15 +125,12 @@ const BookingReview = () => {
         );
         if (response.status === 200) {
           console.log("Seats Booked successfully:", response.data);
-          navigate("/");
+         // navigate("/");
         }
       } catch (error) {
         console.error("Error hitting API on timeout:", error);
       }
     };
-   
-
-    
 
   return (
     <div className="flex w-[100%] h-screen">
@@ -214,7 +161,7 @@ const BookingReview = () => {
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
-              onClick={handleBooking}
+              onClick={handleRedirect}
             >
               Book Now
             </button>
