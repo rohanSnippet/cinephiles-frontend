@@ -8,7 +8,7 @@ const ScreenCard = ({ screen }) => {
     <Link
       to="/owner/seatBookingLayout"
       state={{ screen: screen }}
-      className="relative card bg-gradient-to-br border-double border-slate-800  border-2 from-gray-800 via-base-100 to-slate-900 w-[46vh] h-[36vh] items-center shadow-xl hover:text-white hover:bg-gradient-to-br hover:from-slate-900 hover:via-slate-800 hover:to-slate-700 hover:shadow-xl hover:border-gray-700 shadow-gray-900"
+      className="relative card bg-gradient-to-br border-double border-slate-800  border-2 from-gray-800 via-base-100 to-slate-900 w-[46vh] h-[32vh] items-center shadow-xl hover:text-white hover:bg-gradient-to-br hover:from-slate-900 hover:via-slate-800 hover:to-slate-700 hover:shadow-xl hover:border-gray-700 shadow-gray-900"
     >
       <div className="flex top-4 absolute bottom-[30%] gap-3  left-[75%]">
         <MdOutlineEdit className="h-[4vh] w-[4vh] text-indigo-300 hover:text-indigo-600 cursor-pointer" />
