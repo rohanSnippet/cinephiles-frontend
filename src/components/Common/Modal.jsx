@@ -100,151 +100,141 @@ const CustomModal = ({ path, theatreId }) => {
     currentTier.rows > 0 &&
     currentTier.columns > 0;
   return (
-    <dialog id="my_modal_2" className="modal">
-      <div className="modal-box w-11/12 max-w-5xl">
-        <h2 className="poppins-bold text-xl text-center">ADD SCREEN</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4 text-center">
-            <label className="block text-white text-sm font-semibold mb-2">
-              Screen Name
-            </label>
-            <TextField
-              label="Screen Name"
-              type="text"
-              className="w-[72vh] textarea"
-              name="sname"
-              variant="outlined"
-              value={screen.sname}
-              onChange={handleChange}
-              required
-              sx={textFieldStyles}
-            />
-          </div>
+  <dialog id="my_modal_2" className="modal">
+  <div className="modal-box max-w-6xl">
+    <h2 className="poppins-bold text-xl text-center">ADD SCREEN</h2>
+    <form onSubmit={handleSubmit}>
+      <div className="mb-4 text-center">
+        <label className="block text-white text-sm font-semibold mb-2 w-4/5">
+          Screen Name
+        </label>
+        <TextField
+          label="Screen Name"
+          type="text"
+          className="w-full md:w-[72vh] textarea"
+          name="sname"
+          variant="outlined"
+          value={screen.sname}
+          onChange={handleChange}
+          required
+          sx={textFieldStyles}
+        />
+      </div>
 
-          {/* Add Tier UI */}
-          <div className="flex gap-x-5 align-middle ml-14">
-            <div className="mb-4">
-              <label className="block text-white text-sm font-semibold mb-2">
-                Tier Name
-              </label>
-              <TextField
-                label="Tier Name"
-                type="Text"
-                className="w-[30vh] textarea"
-                name="tiername"
-                variant="outlined"
-                value={currentTier.tiername}
-                onChange={handleTierChange}
-                sx={textFieldStyles}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white text-sm font-semibold mb-2">
-                Price
-              </label>
-              <TextField
-                label="Price"
-                type="number"
-                name="price"
-                className="w-[20vh] textarea"
-                variant="outlined"
-                value={currentTier.price}
-                onChange={handleTierChange}
-                sx={textFieldStyles}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white text-sm font-semibold mb-2">
-                Rows(Including blocked)
-              </label>
-              <TextField
-                label="Rows"
-                type="number"
-                name="rows"
-                value={currentTier.rows}
-                onChange={handleTierChange}
-                className="w-[20vh] textarea"
-                variant="outlined"
-                sx={textFieldStyles}
-              />
-            </div>
-            <div className="mb-4">
-              {" "}
-              <label className="block text-white text-sm font-semibold mb-2">
-                Columns(Including blocked)
-              </label>
-              <TextField
-                type="number"
-                name="columns"
-                value={currentTier.columns}
-                onChange={handleTierChange}
-                className="w-[20vh] textarea"
-                variant="outlined"
-                sx={textFieldStyles}
-              />
-            </div>
-            <div className="mt-7">
-              {" "}
-              <button
-                type="button"
-                className="btn btn-ghost border-2 border-gray-400 text-white bg-slate-800 hover:bg-opacity-90"
-                onClick={addTier}
-                disabled={!isTierValid}
-              >
-                Add Tier
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-between mx-24">
-            <div className="flex gap-x-3 max-w-[10vh]:">
-              {" "}
-              {screen.tiers.map((tier, index) => (
-                <div
-                  key={index}
-                  className="poppins-semibold text-md text-center mb-3"
-                >
-                  <h4 className="flex rounded-xl items-center bg-base-300 bg-opacity-85 border-2 text-gray-100 border-gray-100 justify-around">
-                    {tier.tiername} - ₹{tier.price}
-                    <MdOutlineAirlineSeatReclineNormal
-                      size={20}
-                      className="text-orange-300 "
-                    />
-                    <span className="text-orange-300 ">
-                      {" "}
-                      {tier.rows * tier.columns || "NO"}
-                    </span>
-                  </h4>
-                </div>
-              ))}
-            </div>
-            <h4 className="poppins-regular text-lg text-slate-50">
-              Total Capacity: {totalSeats}
-            </h4>
-          </div>
+      {/* Add Tier UI */}
+      <div className="grid grid-cols-1 md:flex md:items-center md:gap-x-5 ml-4 md:ml-14">
+        <div className="mb-4 md:mb-0">
+          <label className="block text-white text-sm font-semibold mb-2">
+            Tier Name
+          </label>
+          <TextField
+            label="Tier Name"
+            type="text"
+            className="w-full md:w-[30vh] textarea"
+            name="tiername"
+            variant="outlined"
+            value={currentTier.tiername}
+            onChange={handleTierChange}
+            sx={textFieldStyles}
+          />
+        </div>
+        <div className="mb-4 md:mb-0">
+          <label className="block text-white text-sm font-semibold mb-2">
+            Price
+          </label>
+          <TextField
+            label="Price"
+            type="number"
+            name="price"
+            className="w-full md:w-[20vh] textarea"
+            variant="outlined"
+            value={currentTier.price}
+            onChange={handleTierChange}
+            sx={textFieldStyles}
+          />
+        </div>
+        <div className="mb-4 md:mb-0">
+          <label className="block text-white text-sm font-semibold mb-2">
+            Rows
+          </label>
+          <TextField
+            label="Rows"
+            type="number"
+            name="rows"
+            value={currentTier.rows}
+            onChange={handleTierChange}
+            className="w-full md:w-[20vh] textarea"
+            variant="outlined"
+            sx={textFieldStyles}
+          />
+        </div>
+        <div className="mb-4 md:mb-0">
+          <label className="block text-white text-sm font-semibold mb-2 ">
+            Columns
+          </label>
+          <TextField
+            type="number"
+            name="columns"
+            value={currentTier.columns}
+            onChange={handleTierChange}
+            className="w-full md:w-[20vh] textarea"
+            variant="outlined"
+            sx={textFieldStyles}
+          />
+        </div>
+        <div className="mt-4 md:mt-7">
           <button
-            className=" ml-[40vh] hover:bg-teal-500 btn btn-ghost border-2 border-gray-400 text-white bg-teal-300 bg-opacity-30"
-            type="submit"
-            disabled={screen.tiers.length == 0}
+            type="button"
+            className="btn btn-ghost border-2 border-gray-400 text-white bg-slate-800 hover:bg-opacity-90"
+            onClick={addTier}
+            disabled={!isTierValid}
           >
-            Proceed to view
+            Add Tier
           </button>
-        </form>
+        </div>
+      </div>
+
+      <div className="flex justify-between mx-6 md:mx-24 mt-4">
+        <div className="flex flex-wrap gap-x-3">
+          {screen.tiers.map((tier, index) => (
+            <div key={index} className="poppins-semibold text-md text-center mb-3">
+              <h4 className="flex rounded-xl items-center bg-base-300 bg-opacity-85 border-2 text-gray-100 border-gray-100 justify-around p-2">
+                {tier.tiername} - ₹{tier.price}
+                <MdOutlineAirlineSeatReclineNormal size={20} className="text-orange-300" />
+                <span className="text-orange-300">{tier.rows * tier.columns || "NO"}</span>
+              </h4>
+            </div>
+          ))}
+        </div>
+        <h4 className="poppins-regular text-lg text-slate-50">
+          Total Capacity: {totalSeats}
+        </h4>
+      </div>
+
+      <div className="flex flex-col items-center mt-6 space-y-4">
+        <button
+          className="hover:bg-teal-500 btn btn-ghost border-2 border-gray-400 text-white bg-teal-300 bg-opacity-30 px-6 py-2"
+          type="submit"
+          disabled={screen.tiers.length === 0}
+        >
+          Proceed to view
+        </button>
 
         <button
-          className="btn absolute hover:bg-red-500  bottom-6 left-[45%] btn-ghost border-2 border-gray-400 text-white bg-red-500 bg-opacity-30"
+          className="btn hover:bg-red-500 btn-ghost border-2 border-gray-400 text-white bg-red-500 bg-opacity-30 px-6 py-2"
           onClick={() => {
-            document.getElementById("my_modal_2").close(),
-              setScreen({
-                sname: "",
-                tiers: [],
-              }),
-              setTotalSeats(0);
+            document.getElementById("my_modal_2").close();
+            setScreen({ sname: "", tiers: [] });
+            setTotalSeats(0);
           }}
         >
           Close
         </button>
       </div>
-    </dialog>
+    </form>
+  </div>
+</dialog>
+
   );
 };
 
