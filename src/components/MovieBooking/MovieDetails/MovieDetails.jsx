@@ -381,7 +381,7 @@ console.log(item.trailers)
                             referrerPolicy="strict-origin-when-cross-origin"
                             allowFullScreen
                           ></iframe>
-                          <p className="text-white mt-2">Trailer {idx + 1}</p>
+                          {/* <p className="text-white mt-2">Trailer {idx + 1}</p> */}
                         </div>
                       ))}
                     </div>
