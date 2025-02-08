@@ -53,7 +53,7 @@ const VideoEditorTimeline = ({ screen, selectedDate, isSelected }) => {
     const formattedEndTime = `${String(endHour).padStart(2, "0")}:${String(
       endMinute
     ).padStart(2, "0")}`;
-    //console.log(formattedEndTime);
+    console.log(formattedEndTime);
     return { endTime: formattedEndTime, isNextDay, totalMinutes };
   };
 
@@ -150,7 +150,7 @@ const VideoEditorTimeline = ({ screen, selectedDate, isSelected }) => {
             "0"
           )}:${String(newOverlappingMinutes).padStart(2, "0")}`;
         }
-        console.log(newShows);
+       // console.log(newShows);
         setShows(newShows);
       }
     }
@@ -161,9 +161,9 @@ const VideoEditorTimeline = ({ screen, selectedDate, isSelected }) => {
   };
   const deleteShow = async (s) => {
     try {
-      console.log(s.id)
       const res = await axiosSecure.delete(`/show/delete-show/${s.id}`);
-      if (res.status === 200) {
+      console.log(res)
+      if (res.status==204) {
         Swal.fire({
           title: "Show deleted",
           icon: "success",
