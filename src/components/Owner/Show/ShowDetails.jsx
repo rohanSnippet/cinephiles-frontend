@@ -6,6 +6,7 @@ import { FaChevronDown } from "react-icons/fa";
 import { IoWarningOutline } from "react-icons/io5";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import Schedule from "../Schedule";
 
 const ShowDetails = () => {
   const navigate = useNavigate();
@@ -427,6 +428,11 @@ const ShowDetails = () => {
                       screen={screen}
                       selectedDate={selectedDate}
                     />
+                    {/* <Schedule
+                     isSelected={currScreen?.id == screen.id}
+                     screen={screen}
+                     selectedDate={selectedDate}
+                    /> */}
                   </div>
                 ))}
               </div>

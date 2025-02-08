@@ -40,43 +40,39 @@ const ScreenDetails = () => {
   };
 
   return (
-    <div className="">
-      <div className="flex space-x-4 justify-center">
-        {/* Modal */}
-        <Modal path="screenDetails" theatreId={theatreId} />
-
-        <div
-          onClick={openModal}
-          className="card bg-gradient-to-br hover:border-gray-700 border-double border-slate-800 border-2 cursor-pointer from-gray-800 via-base-100 to-slate-900 w-[40vh] h-[36vh] shadow-xl text-slate-300 hover:bg-gradient-to-br hover:from-slate-900 hover:via-slate-800 hover:to-slate-700 hover:shadow-xl shadow-slate-900"
-        >
-          <figure className="px-10 pt-10">
-            <IoIosAddCircleOutline className="h-28 w-28" />
-          </figure>
-          <div className="card-body items-center text-center">
-            <h2 className="card-title roboto-bold text-2xl">Add Screen</h2>
-          </div>
-        </div>
-        <div className="flex">
-          <div className="text-white poppins-semibold text-xl"></div>
-          {screen.length > 0 ? ( // Use length check to see if there are screens
-            <div className="flex gap-4">
-              {screen.map(
-                (
-                  screenItem,
-                  i // Avoid reusing the same name
-                ) => (
-                  <div key={i}>
-                    <ScreenCard screen={screenItem} />
-                  </div>
-                )
-              )}
-            </div>
-          ) : (
-            <div className="text-white">No screens available.</div> // Optional: Message if no screens
-          )}
+    <div className="px-4">
+    <div className="flex flex-col md:flex-row md:justify-center md:items-start space-y-4 md:space-y-0 md:space-x-4">
+      {/* Modal */}
+      <Modal path="screenDetails" theatreId={theatreId} />
+  
+      {/* Add Screen Card */}
+      <div
+        onClick={openModal}
+        className="card bg-gradient-to-br border-double border-slate-800 border-2 cursor-pointer from-gray-800 via-base-100 to-slate-900 w-full md:w-[40vh] h-[32vh] shadow-xl text-slate-300 hover:bg-gradient-to-br hover:from-slate-900 hover:via-slate-800 hover:to-slate-700 hover:shadow-xl shadow-slate-900 flex pt-12 justify-center"
+      >
+        <figure>
+          <IoIosAddCircleOutline className="h-28 w-28" />
+        </figure>
+        <div className="card-body items-center text-center">
+          <h2 className="card-title roboto-bold text-2xl">Add Screen</h2>
         </div>
       </div>
     </div>
+  
+    {/* Screen List */}
+    <div className="mt-6">
+      {screen.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {screen.map((screenItem, i) => (
+            <ScreenCard key={i} screen={screenItem} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-white text-center text-lg mt-4">No screens available.</div>
+      )}
+    </div>
+  </div>
+  
   );
 };
 
