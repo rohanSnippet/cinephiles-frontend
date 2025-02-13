@@ -107,8 +107,8 @@ const Schedule = ({ screen, selectedDate, isSelected }) => {
     setDragging(index);
     setOffsetX(offsetX);
   };
-console.log(shows)
-  const handleMouseMove = (e) => {
+
+/*   const handleMouseMove = (e) => {
     if (dragging === null) return;
 
     setShows((prevShows) => {
@@ -168,7 +168,7 @@ console.log(shows)
       }
       setDragging(null);
     }
-  };
+  }; */
 
   const deleteShow = async (show) => {
     const confirmation = await Swal.fire({
@@ -189,7 +189,7 @@ console.log(shows)
       }
     }
   };
-  function addMinutesToTime(timeStr, minutesToAdd) {
+ /*  function addMinutesToTime(timeStr, minutesToAdd) {
     const [hours, minutes] = timeStr.split(":").map(Number); // Convert string to numbers
     const date = new Date(); // Create a new Date object
     date.setHours(hours, minutes, 0); // Set hours & minutes
@@ -199,7 +199,7 @@ console.log(shows)
     // Format the new time as HH:MM
     return date.toTimeString().slice(0, 5);
   }
-
+ */
   
   // Timeline rendering
   return (
