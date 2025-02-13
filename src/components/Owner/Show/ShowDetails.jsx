@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { MdMovieEdit, MdOutlineDelete } from "react-icons/md";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
-import VideoEditorTimeline from "../VideoEditorTimeline";
 import { FaChevronDown } from "react-icons/fa";
 import { IoWarningOutline } from "react-icons/io5";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+import { json, useNavigate } from "react-router-dom";
 import Schedule from "../Schedule";
 
 const ShowDetails = () => {
@@ -24,7 +23,6 @@ const ShowDetails = () => {
   const [lastShow, setLastShow] = useState();
   const [currMovie, setCurrMovie] = useState();
   const [showStart, setShowStart] = useState();
-  const [showEnd, setShowEnd] = useState();
 
   const [values, setValues] = useState({
     showDate: "",
@@ -37,7 +35,7 @@ const ShowDetails = () => {
     price: {},
     theatreId: null,
   });
-
+let interval = 15;
   const fetchMovies = useCallback(async () => {
     try {
       const res = await axiosSecure.get(`/movie/all-movies`);
@@ -143,15 +141,16 @@ const ShowDetails = () => {
     }
   }, [selectedDate]);
 
-  function addRuntimeToStartTime(startTime, runtime) {
+   function addRuntimeToStartTime(startTime, runtime,field) {
     if (!startTime || !startTime.includes(":")) {
       console.error("Invalid startTime:", startTime);
       return "07:00";
     }
 
     const [startHours, startMinutes] = startTime.split(":").map(Number);
-
-    let totalMinutes = startHours * 60 + startMinutes + runtime;
+    let totalMinutes =  startHours * 60 + startMinutes + runtime;
+     if(field=="end") totalMinutes += interval;
+   
 
     const endHours = Math.floor(totalMinutes / 60) % 24;
     const endMinutes = totalMinutes % 60;
@@ -170,7 +169,8 @@ const ShowDetails = () => {
   };
 
   const handleAddNewShow = async () => {
-    let endTime = addRuntimeToStartTime(values.start, currMovie.runtime);
+  
+    let endTime = addRuntimeToStartTime(values.start, currMovie.runtime,"end");
     const {
       value: formValues,
       isDenied,
@@ -210,7 +210,8 @@ const ShowDetails = () => {
       confirmButtonColor: "#28a745",
       showCancelButton: true,
       showDenyButton: true,
-      denyButtonText: `Go to ${currScreen.sname}`,
+      denyButtonColor:"#44a9e3",
+      denyButtonText: `Change ${currScreen.sname}'s Seating`,
       preConfirm: () => {
         const prices = {};
         currScreen.tiers.forEach((tier, i) => {
@@ -266,8 +267,9 @@ const ShowDetails = () => {
       if (isConfirmed) {
         values.start = formValues.startInput;
         values.price = formValues.prices;
-       console.log(showEnd);
-       
+        values.end = endTime;
+      
+       console.table(values);
         try {
           const res = await axiosSecure.post(`/show/create`, values);
           if (res) {
@@ -278,7 +280,7 @@ const ShowDetails = () => {
               icon: "success",
             });
 
-            fetchTheatres();
+            fetchLastShow();
           }
         } catch (error) {
           console.error("Error adding show:", error);
@@ -290,10 +292,11 @@ const ShowDetails = () => {
         }
       } else {
         Swal.fire({
-          title: "Saved!",
+          title: "Done!",
           text: "Your show has been saved.",
           icon: "success",
         });
+        fetchLastShow();
       }
     }
   };
@@ -315,7 +318,7 @@ const ShowDetails = () => {
     }
     console.log(movie);
     handleButtonClick("format", format);
-    handleButtonClick("start", addRuntimeToStartTime(lastShow?.end, 10));
+    handleButtonClick("start", addRuntimeToStartTime(lastShow?.end, 10,"start"));
     setCurrMovie(movie);
     handleButtonClick("movieId", movie.id);
 
@@ -423,16 +426,17 @@ const ShowDetails = () => {
                     >
                       {screen.sname}
                     </button>
-                    <VideoEditorTimeline
+                    {/* <VideoEditorTimeline
                       isSelected={currScreen?.id == screen.id}
                       screen={screen}
                       selectedDate={selectedDate}
-                    />
-                    {/* <Schedule
+                    /> */}
+                    <Schedule
                      isSelected={currScreen?.id == screen.id}
                      screen={screen}
+                   
                      selectedDate={selectedDate}
-                    /> */}
+                    />
                   </div>
                 ))}
               </div>
