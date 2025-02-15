@@ -6,13 +6,14 @@ import useAxiosPublic from "../../Hooks/AxiosPublic";
 import user from "../../../assets/user_2.png";
 import { AuthContext } from "../../Context/AuthProvider";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
+import useCity from "../../Hooks/useCity";
 
 const MovieDetails = () => {
   const navigate = useNavigate();
   const { userData } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
   const location = useLocation();
-  const [activeVideo, setActiveVideo] = useState(null);
+  //const [activeVideo, setActiveVideo] = useState(null);
   const [castMembers, setCastMembers] = useState([]);
   const [crewMembers, setCrewMembers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ const MovieDetails = () => {
   const { item, previousPath } = location.state;
   const releaseDateObj = new Date(item.releaseDate);
   const axiosSecure = useAxiosSecure();
+  const city = useCity();
 
   useEffect(() => {
     // Scroll to the top when the component mounts
@@ -58,27 +60,26 @@ const MovieDetails = () => {
   };
 
   useEffect(() => {
-    const getShowAvlability = async () => {
-      try {
-        const res = await axiosSecure.get(
-          `/show/get-show-avl/${item.id}/${userData.username}`
-        );
-        console.log(res.data); // Check the structure of `res` here to make sure it's returning what's expected
-        setIsShowAvl(res.data);
-      } catch (error) {
-        console.log(error);
-        setIsShowAvl(res.data); // In case of an error, assume button should not be shown
-      }
-    };
+    // Make a request to check if the movie has a show in the specified city
+    axiosSecure.get(`/show/by-city?movieId=${item.id}&cities=${userData.currLocation || city}`)
+        .then(response => {
+            // If the response contains any shows, set hasShow to true
+            if (response.data.length > 0) {
+                setIsShowAvl(true);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching shows:', error);
+        });
+}, [item.id, city, userData.currLocation]); 
 
-    getShowAvlability();
-  }, [item.id, userData.username]); // Make sure this effect re-runs when `item.id` or `userData.username` changes
 
+console.log(isShowAvl)
   useEffect(() => {
     scrapeActors();
     scrapeCrew();
   }, []);
-console.log(item.trailers)
+
 
   return (
     <div className="h-full w-full">
@@ -129,7 +130,7 @@ console.log(item.trailers)
               </p>
             </div>
             <div className="m-20 absolute left-[40%]">
-              <button
+              {isShowAvl && <button
                 onClick={handleGetTheatres}
                 className="btn bg-slate-950/60 shadow-md hover:-translate-y-1 hover:scale-x-105 transition-all duration-300 ease-in-out shadow-slate-800/90 w-64 border-none hover:bg-white/60 hover:text-black rounded-lg text-white overflow-hidden"
                 style={{
@@ -141,7 +142,7 @@ console.log(item.trailers)
                 <span className="scale-100 text-xl poppins-bold transform transition-transform duration-100">
                   Book &nbsp;Tickets
                 </span>
-              </button>
+              </button>}
             </div>
           </div>
           {/* poster */}
@@ -312,42 +313,7 @@ console.log(item.trailers)
 
           <div className="ml-32 ">
             {/* Filtered trailers based on selected language */}
-            {/*   {Object.entries(item.trailers).filter(
-              ([trailerLang]) =>
-                selectedLanguage === "All" || trailerLang === selectedLanguage
-            ).length > 0 ? (
-              
-              // If there are filtered trailers, render them
-              Object.entries(item.trailers)
-                .filter(
-                  ([trailerLang]) =>
-                    selectedLanguage === "All" ||
-                    trailerLang === selectedLanguage
-                )
-                .map(([trailerLang, link], i) => (
-                  <iframe
-                    key={activeVideo === link ? `${link}-active` : link}
-                    onClick={() => setActiveVideo(link)}
-                    className=" mt-2 rounded-md "
-                    width="700"
-                    height="365"
-                    src={`https://www.youtube.com/embed/${link.substring(17)}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                  ></iframe>
-                ))
-            ) : (
-              // If no trailers match, show "No videos" message
-              <div
-                className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center bg-slate-800 "
-                style={{ width: 700, height: 385 }}
-              >
-                <p className="align-middle">No Vedios in {selectedLanguage}</p>
-              </div>
-            )} */}
+           
             {item.trailers.filter(
               (trailer) =>
                 selectedLanguage === "All" || trailer.language === selectedLanguage
