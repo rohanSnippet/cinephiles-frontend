@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { MdMovieEdit, MdOutlineDelete } from "react-icons/md";
+import { MdMovieEdit } from "react-icons/md";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import { FaChevronDown } from "react-icons/fa";
 import { IoWarningOutline } from "react-icons/io5";
 import Swal from "sweetalert2";
-import { json, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Schedule from "../Schedule";
 
 const ShowDetails = () => {
@@ -13,8 +13,7 @@ const ShowDetails = () => {
   const [datesStr, setDatesStr] = useState([]);
   const axiosSecure = useAxiosSecure();
   const [movies, setMovies] = useState([]);
-  /*   const [shows, setShows] = useState([]);
-  const [currShow, setCurrShow] = useState(); */
+
   const [screens, setScreens] = useState([]);
   const [currScreen, setCurrScreen] = useState();
   const [selectedDate, setSelectedDate] = useState();
@@ -22,7 +21,6 @@ const ShowDetails = () => {
   const [currTheatre, setCurrTheatre] = useState({});
   const [lastShow, setLastShow] = useState();
   const [currMovie, setCurrMovie] = useState();
-  const [showStart, setShowStart] = useState();
 
   const [values, setValues] = useState({
     showDate: "",
@@ -434,7 +432,6 @@ let interval = 15;
                     <Schedule
                      isSelected={currScreen?.id == screen.id}
                      screen={screen}
-                   
                      selectedDate={selectedDate}
                     />
                   </div>
