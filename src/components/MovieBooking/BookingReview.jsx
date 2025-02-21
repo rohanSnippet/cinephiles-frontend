@@ -66,58 +66,59 @@ const BookingReview = () => {
     const secs = seconds % 60;
     return { minutes, secs };
   };
+  console.log(movie)
   const { minutes, secs } = formatTime(time);
   if (!selectedData) {
     navigate(`/all-shows`, { state: { item: movie } });
     return null; 
   }
-    const handleRedirect = async () => {
-      try {
-        const response = await axiosSecure.post(
-          '/payment/create-session',
-          {
-            orderId: selectedData.user.substring(0,4)+Date.now(),
-            orderAmount: selectedData.price*selectedData.seatsId.length,
-            customerId: selectedData.user,
-            customerPhone: "0000000000",
+     // Handle payment redirection
+  const handleRedirect = async () => {
+    try {
+      const orderId = selectedData.user.substring(0, 4) + Date.now();
+      const response = await axiosSecure.post(
+        "/payment/create-session",
+        {
+          orderId,
+          orderAmount: selectedData.price * selectedData.seatsId.length,
+          customerId: selectedData.user,
+          customerPhone: "0000000000",
+        },
+        {
+          headers: {
+            "x-client-id": import.meta.env.VITE_CASHFREE_API_KEY,
+            "x-client-secret": import.meta.env.VITE_CASHFREE_CLIENT_SECRET,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "x-api-version": "2023-08-01",
           },
-          {
-            headers: {
-              'x-client-id': 'TEST1034155514be0f85af06d50db23755514301',
-              'x-client-secret': 'cfsk_ma_test_7a5bedaf521e805a0c3aab500a4b0444_1bac70da',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'x-api-version': '2023-08-01',
-            },
-          }
-        );
-    
-        // Directly handle the response, as axios automatically parses JSON            returnUrl: "http://localhost:5173/booking-confirmation",
-        console.log('Success:', response.data); // Use the session ID from the response
-    
-        let checkoutOptions = {
-          paymentSessionId: response.data.payment_session_id,
-          returnUrl:'http://localhost:5173/'
-        };
-    
-        // Calling checkout with a promise-based approach
-        cashfree.checkout(checkoutOptions).then(function (result) {
-          if (result.error) {
-            alert(result.error.message);
-          } 
-          if (result.redirect) {
-            console.log(result)
-            console.log("Redirection happening...");
-           
-            handleBooking();
-          }
-        });
-    
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-    const handleBooking = async () => {
+        }
+      );
+
+      console.log("Payment session created:", response.data);
+      const returnUrl = `http://localhost:5173/payment-success?orderId=${encodeURIComponent(orderId)}&mId=${encodeURIComponent(movie.id)}`;
+      let checkoutOptions = {
+        paymentSessionId: response.data.payment_session_id,
+        // returnUrl: `http://localhost:5173/payment-success?orderId=${orderId}&mId=${movie.id}`, // Redirect here after payment
+        returnUrl
+      };
+
+      cashfree.checkout(checkoutOptions).then(function (result) {
+        if (result.error) {
+          alert(result.error.message);
+          navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
+        }
+        if (result.redirect) {
+          console.log("Redirection happening...");
+        }
+      });
+    } catch (error) {
+      console.error("Error creating payment session:", error);
+      navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
+    }
+  };
+
+   /*  const handleBooking = async () => {
       try {
         const response = await axiosSecure.post(
           `/bookings/book-seats`,
@@ -130,7 +131,7 @@ const BookingReview = () => {
       } catch (error) {
         console.error("Error hitting API on timeout:", error);
       }
-    };
+    }; */
 
   return (
     <div className="flex w-[100%] h-screen">

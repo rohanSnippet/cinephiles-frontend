@@ -5,7 +5,6 @@ import useCity from "../Hooks/useCity";
 import regions from "../../assets/regions.json";
 import regions2 from "../../assets/regions2.json";
 import UserNavHeader from "./UserNavHeader";
-import Tooltip from "../Common/Tooltip";
 
 const AllShows = () => {
   const location = useLocation();
