@@ -33,7 +33,7 @@ const ShowDetails = () => {
     price: {},
     theatreId: null,
   });
-let interval = 15;
+  let interval = 15;
   const fetchMovies = useCallback(async () => {
     try {
       const res = await axiosSecure.get(`/movie/all-movies`);
@@ -108,7 +108,7 @@ let interval = 15;
     const date = new Date(dateStr);
 
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+    const month = String(date.getMonth() + 1).padStart(2, "0"); 
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
@@ -139,11 +139,22 @@ let interval = 15;
     }
   }, [selectedDate]);
 
+
    function addRuntimeToStartTime(startTime, runtime,field) {
+    console.log(startTime)
+    // if (!startTime || !startTime.includes(":")) {
+    //   console.error("Invalid startTime:", startTime);
+    //   return "07:00";
+    // }
+
     if (!startTime || !startTime.includes(":")) {
-      console.error("Invalid startTime:", startTime);
-      return "07:00";
-    }
+       fetchLastShow(); // Ensure last show data is fetched before using it
+      if (!lastShow) {
+          console.error("Invalid startTime:", startTime);
+          return "07:00"; // Default start time if no valid start time is provided
+      }
+      startTime = lastShow.end; // Use the end time of the last show as the new start time
+  }
 
     const [startHours, startMinutes] = startTime.split(":").map(Number);
     let totalMinutes =  startHours * 60 + startMinutes + runtime;
@@ -167,8 +178,11 @@ let interval = 15;
   };
 
   const handleAddNewShow = async () => {
-  
-    let endTime = addRuntimeToStartTime(values.start, currMovie.runtime,"end");
+    let endTime = addRuntimeToStartTime(
+      values.start,
+      currMovie.runtime,
+      "end"
+    );
     const {
       value: formValues,
       isDenied,
@@ -208,7 +222,7 @@ let interval = 15;
       confirmButtonColor: "#28a745",
       showCancelButton: true,
       showDenyButton: true,
-      denyButtonColor:"#44a9e3",
+      denyButtonColor: "#44a9e3",
       denyButtonText: `Change ${currScreen.sname}'s Seating`,
       preConfirm: () => {
         const prices = {};
@@ -245,7 +259,7 @@ let interval = 15;
       });
 
       if (isDenied) {
-        console.log(values);
+        // console.log(values);
         navigate("/owner/ScreenLayoutForShow", {
           state: {
             values: formValues,
@@ -266,8 +280,8 @@ let interval = 15;
         values.start = formValues.startInput;
         values.price = formValues.prices;
         values.end = endTime;
-      
-       console.table(values);
+
+        console.table(values);
         try {
           const res = await axiosSecure.post(`/show/create`, values);
           if (res) {
@@ -309,19 +323,36 @@ let interval = 15;
       confirmButtonColor: "#28a745",
     });
   };
-  const handleFormatButtonClick = (format, movie) => {
+  const handleFormatButtonClick = async (format, movie) => {
     if (!currScreen) {
-      sendAlert();
-      return;
+        sendAlert();
+        return;
     }
-    console.log(movie);
-    handleButtonClick("format", format);
-    handleButtonClick("start", addRuntimeToStartTime(lastShow?.end, 10,"start"));
-    setCurrMovie(movie);
-    handleButtonClick("movieId", movie.id);
 
-    handleAddNewShow();
-  };
+    if (!lastShow) {
+        await fetchLastShow(); 
+    }
+
+    const startTime = addRuntimeToStartTime(lastShow?.end, 10, "start");
+
+    
+    setValues((prevValues) => ({
+        ...prevValues,
+        format,
+        start: startTime,
+        movieId: movie.id,
+    }));
+
+    setCurrMovie(movie);
+};
+
+useEffect(() => {
+    if (values.format && values.movieId && values.start) {
+        handleAddNewShow(); 
+       
+    }
+}, [values.start,values.end]); 
+
   return (
     <div>
       <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
@@ -430,9 +461,9 @@ let interval = 15;
                       selectedDate={selectedDate}
                     /> */}
                     <Schedule
-                     isSelected={currScreen?.id == screen.id}
-                     screen={screen}
-                     selectedDate={selectedDate}
+                      isSelected={currScreen?.id == screen.id}
+                      screen={screen}
+                      selectedDate={selectedDate}
                     />
                   </div>
                 ))}
