@@ -13,12 +13,11 @@ const MovieDetails = () => {
   const { userData } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
   const location = useLocation();
-  //const [activeVideo, setActiveVideo] = useState(null);
   const [castMembers, setCastMembers] = useState([]);
   const [crewMembers, setCrewMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [cLoading, setCLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("All"); // Default to "All" or any preferred language
+  const [selectedLanguage, setSelectedLanguage] = useState("All"); 
   const [isShowAvl, setIsShowAvl] = useState(false);
   const { item, previousPath } = location.state;
   const releaseDateObj = new Date(item.releaseDate);
@@ -73,6 +72,7 @@ const MovieDetails = () => {
         });
 }, [item.id, city, userData.currLocation]); 
 
+
   useEffect(() => {
     scrapeActors();
     scrapeCrew();
@@ -84,8 +84,7 @@ const MovieDetails = () => {
       <UserNavHeader navLocation={previousPath || "/"} item={item} />
 
       <div className="relative w-[96%] h-[60vh] bg-black mx-auto rounded-xl shadow-lg shadow-slate-500/20">
-        <div
-          className="w-[80%] h-[100%] rounded-xl bg-no-repeat bg-cover bg-center"
+        <div className="w-[80%] h-[100%] rounded-xl bg-no-repeat bg-cover bg-center"
           style={{
             backgroundImage: item.banner
               ? `url('${item?.banner}')`
@@ -97,7 +96,7 @@ const MovieDetails = () => {
           <div className="absolute w-[80%] h-[100%] rounded-xl bg-gradient-to-r from-slate-950 via-transparent to-black"></div>
           {/* details */}
           <div id="name" className="md:pt-16 md:pl-8 w-[60%] pt-0 pl-2 ">
-            <span className=" bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent text-xl md:text-7xl roboto-semibold md:roboto-semibold ml-12 absolute">
+            <span className={` bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent text-xl md:${item.title.length > 23 ?`text-5xl` :`text-7xl`} md:${item.title.length > 23 ?`roboto-bold` :`roboto-semibold`} ml-12 absolute`}>
               {" "}
               {item.title.toUpperCase()}
             </span>
@@ -123,7 +122,7 @@ const MovieDetails = () => {
                   </span>
                 </span>
               </p>
-              <p className="md:text-2xl word-class w-[80vh] text-white absolute poppins-extralight">
+              <p className="md:text-2xl word-class w-[70vh] text-white absolute poppins-extralight">
                 {item.description}
               </p>
             </div>
@@ -159,9 +158,7 @@ const MovieDetails = () => {
               onClick={() => document.getElementById("my_modal_2").showModal()}
               className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular"
             >
-             {/*  {Object.values(item.trailers).includes("tba")
-                ? `No Trailer(s)`
-                : `(${Object.entries(item.trailers).length}) Trailer(s)`} */}
+      
               {item.trailers.length > 0 
   ? `${item.trailers.reduce((total, trailer) => total + trailer.trailerUrl.length, 0)} Trailer(s)` 
   : ''}
