@@ -73,8 +73,6 @@ const MovieDetails = () => {
         });
 }, [item.id, city, userData.currLocation]); 
 
-
-console.log(isShowAvl)
   useEffect(() => {
     scrapeActors();
     scrapeCrew();
