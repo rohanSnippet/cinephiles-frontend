@@ -5,10 +5,14 @@ import { cashfree } from "../Services/cashfree";
 
 const BookingReview = () => {
   const [time, setTime] = useState(0);
+  const [isPaying, setIsPaying] = useState(false);
+  const [errorMsg, setErrorMsg] = useState();
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedData, movie } = location.state || {};
   const axiosSecure = useAxiosSecure();
+
+  // ******** For timeout *****************
   const handleTimeout = async () => {
     try {
       const response = await axiosSecure.delete(
@@ -55,13 +59,6 @@ const BookingReview = () => {
 
     return () => clearInterval(interval);
   }, [selectedData, axiosSecure]);
-  const handleBackNavigation = async () => {
-    const response = await handleTimeout(); // Wait for API response
-    if (response?.status === 200) {
-      // navigate("/all-shows", { state: { item: movie } });
-    }
-  };
-  window.addEventListener("popstate", handleBackNavigation);
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -73,12 +70,59 @@ const BookingReview = () => {
     navigate(`/all-shows`, { state: { item: movie } });
     return null; 
   }
+
+ //Handle Payment redirection
+    const handlePayNow = async () => {
+    if (!selectedData) return;
+    setIsPaying(true);
+    setErrorMsg("");
+
+    try {
+     let totalamount = selectedData.price * selectedData.seatsId.length;
+      const payload = {
+        username: selectedData.user,
+        amount: totalamount,
+        showId: selectedData.showId,
+        seats: selectedData.seatsId
+      };
+
+      const { data } = await axiosSecure.post("/api/payment/create-order", payload);
+      // expect: { paymentSessionId, orderId, returnUrl }
+       console.table(data);
+      const checkoutOptions = {
+        paymentSessionId: data.paymentSessionId,
+        // If backend returned a returnUrl, prefer that:
+        returnUrl: data.returnUrl ??
+          `${import.meta.env.VITE_APP_BASE_URL}/payment-success?orderId=${encodeURIComponent(
+            data.orderId
+          )}`,
+      };
+        
+      cashfree.checkout(checkoutOptions).then((result) => {
+        if (result.error) {
+          console.error("Cashfree checkout error:", result.error);
+          setErrorMsg(result.error.message || "Payment could not be started.");
+          setIsPaying(false);
+          return;
+        }
+        if (result.redirect) {
+          console.log("Redirecting to Cashfree checkout…");
+        }
+      });
+    } catch (err) {
+      console.error("Failed to initiate payment:", err);
+      setErrorMsg("Could not start payment. Please try again.");
+      setIsPaying(false);
+    }
+  }; 
+
+
      // Handle payment redirection
- /*  const handleRedirect = async () => {
+/*   const handleRedirect = async () => {
     try {
       const orderId = selectedData.user.substring(0, 4) + Date.now();
       const response = await axiosSecure.post(
-        "/payment/create-session",
+        "https://sandbox.cashfree.com/pg/orders",
         {
           orderId,
           orderAmount: selectedData.price * selectedData.seatsId.length,
@@ -95,7 +139,7 @@ const BookingReview = () => {
           },
         }
       );
-
+    
       console.log("Payment session created:", response.data);
       const returnUrl = `http://localhost:5173/payment-success?orderId=${encodeURIComponent(orderId)}&mId=${encodeURIComponent(movie.id)}`;
       let checkoutOptions = {
@@ -107,7 +151,7 @@ const BookingReview = () => {
       cashfree.checkout(checkoutOptions).then(function (result) {
         if (result.error) {
           alert(result.error.message);
-          navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
+          //navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
         }
         if (result.redirect) {
           console.log("Redirection happening...");
@@ -117,7 +161,7 @@ const BookingReview = () => {
       console.error("Error creating payment session:", error);
       navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
     }
-  }; */
+  };  */
 
      const handleBooking = async () => {
       try {
@@ -163,7 +207,7 @@ const BookingReview = () => {
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
-              onClick={handleBooking}
+              onClick={handlePayNow}
             >
               Book Now
             </button>
