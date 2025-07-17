@@ -251,7 +251,7 @@ const BookSeats = () => {
           );
 
           if (res.data) {
-            console.log(res);
+            console.log(res.data);
             navigate("/bookingReview", {
               state: { selectedData: userSeats, movie: movie },
             });
@@ -265,8 +265,8 @@ const BookSeats = () => {
         } catch (error) {
           console.error("Error adding show:", error);
           Swal.fire({
-            title: "Please Try Again!",
-            text: "There was an error booking for show.",
+            title: "Seat Unavailable",
+            text: "The seat you selected is currently locked by another user. Please choose a different seat.",
             icon: "error",
           });
         }

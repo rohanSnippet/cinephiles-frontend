@@ -17,7 +17,7 @@ const MovieDetails = () => {
   const [crewMembers, setCrewMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [cLoading, setCLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("All"); 
+  const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [isShowAvl, setIsShowAvl] = useState(false);
   const { item, previousPath } = location.state;
   const releaseDateObj = new Date(item.releaseDate);
@@ -60,31 +60,35 @@ const MovieDetails = () => {
 
   useEffect(() => {
     // Make a request to check if the movie has a show in the specified city
-    axiosSecure.get(`/show/by-city?movieId=${item.id}&cities=${userData.currLocation || city}`)
-        .then(response => {
-            // If the response contains any shows, set hasShow to true
-            if (response.data.length > 0) {
-                setIsShowAvl(true);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching shows:', error);
-        });
-}, [item.id, city, userData.currLocation]); 
-
+    axiosSecure
+      .get(
+        `/show/by-city?movieId=${item.id}&cities=${
+          userData.currLocation || city
+        }`
+      )
+      .then((response) => {
+        // If the response contains any shows, set hasShow to true
+        if (response.data.length > 0) {
+          setIsShowAvl(true);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching shows:", error);
+      });
+  }, [item.id, city, userData.currLocation]);
 
   useEffect(() => {
     scrapeActors();
     scrapeCrew();
   }, []);
 
-
   return (
     <div className="h-full w-full">
       <UserNavHeader navLocation={previousPath || "/"} item={item} />
 
       <div className="relative w-[96%] h-[60vh] bg-black mx-auto rounded-xl shadow-lg shadow-slate-500/20">
-        <div className="w-[80%] h-[100%] rounded-xl bg-no-repeat bg-cover bg-center"
+        <div
+          className="w-[80%] h-[100%] rounded-xl bg-no-repeat bg-cover bg-center"
           style={{
             backgroundImage: item.banner
               ? `url('${item?.banner}')`
@@ -96,7 +100,13 @@ const MovieDetails = () => {
           <div className="absolute w-[80%] h-[100%] rounded-xl bg-gradient-to-r from-slate-950 via-transparent to-black"></div>
           {/* details */}
           <div id="name" className="md:pt-16 md:pl-8 w-[60%] pt-0 pl-2 ">
-            <span className={` bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent text-xl md:${item.title.length > 23 ?`text-5xl` :`text-7xl`} md:${item.title.length > 23 ?`roboto-bold` :`roboto-semibold`} ml-12 absolute`}>
+            <span
+              className={` bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent text-xl md:${
+                item.title.length > 23 ? `text-5xl` : `text-7xl`
+              } md:${
+                item.title.length > 23 ? `roboto-bold` : `roboto-semibold`
+              } ml-12 absolute`}
+            >
               {" "}
               {item.title.toUpperCase()}
             </span>
@@ -114,7 +124,7 @@ const MovieDetails = () => {
                       return <span key={i}>{lang}</span>;
                     })}
                   </span>
-                  <span className="ml-4 space-x-2 py-2 md:badge md:badge-ghost md:badge-lg border-none text-white md:text-white md:bg-opacity-50">
+                  <span className="ml-4 space-x-2 py-2 md:badge md:badge-ghost md:badge-lg border-none text-white md:text-white md:bg-opacity-50 flex">
                     {" "}
                     {item.formats.map((format, i) => {
                       return <span key={i}>{format}</span>;
@@ -127,9 +137,9 @@ const MovieDetails = () => {
               </p>
             </div>
             <div className="m-20 absolute left-[40%]">
-              {isShowAvl && <button
+              {/*  {isShowAvl && <button
                 onClick={handleGetTheatres}
-                className="btn bg-slate-950/60 shadow-md hover:-translate-y-1 hover:scale-x-105 transition-all duration-300 ease-in-out shadow-slate-800/90 w-64 border-none hover:bg-white/60 hover:text-black rounded-lg text-white overflow-hidden"
+                className="btn hover:bg-transparent shadow-md bg-gradient-to-br from-white/90 via-white/80 to-white/90 shadow-slate-800/90 w-64 border-none text-black rounded-lg hover:text-white overflow-hidden "
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -139,7 +149,21 @@ const MovieDetails = () => {
                 <span className="scale-100 text-xl poppins-bold transform transition-transform duration-100">
                   Book &nbsp;Tickets
                 </span>
-              </button>}
+              </button>} */}
+              {isShowAvl && (
+                <button
+                  onClick={handleGetTheatres}
+                  className="btn w-64 border border-white/20 hover:border-white text-white rounded-lg overflow-hidden 
+               backdrop-blur-md bg-white/10 hover:bg-white/20 
+               shadow-[0_0_10px_rgba(255,255,255,0.3)] 
+               hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] 
+               transition-all duration-300 flex items-center justify-center"
+                >
+                  <span className="text-xl poppins-bold transform transition-transform duration-100">
+                    Book &nbsp;Tickets
+                  </span>
+                </button>
+              )}
             </div>
           </div>
           {/* poster */}
@@ -158,11 +182,12 @@ const MovieDetails = () => {
               onClick={() => document.getElementById("my_modal_2").showModal()}
               className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular"
             >
-      
-              {item.trailers.length > 0 
-  ? `${item.trailers.reduce((total, trailer) => total + trailer.trailerUrl.length, 0)} Trailer(s)` 
-  : ''}
-
+              {item.trailers.length > 0
+                ? `${item.trailers.reduce(
+                    (total, trailer) => total + trailer.trailerUrl.length,
+                    0
+                  )} Trailer(s)`
+                : ""}
             </button>
 
             <div className="absolute bg-black bg-opacity-50 h-8 w-full rounded-b-xl bottom-0"></div>
@@ -192,14 +217,14 @@ const MovieDetails = () => {
           <div className="poppins-semibold text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
             CAST
           </div>
-          <div className="text-white poppins-bold text-xl flex-wrap flex">
+          <div className="text-white poppins-bold text-md flex-wrap flex">
             {Object.entries(item.cast).map(([member, char], i) => (
               <div
                 key={i}
-                className="poppins-medium my-5 w-1/6  hover:scale-[1.03] transition-all duration-200 ease-in-out"
+                className="poppins-medium my-5 w-1/8  hover:scale-[1.03] transition-all duration-200 ease-in-out"
               >
                 <div className="avatar ">
-                  <div className="w-32 rounded-xl shadow-md ">
+                  <div className="w-24 rounded-full shadow-md ">
                     <a
                       href={`https://www.google.com/search?q=${member
                         .trim()
@@ -222,7 +247,7 @@ const MovieDetails = () => {
                     </a>
                   </div>
                 </div>
-                <div className="word-class w-36"> {member} </div>
+                <div className="word-class w-28"> {member} </div>
                 <span className="poppins-extralight-italic text-slate-100/80 word-class w-8">
                   {char}
                 </span>
@@ -308,10 +333,11 @@ const MovieDetails = () => {
 
           <div className="ml-32 ">
             {/* Filtered trailers based on selected language */}
-           
+
             {item.trailers.filter(
               (trailer) =>
-                selectedLanguage === "All" || trailer.language === selectedLanguage
+                selectedLanguage === "All" ||
+                trailer.language === selectedLanguage
             ).length > 0 ? (
               // If there are filtered trailers, render them
               item.trailers
@@ -323,7 +349,7 @@ const MovieDetails = () => {
                 .map((trailer, i) => (
                   <div key={i} className="my-4">
                     <h3 className="text-xl font-semibold text-white">
-                      {trailer.language} Trailers:
+                      {trailer.language} Trailers
                     </h3>
                     <div className="flex flex-wrap space-x-4 mt-2">
                       {trailer.trailerUrl.map((link, idx) => (
@@ -351,7 +377,7 @@ const MovieDetails = () => {
             ) : (
               // If no trailers match, show "No videos" message
               <div
-                className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center bg-slate-800"
+                className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center "
                 style={{ width: 700, height: 385 }}
               >
                 <p className="align-middle">No Videos in {selectedLanguage}</p>

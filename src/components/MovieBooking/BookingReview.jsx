@@ -27,7 +27,8 @@ const BookingReview = () => {
     const fetchRemainingTime = async () => {
       if (!selectedData) return; // Ensure selectedData is present
       try {
-        console.log(selectedData.showId ,"  ", selectedData.user)
+        //console.log(selectedData.showId ,"  ", selectedData.user)
+        console.log(selectedData)
         const response = await axiosSecure.get(
           `/bookings/remaining-time?showId=${selectedData.showId}&user=${selectedData.user}`
         );
@@ -66,14 +67,14 @@ const BookingReview = () => {
     const secs = seconds % 60;
     return { minutes, secs };
   };
-  console.log(movie)
+  //console.log(movie)
   const { minutes, secs } = formatTime(time);
   if (!selectedData) {
     navigate(`/all-shows`, { state: { item: movie } });
     return null; 
   }
      // Handle payment redirection
-  const handleRedirect = async () => {
+ /*  const handleRedirect = async () => {
     try {
       const orderId = selectedData.user.substring(0, 4) + Date.now();
       const response = await axiosSecure.post(
@@ -116,9 +117,9 @@ const BookingReview = () => {
       console.error("Error creating payment session:", error);
       navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
     }
-  };
+  }; */
 
-   /*  const handleBooking = async () => {
+     const handleBooking = async () => {
       try {
         const response = await axiosSecure.post(
           `/bookings/book-seats`,
@@ -126,12 +127,12 @@ const BookingReview = () => {
         );
         if (response.status === 200) {
           console.log("Seats Booked successfully:", response.data);
-         // navigate("/");
+          navigate("/booking-confirmation");
         }
       } catch (error) {
         console.error("Error hitting API on timeout:", error);
       }
-    }; */
+    }; 
 
   return (
     <div className="flex w-[100%] h-screen">
@@ -162,7 +163,7 @@ const BookingReview = () => {
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
-              onClick={handleRedirect}
+              onClick={handleBooking}
             >
               Book Now
             </button>
