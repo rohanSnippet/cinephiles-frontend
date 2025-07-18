@@ -1,72 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import useAxiosSecure from "../Hooks/AxiosSecure";
+import { data } from "autoprefixer";
 
 const PaymentSuccess = () => {
-  const [item, setItem] = useState(null);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("orderId");
+  const [status, setStatus] = useState("loading"); // 'loading', 'success', 'failed'
+  const [message, setMessage] = useState("");
   const axiosSecure = useAxiosSecure();
+  const navigate = useNavigate();
 
-  const getMovieById = async (movieId) => {
-    try {
-      const res = await axiosSecure.get(`/movie/get-movie/${movieId}`);
-      console.log(res);
-      if (res) {
-        setItem(res.data); // Ensure setItem is defined
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  console.log(orderId);
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      const orderId = new URLSearchParams(location.search).get("orderId");
-      const movieId = new URLSearchParams(location.search).get("mId");
-  
+    if (!orderId) {
+      setStatus("failed");
+      setMessage("Order ID not found in URL.");
+      return;
+    }
 
-      console.log(movieId,"    ",orderId)
-      if (!orderId || !movieId) {
-        console.log("no orderId found");
-        getMovieById(movieId); // Fetch movie details
-        navigate(`/movie-details`, { state: { item } }); // Navigate to movie details page
-        return;
-      }
-  
+    const verifyPayment = async () => {
       try {
-        // Verify payment status with Cashfree API
-        const response = await axiosSecure.get(`/payment/verify?orderId=${orderId}`);
-        if (response.data.status === "SUCCESS") {
-          // Payment is successful, proceed with booking
-          const bookingResponse = await axiosSecure.post("/bookings/book-seats", {
-            showId: response.data.showId,
-            userId: response.data.userId,
-            seatsId: response.data.seatsId,
-          });
-          if (bookingResponse.status === 200) {
-            console.log("Seats booked successfully:", bookingResponse.data);
-            navigate("/booking-confirmation", {
-              state: { booking: bookingResponse.data },
-            });
-          }
+        const data = await axiosSecure.get(`/api/payment/verify/${orderId}`);
+        console.log(data);
+        if (data.success) {
+          setStatus("success");
+          setMessage(data.message);
         } else {
-          // Payment failed or incomplete
-          navigate("/all-shows", { state: { item } });
+          setStatus("failed");
+          setMessage(data.message);
         }
-      } catch (error) {
-        console.error("Error verifying payment:", error);
-        navigate("/all-shows", { state: { item } });
+      } catch (err) {
+        console.error("Payment verification failed:", err);
+        setStatus("failed");
+        setMessage("Error verifying payment. Please contact support.");
       }
     };
-  
-    verifyPayment();
-  }, [location, navigate, axiosSecure, item]); // Add item to dependencies
-  
-  
+
+    verifyPayment().then((data)=>
+    {if(data?.success){
+         navigate('/booking-confirmation', {state:{data}})
+    }}).catch((err)=>{
+      console.log("Booking failed : ",error)
+    });
+  }, [orderId]);
+
+  if (status === "loading")
+    return (
+      <div className="mx-auto flex my-auto max-h-[100vh] max-w-[100vh]">
+        <div className=" justify-center items-center align-middle text-center">
+          <span className="loading loading-ring loading-xl text-center"></span>
+        </div>
+        <p className="justify-center items-center align-middle text-center poppins-bold text-lg text-white">Booking Your Show ...</p>
+      </div>
+    );
+
   return (
-    <div>
-      <span className="loading loading-ring loading-lg"></span>
+    <div className="payment-result">
+        {status === "success" ? (
+        <div>
+          <h2>✅ Payment Successful</h2>
+          <p>{message}</p>
+          <Link to="/booking-confirmation" className="btn">View Booking</Link>
+        </div>
+      ) : (
+        <div>
+          <h2>❌ Payment Failed</h2>
+          <p>{message}</p>
+          <a href="/retry-payment" className="btn">Try Again</a>
+        </div>
+      )} 
     </div>
   );
 };

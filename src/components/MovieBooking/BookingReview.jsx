@@ -83,7 +83,7 @@ const BookingReview = () => {
         username: selectedData.user,
         amount: totalamount,
         showId: selectedData.showId,
-        seats: selectedData.seatsId
+        seats: selectedData.seatsId, 
       };
 
       const { data } = await axiosSecure.post("/api/payment/create-order", payload);
@@ -93,7 +93,7 @@ const BookingReview = () => {
         paymentSessionId: data.paymentSessionId,
         // If backend returned a returnUrl, prefer that:
         returnUrl: data.returnUrl ??
-          `${import.meta.env.VITE_APP_BASE_URL}/payment-success?orderId=${encodeURIComponent(
+          `${import.meta.env.VITE_APP_BASE_URL}/booking-confirmation?orderId=${encodeURIComponent(
             data.orderId
           )}`,
       };
