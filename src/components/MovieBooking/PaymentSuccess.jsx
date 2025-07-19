@@ -23,15 +23,16 @@ const PaymentSuccess = () => {
 
     const verifyPayment = async () => {
       try {
-        const data = await axiosSecure.get(`/api/payment/verify/${orderId}`);
-        console.log(data);
-        if (data.success) {
+        const response = await axiosSecure.get(`/api/payment/verify/${orderId}`);
+        console.log(response.data);
+         if (resdata.success) {
           setStatus("success");
           setMessage(data.message);
+          navigate('/booking-confirmation',{state:{data}})
         } else {
           setStatus("failed");
           setMessage(data.message);
-        }
+        } 
       } catch (err) {
         console.error("Payment verification failed:", err);
         setStatus("failed");
@@ -39,21 +40,17 @@ const PaymentSuccess = () => {
       }
     };
 
-    verifyPayment().then((data)=>
-    {if(data?.success){
-         navigate('/booking-confirmation', {state:{data}})
-    }}).catch((err)=>{
-      console.log("Booking failed : ",error)
-    });
+    verifyPayment();
   }, [orderId]);
 
   if (status === "loading")
     return (
-      <div className="mx-auto flex my-auto max-h-[100vh] max-w-[100vh]">
-        <div className=" justify-center items-center align-middle text-center">
+      <div className="h-screen w-screen">
+        <div className="flex justify-center items-center">
           <span className="loading loading-ring loading-xl text-center"></span>
+           <p className="justify-center items-center align-middle text-center poppins-bold text-lg text-white">Booking Your Show ...</p>
         </div>
-        <p className="justify-center items-center align-middle text-center poppins-bold text-lg text-white">Booking Your Show ...</p>
+       
       </div>
     );
 
@@ -69,7 +66,7 @@ const PaymentSuccess = () => {
         <div>
           <h2>❌ Payment Failed</h2>
           <p>{message}</p>
-          <a href="/retry-payment" className="btn">Try Again</a>
+        
         </div>
       )} 
     </div>

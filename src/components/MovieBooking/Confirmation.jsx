@@ -1,8 +1,10 @@
 import React from 'react'
 import { FaCheck } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 const Confirmation = () => {
+  const location = useLocation();
+  console.log(location)
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 px-4 md:px-6">
     <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">

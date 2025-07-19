@@ -83,7 +83,7 @@ const BookingReview = () => {
         username: selectedData.user,
         amount: totalamount,
         showId: selectedData.showId,
-        seats: selectedData.seatsId, 
+        seatsIds: selectedData.seatsId, 
       };
 
       const { data } = await axiosSecure.post("/api/payment/create-order", payload);
