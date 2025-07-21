@@ -21,6 +21,7 @@ const BookSeats = () => {
     price: null,
     user: "",
     showId: null,
+    tierName:""
   });
 
   const numberOfTickets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -97,7 +98,7 @@ const BookSeats = () => {
     //if (seatIndex + remainingSeatsNeeded <= rowSeats.length) {
     let tempSeat = null;
     for (let i = 0; i < remainingSeatsNeeded; i++) {
-      console.log(seatIndex+i)
+      //console.log(seatIndex+i)
       if(rowSeats[seatIndex+i]==undefined) {
         //console.log("break the statement for :"+seatIndex+i)
         break;
@@ -179,11 +180,12 @@ const BookSeats = () => {
       .filter(Boolean);
   };
 
-  const getTierIdsBySelectedSeats = (selectedSeats) => {
+  /* const getTierIdsBySelectedSeats = (selectedSeats) => {
     const tierIds = new Set();
 
     selectedSeats.forEach((seatId) => {
       const [tierIndex] = seatId.split("-").map(Number);
+      console.log("tier Index ",tierIndex)
       const tier = updatedScreen.tiers[tierIndex];
 
       if (tier) {
@@ -192,22 +194,43 @@ const BookSeats = () => {
     });
 
     return Array.from(tierIds);
-  };
+  }; */
 
-  const tierIds = getTierIdsBySelectedSeats(selectedSeats);
+  const getTierIdsBySelectedSeats = (selectedSeats) => {
+  const seen = new Set();        // track tierIndex we've already added
+  const result = [];
+
+  for (const seatId of selectedSeats) {
+    const [tierIndex] = seatId.split("-").map(Number);
+    const tier = updatedScreen.tiers[tierIndex];
+    if (!tier) continue;
+
+    if (!seen.has(tierIndex)) {
+      seen.add(tierIndex);
+      result.push({ tierIndex, price: tier.price });
+    }
+  }
+    
+  return result;
+};
+
+// usage
+const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
+// e.g. [{ tierIndex: 0, price: 100 }, { tierIndex: 1, price: 150 }]
+
+  //const tierIds = getTierIdsBySelectedSeats(selectedSeats);
 
   useEffect(() => {
     seatIds = getSelectedSeatIds();
     setUserSeats((prev) => ({
       ...prev,
       seatsId: seatIds,
-      price: tierIds[0],
+      price: tierInfo[0]?.price * seatIds.length,
       user: username,
       showId: show.id,
+      tierName: updatedScreen?.tiers?.[tierInfo[0]?.tierIndex]?.tiername
     }));
   }, [selectedSeats, updatedScreen]);
-  // console.log(userSeats, "and ", username, "and show: ", show);
- //console.log(updatedScreen);
 
   useEffect(() => {
     setSelectedSeats([]);
@@ -216,7 +239,7 @@ const BookSeats = () => {
   if (!updatedScreen) {
     return <p>Loading screen data...</p>;
   }
-  //console.log(updatedScreen.tiers[0])
+  console.log(userSeats?.tierName)
  // console.log(selectedShow);
   const handleSeatStatus = (seat) => {
     if (show?.blocked.includes(seat.seatId)) return "BLOCKED";
@@ -273,6 +296,8 @@ const BookSeats = () => {
       }
     });
   };
+
+  //console.log(selectedSeats)
 
   const navigateBack = () => {
     navigate("/all-shows", { state: { item: movie } });
@@ -478,7 +503,7 @@ const BookSeats = () => {
                           </span>
                         )}
                         <button
-                          className={`seat skeleton text-sm bg-slate-800 cursor-pointer z-30 relative`}
+                          className={`seat skeleton text-sm bg-slate-600 cursor-pointer z-30 relative`}
                         ></button>
                         {isLastInRow && <br />}
                       </React.Fragment>
@@ -518,7 +543,7 @@ const BookSeats = () => {
             onClick={handleProceed}
             className=" absolute py-2 mt-2 rounded-lg px-32 -ml-36 poppins-regular text-white text-lg bg-gradient-to-tr from-green-600 via-green-600 to-green-600"
           >
-            Pay Rs.{userSeats.price * userSeats.seatsId.length}
+            Pay Rs. {userSeats.price * userSeats.seatsId.length}
           </button>
         </div>
       )}

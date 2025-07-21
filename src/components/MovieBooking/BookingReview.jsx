@@ -4,13 +4,20 @@ import useAxiosSecure from "../Hooks/AxiosSecure";
 import { cashfree } from "../Services/cashfree";
 
 const BookingReview = () => {
-  const [time, setTime] = useState(0);
-  const [isPaying, setIsPaying] = useState(false);
-  const [errorMsg, setErrorMsg] = useState();
+
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedData, movie } = location.state || {};
   const axiosSecure = useAxiosSecure();
+  const [time, setTime] = useState(0);
+  const [isPaying, setIsPaying] = useState(false);
+  const [baseAmt, setBaseAmt] = useState((selectedData?.price * selectedData?.seatsId.length) || 0);
+  const [taxes, setTaxes] = useState({
+    cgst: baseAmt * 0.09,
+    sgst: baseAmt * 0.09
+  })
+
+
 
   // ******** For timeout *****************
   const handleTimeout = async () => {
@@ -28,6 +35,12 @@ const BookingReview = () => {
     }
   };
   useEffect(() => {
+
+    setTaxes(prev => ({
+      ...prev, 
+      cgst: baseAmt * 0.09,
+      sgst: baseAmt * 0.09
+    }))
     const fetchRemainingTime = async () => {
       if (!selectedData) return; // Ensure selectedData is present
       try {
@@ -59,6 +72,7 @@ const BookingReview = () => {
 
     return () => clearInterval(interval);
   }, [selectedData, axiosSecure]);
+
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -75,15 +89,19 @@ const BookingReview = () => {
     const handlePayNow = async () => {
     if (!selectedData) return;
     setIsPaying(true);
-    setErrorMsg("");
+   
 
     try {
      let totalamount = selectedData.price * selectedData.seatsId.length;
+     
       const payload = {
         username: selectedData.user,
         amount: totalamount,
         showId: selectedData.showId,
         seatsIds: selectedData.seatsId, 
+        tierName: selectedData.tierName,
+        cgst:taxes.cgst,
+        sgst:taxes.sgst
       };
 
       const { data } = await axiosSecure.post("/api/payment/create-order", payload);
@@ -101,7 +119,6 @@ const BookingReview = () => {
       cashfree.checkout(checkoutOptions).then((result) => {
         if (result.error) {
           console.error("Cashfree checkout error:", result.error);
-          setErrorMsg(result.error.message || "Payment could not be started.");
           setIsPaying(false);
           return;
         }
@@ -111,57 +128,9 @@ const BookingReview = () => {
       });
     } catch (err) {
       console.error("Failed to initiate payment:", err);
-      setErrorMsg("Could not start payment. Please try again.");
       setIsPaying(false);
     }
   }; 
-
-
-     // Handle payment redirection
-/*   const handleRedirect = async () => {
-    try {
-      const orderId = selectedData.user.substring(0, 4) + Date.now();
-      const response = await axiosSecure.post(
-        "https://sandbox.cashfree.com/pg/orders",
-        {
-          orderId,
-          orderAmount: selectedData.price * selectedData.seatsId.length,
-          customerId: selectedData.user,
-          customerPhone: "0000000000",
-        },
-        {
-          headers: {
-            "x-client-id": import.meta.env.VITE_CASHFREE_API_KEY,
-            "x-client-secret": import.meta.env.VITE_CASHFREE_CLIENT_SECRET,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "x-api-version": "2023-08-01",
-          },
-        }
-      );
-    
-      console.log("Payment session created:", response.data);
-      const returnUrl = `http://localhost:5173/payment-success?orderId=${encodeURIComponent(orderId)}&mId=${encodeURIComponent(movie.id)}`;
-      let checkoutOptions = {
-        paymentSessionId: response.data.payment_session_id,
-        // returnUrl: `http://localhost:5173/payment-success?orderId=${orderId}&mId=${movie.id}`, // Redirect here after payment
-        returnUrl
-      };
-
-      cashfree.checkout(checkoutOptions).then(function (result) {
-        if (result.error) {
-          alert(result.error.message);
-          //navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
-        }
-        if (result.redirect) {
-          console.log("Redirection happening...");
-        }
-      });
-    } catch (error) {
-      console.error("Error creating payment session:", error);
-      navigate("/all-shows", { state: { item: movie } }); // Navigate back on error
-    }
-  };  */
 
      const handleBooking = async () => {
       try {
@@ -184,8 +153,10 @@ const BookingReview = () => {
         <div className="bg-fuchsia-800 h-1/5">Snacks Banner</div>
         <div className="bg-stone-500 h-4/5">Snacks</div>
       </div>
+      {/* Right section */}
       <div className="relative w-2/5 bg-gradient-to-tr from-stone-400 via-amber-50 to-orange-100/80 h-full overflow-y-scroll overflow-x-hidden">
-        <div className="px-6 bg-gradient-to-tr from-base-100/90 via-base-100/90 to-slate-800/90 max-h-max py-3 mx-4 my-1 space-y-20 rounded-sm w-[95%]">
+        <div className="px-6 bg-gradient-to-tr from-base-100/90 via-base-100/90 to-slate-800/90 max-h-max py-3 mx-4 my-1 space-y-2 rounded-sm w-[95%]">
+        {/* Timer section */}
           <div
             className={`grid grid-flow-col gap-5 ${
               minutes < 4 ? `text-red-500` : `text-white`
@@ -195,15 +166,24 @@ const BookingReview = () => {
               <span className="countdown font-mono text-3xl">
                 <span style={{ "--value": minutes % 60 }}></span>
               </span>
-              min
+              Min
             </div>
             <div className="flex flex-col">
               <span className="countdown font-mono text-3xl">
                 <span style={{ "--value": secs }}></span>
               </span>
-              sec
+              Sec
             </div>
           </div>
+          {/* details */}
+          {/* Movie section */}
+          <div className="mx-2 justify-between p-2 flex bg-green-500 space-x-2">
+            <div className="bg-indigo-700 w-1/2">Hello</div>
+            <div className="bg-red-600 w-1/2">hello</div>
+          </div>
+           <div className="bg-blue-600"> hello</div>
+          {/* price section */}
+        
           <div className="text-center">
             <button
               className="btn bg-green rounded-md text-white"
