@@ -55,10 +55,6 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("username");
     localStorage.removeItem("access-token");
   }
- /*  if(session==undefined){
-    localStorage.removeItem("access-token")
-    localStorage.removeItem("username")
-  } */
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
     const storedToken = localStorage.getItem("access-token");
@@ -71,14 +67,9 @@ const AuthProvider = ({ children }) => {
     } else if (storedUser && storedToken) {
       setUserData({ username: storedUser, token: storedToken });
     }
-
-   /*  if(!session){
-      localStorage.removeItem("access-token")
-      localStorage.removeItem("username")
-      setUserData({username:"",token:""})
-    } */
   }, []);
-console.log(session)
+
+console.log(userData)
   useEffect(() => {
    
      const getSession = ()=>{
@@ -104,7 +95,6 @@ console.log(session)
     if (response.ok) {
         const data = await response.json();
         const token = data.token;
-    // console.log("Got the token :",data)
   
       localStorage.setItem('access-token', token);
       setUserData(prevData=>({...prevData,token:token}))

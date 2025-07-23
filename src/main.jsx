@@ -40,6 +40,7 @@ import EditMovie from "./components/Admin/MoviesInfo/EditMovie";
 import Orders from "./components/User/Orders";
 import Confirmation from "./components/MovieBooking/Confirmation";
 import PaymentSuccess from "./components/MovieBooking/PaymentSuccess";
+import Popstate2 from "./components/User/Popstate2";
 
 const router = createBrowserRouter([
   {
@@ -89,6 +90,10 @@ const router = createBrowserRouter([
       {
         path: "/Orders",
         element: <Orders />,
+      },
+      {
+        path: "/pop",
+        element: <Popstate2 />,
       },
       {
         path: "/theatre-request",

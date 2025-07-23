@@ -66,8 +66,6 @@ const BookSeats = () => {
     fetchScreen();
   }, [fetchScreen]);
 
-
-  //Seat click logic
   const handleSeatClick = (tierIndex, seatIndex) => {
     const rowSeats = updatedScreen.tiers[tierIndex].seats;
 
@@ -180,22 +178,6 @@ const BookSeats = () => {
       .filter(Boolean);
   };
 
-  /* const getTierIdsBySelectedSeats = (selectedSeats) => {
-    const tierIds = new Set();
-
-    selectedSeats.forEach((seatId) => {
-      const [tierIndex] = seatId.split("-").map(Number);
-      console.log("tier Index ",tierIndex)
-      const tier = updatedScreen.tiers[tierIndex];
-
-      if (tier) {
-        tierIds.add(tier.price);
-      }
-    });
-
-    return Array.from(tierIds);
-  }; */
-
   const getTierIdsBySelectedSeats = (selectedSeats) => {
   const seen = new Set();        // track tierIndex we've already added
   const result = [];
@@ -214,7 +196,6 @@ const BookSeats = () => {
   return result;
 };
 
-// usage
 const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
 // e.g. [{ tierIndex: 0, price: 100 }, { tierIndex: 1, price: 150 }]
 
@@ -239,17 +220,16 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
   if (!updatedScreen) {
     return <p>Loading screen data...</p>;
   }
-  console.log(userSeats?.tierName)
- // console.log(selectedShow);
+ 
   const handleSeatStatus = (seat) => {
     if (show?.blocked.includes(seat.seatId)) return "BLOCKED";
     if (show?.booked.includes(seat.seatId)) return "BOOKED";
     if (seat.status == "NO_SEAT") return "NO_SEAT";
     return seat.status;
   };
-  //showID,username,totalamount,seats
+
   const handleProceed = () => {
-    // console.log(userSeats);
+
     Swal.fire({
       title: `Do you accept terms`,
       html: `<div class="text-[14px] poppins-light text-white text-start flex-wrap">${guidelines
@@ -296,8 +276,6 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
       }
     });
   };
-
-  //console.log(selectedSeats)
 
   const navigateBack = () => {
     navigate("/all-shows", { state: { item: movie } });

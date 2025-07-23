@@ -82,11 +82,15 @@ const PaymentSuccess = () => {
           <Link to="/booking-confirmation" className="btn">View Booking</Link>
         </div>
       ) : (
-        <div>
-          <h2>❌ Payment Failed</h2>
-          <p>{message}</p>
-         <Link to="/">Home Page</Link>
-        </div>
+        status === "failed" ? (
+          navigate("/")
+        ) : (
+          <div>
+            <h2>❌ Payment Failed</h2>
+            <p>{message}</p>
+            <Link to="/">Home Page</Link>
+          </div>
+        )
       )} 
     </div>
   );

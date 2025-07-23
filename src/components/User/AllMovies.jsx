@@ -4,6 +4,7 @@ import useAxiosSecure from "../Hooks/AxiosSecure";
 import MovieCard from "./MovieCard";
 import { BsSortAlphaDown } from "react-icons/bs";
 import { BsSortAlphaUpAlt } from "react-icons/bs";
+import { Link, redirect } from "react-router-dom";
 
 const AllMovies = () => {
   const axiosSecure = useAxiosSecure();
@@ -11,6 +12,7 @@ const AllMovies = () => {
   const [fsMovies, setFsMovies] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(`All`);
   const [selectedSort, setSelectedSort] = useState(`earliest`);
+
 
   // Fetch movies from the backend
   const fetchMovies = async () => {
@@ -218,6 +220,8 @@ const AllMovies = () => {
           </div>
         </div>
       </div>
+      {/* Tp */}
+     <Link to="/pop2" state={{from: "/All-Movies"}}>Navigate </Link>
     </div>
   );
 };
