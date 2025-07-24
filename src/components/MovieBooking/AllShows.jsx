@@ -22,7 +22,7 @@ const AllShows = () => {
   const [uniqueShowDates, setUniqueShowDates] = useState([]);
   const [parseInfo, setParseInfo] = useState();
   const { item } = location?.state || {};
-  const[movie, setMovie] = useState(item || null);
+  const[movie, setMovie] = useState(() => item || null);
   const city = useCity();
   const today = new Date(); // Get today's date
 
@@ -36,20 +36,33 @@ const AllShows = () => {
     return `${year}-${month}-${day}`;
   }
 
-  console.log(item )
-  console.log(movie)
-   useEffect(() => {
-  if(!item || item == null || item == undefined){
-     setMovie(JSON.parse(sessionStorage?.getItem("bookingData")?.movie))
-  }  
-}, []); 
+useEffect(() => {
+  if (!item) {
+    const bookingData = sessionStorage.getItem("bookingData");
+    if (bookingData) {
+      try {
+        const parsed = JSON.parse(bookingData);
+        if (parsed?.movie) {
+          setMovie(parsed.movie);
+        } else {
+          console.warn("Parsed bookingData has no movie");
+        }
+      } catch (error) {
+        console.error("Failed to parse bookingData from sessionStorage", error);
+      }
+    } else {
+      console.warn("No bookingData found in sessionStorage");
+    }
+  }
+}, []);
+
 
   const fetchAllShows = useCallback(async () => {
     try {
       setIsSLoading(true);
       const cityQuery = cities.join(",");
       const res = await axiosSecure.get(
-        `/show/by-city?movieId=${item?.id}&cities=${cityQuery}`
+        `/show/by-city?movieId=${movie?.id}&cities=${cityQuery}`
       );
       if (res.data) {
         setShows(res.data);
@@ -59,7 +72,7 @@ const AllShows = () => {
     } finally {
       setIsSLoading(false);
     }
-  }, [axiosSecure, cities, item?.id || movie?.id]);
+  }, [axiosSecure, cities, movie?.id]);
 
   const fetchAllTheatres = useCallback(async () => {
     try {
@@ -77,11 +90,11 @@ const AllShows = () => {
     } finally {
       setIsTLoading(false);
     }
-  }, [axiosSecure, cities, item?.id || movie?.id, selectedDate]);
+  }, [axiosSecure, cities, movie?.id, selectedDate]);
 
   const filterTheatres = (data) => {
-    console.log(data);
-    const movieId = item?.id || movie?.id;
+   // console.log(data);
+    const movieId = movie?.id || item?.id;
     const theatresWithMovieShows = data.filter((theatre) =>
       theatre.shows.some((show) => show.mid === movieId)
     );
@@ -104,11 +117,11 @@ const AllShows = () => {
   }, [city]);
 
   useEffect(() => {
-    if (item && cities.length > 0) {
+    if (movie && cities.length > 0) {
       fetchAllShows();
       fetchAllTheatres();
     }
-  }, [fetchAllShows, cities, fetchAllTheatres, item?.id || movie?.id]);
+  }, [fetchAllShows, cities, fetchAllTheatres, movie?.id || item?.id]);
 
   useEffect(() => {
     const getDates = () => {
@@ -173,7 +186,7 @@ const AllShows = () => {
     }
   };
   
-  if (item == null || item == undefined) {
+  if (!item && !movie) {
     return (
       <div className="h-full w-full mt-2">
         <div className="">
@@ -188,12 +201,12 @@ const AllShows = () => {
   }
   return (
     <div className="h-full w-full mt-2">
-      <UserNavHeader navLocation={`/movie-details`} item={item || movie} />
+      <UserNavHeader navLocation={`/movie-details`} item={movie || item} />
       <div className="">
         {" "}
         <div className="bg-gradient-to-br from-black via-gray-900 to-black  rounded-xl mx-2">
           <h2 className="poppins-bold text-2xl text-white  text-center">
-            {item.title.toUpperCase() || movie.title.toUpperCase()}
+            {movie?.title?.toUpperCase() || item?.title?.toUpperCase()}
           </h2>
 
           {isDLoading ? (
