@@ -256,7 +256,7 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
           if (res.data) {
             console.log(res.data);
             navigate("/bookingReview", {
-              state: { selectedData: userSeats, movie: movie },
+              state: { selectedData: userSeats, movie: movie , selectedShow: selectedShow, selectedDate:selectedDate, updatedScreen:updatedScreen},
             });
           } else {
             Swal.fire({
