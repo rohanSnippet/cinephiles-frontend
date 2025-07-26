@@ -12,7 +12,7 @@ const RecomendedMovieCard = ({ item }) => {
   const displayText = releaseDateObj <= now ? "votes" : "interests";
 
   return (
-    <div className="carousel-item rounded-2xl relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40">
+    <div className="carousel-item ring-2 ring-white/20 rounded-sm relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40">
       {item.promoted ? (
         <p
           className={`absolute bottom-13 poppins-light text-md px-2 text-white bg-green-600 rounded-ss-xl rounded-ee-xl`}
@@ -26,9 +26,9 @@ const RecomendedMovieCard = ({ item }) => {
         src={item.poster || noPoster}
         alt="Burger"
         loading="lazy"
-        className="object-cover w-full h-full rounded-2xl"
+        className="object-cover w-full h-full rounded-sm"
       />
-      <div className="absolute btn-ghost rounded-xl hover:bg-slate-600 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300">
+      <div className="absolute btn-ghost rounded-lg backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300">
         {" "}
         {releaseDateObj <= now ? (
           <img
@@ -57,12 +57,12 @@ const RecomendedMovieCard = ({ item }) => {
         <Link
           to={`/movie-details`}
           state={{ item: item, previousPath: `/` }}
-          className="absolute top-[50%] poppins-regular hover:font-bold text-2xl left-[32%] bg-black bg-opacity-60 px-4 py-1 rounded-3xl hover:-translate-y-3 hover:shadow-sm hover:shadow-white/50 duration-300 hover:bg-white hover:text-black hover:bg-opacity-50"
+          className="absolute top-[50%] poppins-light hover:font-bold text-2xl left-[32%] bg-black bg-opacity-60 px-4 py-1 rounded-md hover:-translate-y-3 hover:shadow-sm hover:shadow-white/60 duration-300 hover:bg-white hover:text-black hover:bg-opacity-50"
         >
           Book{" "}
         </Link>
-        <p className=" absolute top-[0%] w-full roboto-bold text-xl text-white  rounded-t-xl  ">
-          {item.title}
+        <p className=" absolute top-[0%] w-full poppins-bold text-xl text-white">
+          {item.title.toUpperCase()}
         </p>
         {releaseDateObj <= now ? (
           <p className=" absolute bottom-[9%] w-full roboto-regular text-[15px] text-white">

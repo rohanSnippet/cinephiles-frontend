@@ -21,7 +21,7 @@ const BookSeats = () => {
     price: null,
     user: "",
     showId: null,
-    tierName:""
+    tierName: "",
   });
 
   const numberOfTickets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -69,7 +69,6 @@ const BookSeats = () => {
   const handleSeatClick = (tierIndex, seatIndex) => {
     const rowSeats = updatedScreen.tiers[tierIndex].seats;
 
-
     let remainingSeatsNeeded = tickets - selectedSeats.length;
 
     if (remainingSeatsNeeded <= 0) {
@@ -91,13 +90,13 @@ const BookSeats = () => {
       }
     }
     const newSelectedSeatIds = [];
-//console.log(seatIndex)
+    //console.log(seatIndex)
 
     //if (seatIndex + remainingSeatsNeeded <= rowSeats.length) {
     let tempSeat = null;
     for (let i = 0; i < remainingSeatsNeeded; i++) {
       //console.log(seatIndex+i)
-      if(rowSeats[seatIndex+i]==undefined) {
+      if (rowSeats[seatIndex + i] == undefined) {
         //console.log("break the statement for :"+seatIndex+i)
         break;
       }
@@ -118,7 +117,6 @@ const BookSeats = () => {
         // console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
         newSelectedSeatIds.push(seatId);
       } else {
-       
         break;
       }
     }
@@ -179,25 +177,25 @@ const BookSeats = () => {
   };
 
   const getTierIdsBySelectedSeats = (selectedSeats) => {
-  const seen = new Set();        // track tierIndex we've already added
-  const result = [];
+    const seen = new Set(); // track tierIndex we've already added
+    const result = [];
 
-  for (const seatId of selectedSeats) {
-    const [tierIndex] = seatId.split("-").map(Number);
-    const tier = updatedScreen.tiers[tierIndex];
-    if (!tier) continue;
+    for (const seatId of selectedSeats) {
+      const [tierIndex] = seatId.split("-").map(Number);
+      const tier = updatedScreen.tiers[tierIndex];
+      if (!tier) continue;
 
-    if (!seen.has(tierIndex)) {
-      seen.add(tierIndex);
-      result.push({ tierIndex, price: tier.price });
+      if (!seen.has(tierIndex)) {
+        seen.add(tierIndex);
+        result.push({ tierIndex, price: tier.price });
+      }
     }
-  }
-    
-  return result;
-};
 
-const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
-// e.g. [{ tierIndex: 0, price: 100 }, { tierIndex: 1, price: 150 }]
+    return result;
+  };
+
+  const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
+  // e.g. [{ tierIndex: 0, price: 100 }, { tierIndex: 1, price: 150 }]
 
   //const tierIds = getTierIdsBySelectedSeats(selectedSeats);
 
@@ -209,7 +207,7 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
       price: tierInfo[0]?.price * seatIds.length,
       user: username,
       showId: show.id,
-      tierName: updatedScreen?.tiers?.[tierInfo[0]?.tierIndex]?.tiername
+      tierName: updatedScreen?.tiers?.[tierInfo[0]?.tierIndex]?.tiername,
     }));
   }, [selectedSeats, updatedScreen]);
 
@@ -220,7 +218,7 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
   if (!updatedScreen) {
     return <p>Loading screen data...</p>;
   }
- 
+
   const handleSeatStatus = (seat) => {
     if (show?.blocked.includes(seat.seatId)) return "BLOCKED";
     if (show?.booked.includes(seat.seatId)) return "BOOKED";
@@ -229,7 +227,6 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
   };
 
   const handleProceed = () => {
-
     Swal.fire({
       title: `Do you accept terms`,
       html: `<div class="text-[14px] poppins-light text-white text-start flex-wrap">${guidelines
@@ -256,7 +253,13 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
           if (res.data) {
             console.log(res.data);
             navigate("/bookingReview", {
-              state: { selectedData: userSeats, movie: movie , selectedShow: selectedShow, selectedDate:selectedDate, updatedScreen:updatedScreen},
+              state: {
+                selectedData: userSeats,
+                movie: movie,
+                selectedShow: selectedShow,
+                selectedDate: selectedDate,
+                updatedScreen: updatedScreen,
+              },
             });
           } else {
             Swal.fire({
@@ -277,11 +280,12 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
     });
   };
 
+
   const navigateBack = () => {
     navigate("/all-shows", { state: { item: movie } });
   };
   return (
-    <div className="gap-2 justify-center">
+    <div className="flex flex-col gap-2 justify-center">
       {/* Open the modal using document.getElementById('ID').showModal() method */}
       <dialog id="my_modal_2" className="modal">
         <div className="modal-box text-center text-white bg-opacity-85">
@@ -308,15 +312,16 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
       {/* nav */}
 
       {/* filters & shows */}
-      <div className="flex text-white bg-gradient-to-br gap-x-2 from-black/90 via-transparent to-black/90 h-[18vh] w-[98%] poppins-regular rounded-lg mx-auto my-2 ring-2 ring-white/25">
+      <div className="flex flex-col md:flex-row text-white bg-gradient-to-br gap-x-2 from-black/90 via-transparent to-black/90 h-auto md:h-[18vh] w-[98%] poppins-regular rounded-lg mx-auto my-2 ring-2 ring-white/25 p-2">
         <IoIosArrowBack
-          className="w-16 h-24 pt-8 cursor-pointer"
+          className="w-10 h-6 md:w-10 md:h-24 pt-2 md:pt-0 cursor-pointer self-start md:self-auto items-center"
           onClick={navigateBack}
         />
-        <div className="ring-2 ring-slate-600/60 w-3/5 m-2 rounded-md bg-gradient-to-tr from-tranparent via-slate-900 to-tranparent shadow-md shadow-slate-700">
-          <div className="justify-between flex">
-            <div className="mt-2 ml-16 poppins-extralight ">
-              <span className="text-xl poppins-regular">
+        {/* theatre details */}
+        <div className="ring-2 ring-slate-600/60 w-full md:w-3/5 rounded-md bg-gradient-to-tr from-transparent via-slate-900 to-transparent shadow-md shadow-slate-700 sm:my-0  my-2">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mt-2 md:ml-6 poppins-extralight text-center md:text-left">
+              <span className="text-xl poppins-regular block md:inline">
                 {" "}
                 {theatre[0].name}
               </span>{" "}
@@ -324,53 +329,55 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
             </div>
             <button
               onClick={() => document.getElementById("my_modal_2").showModal()}
-              className="btn btn-sm bg-slate-600/50 mr-2 border-2 border-white/80 shadow-md shadow-white/30 rounded-3xl text-white hover:bg-white/80 hover:text-black text-md mt-2"
+              className="btn btn-sm bg-slate-600/50 md:mr-2 border-2 border-white/80 shadow-md shadow-white/30 rounded-3xl text-white hover:bg-white/80 hover:text-black text-md mt-2 md:mt-2"
             >
               {" "}
               <MdOutlineEdit size={18} />
               {tickets} Tickets
             </button>
           </div>
-          <div className="flex-wrap w-[80%] space-x-2 mt-1 mx-12">
+          <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] space-x-0 md:space-x-2 mt-2 md:mt-1 mx-auto md:mx-12">
             {theatre[0].shows
-              .filter((s) => s.mid == movie.id && s.showDate == selectedDate)
+              .filter((s) => s.mid === movie.id && s.showDate === selectedDate)
               .map((s) => (
                 <button
                   key={s.id}
                   onClick={() => handleChangeShow(s)}
-                  className={` text-center w-1/6 rounded-md py-1 poppins-regular ${
-                    s.id == show.id
+                  className={`text-center w-[calc(18%-8px)] sm:w-1/5 sm:text-sm md:w-1/6 rounded-md sm:py-1 py-0 poppins-regular sm:mb-2 sm:m-2 m-2 ${
+                    s.id === show.id
                       ? `show-${s.status} curr-show shadow-md `
                       : `show-${s.status}`
                   }`}
                 >
                   {s.start}
-                  {/*  <span className="text-[10px] ml-2 text-gray-400/80">
-                    {s.status}
-                  </span> */}
                 </button>
               ))}
           </div>
         </div>
-        <div className="ring-2 ring-slate-600/60 w-2/5 m-2 rounded-md bg-gradient-to-tr from-tranparent via-slate-900 to-transparent shadow-md shadow-slate-700/60">
-          <div className="flex gap-x-8 ml-5">
-            {" "}
-            <h2 className="text-center roboto-light text-3xl mt-4">
-              {show.title}
+        {/* movie details */}
+        <div className="ring-2 ring-slate-600/60 w-full md:w-2/5 rounded-md bg-gradient-to-tr from-transparent via-slate-900 to-transparent shadow-md shadow-slate-700/60 sm:my-0 my-2">
+          <div className="flex flex-col items-center md:flex-row md:gap-x-8 md:ml-5">
+            <h2
+              className={`roboto-light text-xl mt-2 text-wrap text-balance ${
+                movie.title.length > 10 ? "text-sm md:text-md" : "md:text-3xl"
+              }`}
+            >
+              {movie.title}
             </h2>
-            <div className="justify-center gap-x-8 flex mt-6 ml-6">
-              {" "}
-              <p className="text-center badge  badge-outline text-white/80 w-16 h-6 roboto-bold">
-                {movie.certification == "CERTIFICATION_UA"
+            <div className="flex justify-center gap-x-4 md:gap-x-8 mt-2 md:mt-2 md:ml-6">
+              <p className="text-center badge badge-outline text-white/80 w-16 h-6 roboto-bold">
+                {movie.certification === "CERTIFICATION_UA"
                   ? "U/A"
                   : movie.certification.substring(14)}
               </p>
-              <p className="bg-gray-500 text-white/95 badge badge-lg">
+              <p className="bg-gray-500 text-white/95 badge badge-lg text-sm whitespace-nowrap">
                 {movie.runtime} Minutes
               </p>
             </div>
           </div>
-          <p className="poppins-light text-center mt-6">
+          <div className="text-center flex justify-around text-sm mt-4 md:mt-2">
+            <p className="">{show.showDate}</p>
+          <p className="poppins-light ">
             Show starts at{" "}
             <span className="roboto-bold">
               {show.start}&nbsp;
@@ -380,18 +387,19 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
                 : `AM`}
             </span>
           </p>
+          </div>
         </div>
       </div>
       {/* Seats Section */}
       {!loading ? (
-        <div className=" text-white bg-gradient-to-b from-black/90 via-slate-900 to-black/90 h-[100vh] w-[100%] poppins-regular overflow-y-scroll overflow-x-auto ring-2 ring-white/25">
+        <div className=" text-white bg-gradient-to-b from-black/90 via-slate-900 to-black/90 h-[100vh] w-[100%] poppins-regular overflow-y-scroll  overflow-x-auto ring-2 ring-white/25">
           {updatedScreen.tiers.map((tier, index) => {
             return (
-              <div key={index} className={`mt-4 ${layout.center} z-90`}>
+              <div key={index} className={`mt-4 overflow-x-auto ${layout.center} z-90`}>
                 <h2>
                   {tier.tiername} (₹{tier.price})
                 </h2>
-                <hr className="border-gray-600 border-double" />
+                <hr className="border-gray-600 border-double w-11/12 mx-auto md:w-[90%] md:mx-auto" />
                 <div id="seatArr" className="mb-8">
                   {tier.seats.map((seat, seatIndex) => {
                     const isFirstInRow = seatIndex % tier.columns === 0;
@@ -399,7 +407,7 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
                     const seatId = `${index}-${seatIndex}`;
                     const isSelected = selectedSeats.includes(seatId);
                     const seatStatus = handleSeatStatus(seat);
-                    
+
                     return (
                       <React.Fragment key={seatId}>
                         {isFirstInRow && (
@@ -530,3 +538,6 @@ const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
 };
 
 export default BookSeats;
+
+
+

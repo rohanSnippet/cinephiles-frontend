@@ -275,11 +275,11 @@
 }
 .seat {
   margin: 5px;
-  height: 20px;
+  height: 22px;
   border: 1px solid #3b3a3a;
   border-radius: 4px;
   display: inline-block;
-  width: 20px; /* Adjust as needed */
+  width: 22px; /* Adjust as needed */
   text-align: center;
   color: black;
 }
@@ -359,4 +359,20 @@ input[type="radio"] {
 input[type="radio"]:checked + .radio-button {
   background-color: #ebebec;
   color: rgb(29, 28, 28);
+}
+
+/* Media query for smaller screens (e.g., up to 767px wide) */
+@media (max-width: 767px) {
+  .seat {
+    margin: 2px; /* Smaller margin for smaller screens */
+    height: 22px; /* Smaller height for smaller screens */
+    width: 22px; /* Smaller width for smaller screens */
+    font-size: 0.75rem; /* Smaller font size for numbers inside seats */
+  }
+
+  .seat.skeleton {
+    margin: 2px; /* Smaller margin for smaller screens */
+    height: 24px; /* Smaller height for smaller screens */
+    width: 24px; /* Smaller width for smaller screens */
+  }
 }
