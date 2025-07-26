@@ -78,13 +78,13 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
             {videos[currentVideoIndex].name}
           </span>
           <div className=" pt-4 ml-12 text-xl text-justify w-[60%] poppins-light  text-white">
-            <p className=" mb-12 text-sm md:text-base poppins-regular opacity-70">
+           {/*  <p className=" mb-12 text-sm md:text-base poppins-regular opacity-70">
               U/A{" "}
               <span className="ml-4 py-2 md:badge md:badge-ghost border-none text-white md:text-white md:bg-opacity-50">
                 {" "}
                 Hindi, Telugu, Tamil, Kannada, Malayalam, Bengali
               </span>
-            </p>
+            </p> */}
             <p className="md:text-xl">{videos[currentVideoIndex].desc}</p>
           </div>
         </div>

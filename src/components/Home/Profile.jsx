@@ -6,6 +6,7 @@ import { CiUser } from "react-icons/ci";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../Context/AuthProvider";
+import Loading from "../Common/Loading";
 
 const Profile = () => {
   const { session, setSession } = useContext(AuthContext);
@@ -26,6 +27,9 @@ const Profile = () => {
       }
     };
 
+     setTimeout(() => {
+      
+    }, 1000);
     getUser();
   }, [username]);
 
@@ -59,12 +63,12 @@ const Profile = () => {
       }
     
   };
-console.log(user)
+
   const [isAdmin, isAdminLoading] = useAdmin();
   const [isOwner, isOwnerLoading] = useOwner();
 
   if (loading) {
-    return <div>Loading...</div>; // Show a loading state while fetching
+    return <Loading/>; // Show a loading state while fetching
   }
 
   return (
