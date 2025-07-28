@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import UserNavHeader from "../UserNavHeader";
 import like from "../../../assets/like.png";
@@ -7,88 +7,128 @@ import user from "../../../assets/user_2.png";
 import { AuthContext } from "../../Context/AuthProvider";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import useCity from "../../Hooks/useCity";
+import Loading from "../../Common/Loading";
 
 const MovieDetails = () => {
   const navigate = useNavigate();
   const { userData } = useContext(AuthContext);
   const axiosPublic = useAxiosPublic();
   const location = useLocation();
-  const [castMembers, setCastMembers] = useState([]);
-  const [crewMembers, setCrewMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [cLoading, setCLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("All");
-  const [isShowAvl, setIsShowAvl] = useState(false);
-  const { item, previousPath } = location.state;
-  const releaseDateObj = new Date(item.releaseDate);
   const axiosSecure = useAxiosSecure();
   const city = useCity();
 
+  const [castMembers, setCastMembers] = useState([]);
+  const [crewMembers, setCrewMembers] = useState([]);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [isShowAvl, setIsShowAvl] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("All");
+
+  const { item, previousPath } = location.state || {};
+  const releaseDateObj = item ? new Date(item.releaseDate) : null;
+
   useEffect(() => {
-    // Scroll to the top when the component mounts
+    if (!item) {
+      console.error("Movie item not found in location state.");
+      setIsLoadingContent(true);
+      return;
+    }
     window.scrollTo(0, 0);
-  }, []);
+  }, [item]);
+
   const handleGetTheatres = () => {
     navigate("/all-shows", { state: { item } });
   };
-  // const profile = "https://en.wikipedia.org/wiki/Allu_Arjun"; // Make sure to include http/https
 
-  const scrapeActors = async () => {
+  const scrapeActors = useCallback(async () => {
+    if (!item?.cast) return [];
     try {
-      setLoading(true);
       const res = await axiosPublic.post(`/actor/scrape`, item.cast);
-      if (res.data.urls != null) {
-        setCastMembers(res.data.urls);
-        setLoading(false);
-      }
+      return res.data?.urls || [];
     } catch (error) {
-      console.log(error);
+      console.error("Error scraping actors:", error);
+      return [];
     }
-  };
-  const scrapeCrew = async () => {
-    try {
-      setCLoading(true);
-      const res = await axiosPublic.post(`/actor/scrape-crew`, item.crew);
-      if (res.data.urls != null) {
-        setCrewMembers(res.data.urls);
-        setCLoading(false);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  }, [axiosPublic, item?.cast]);
 
-  useEffect(() => {
-    // Make a request to check if the movie has a show in the specified city
-    axiosSecure
-      .get(
+  const scrapeCrew = useCallback(async () => {
+    if (!item?.crew) return [];
+    try {
+      const res = await axiosPublic.post(`/actor/scrape-crew`, item.crew);
+      return res.data?.urls || [];
+    } catch (error) {
+      console.error("Error scraping crew:", error);
+      return [];
+    }
+  }, [axiosPublic, item?.crew]);
+
+  const checkShowAvailability = useCallback(async () => {
+    if (!item?.id || (!userData?.currLocation && !city)) return false;
+    try {
+      const res = await axiosSecure.get(
         `/show/by-city?movieId=${item.id}&cities=${
           userData.currLocation || city
         }`
-      )
-      .then((response) => {
-        // If the response contains any shows, set hasShow to true
-        if (response.data.length > 0) {
-          setIsShowAvl(true);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching shows:", error);
-      });
-  }, [item.id, city, userData.currLocation]);
+      );
+      return res.data?.length > 0;
+    } catch (error) {
+      console.error("Error fetching show availability:", error);
+      return false;
+    }
+  }, [axiosSecure, item?.id, userData?.currLocation, city]);
 
   useEffect(() => {
-    scrapeActors();
-    scrapeCrew();
-  }, []);
+    const fetchData = async () => {
+      if (!item) {
+        return;
+      }
+      setIsLoadingContent(true);
+
+      try {
+        const [fetchedCastMembers, fetchedCrewMembers, showAvailability] =
+          await Promise.all([
+            scrapeActors(),
+            scrapeCrew(),
+            checkShowAvailability(),
+          ]);
+
+        setCastMembers(fetchedCastMembers);
+        setCrewMembers(fetchedCrewMembers);
+        setIsShowAvl(showAvailability);
+      } catch (error) {
+        console.error("Failed to fetch all movie details:", error);
+      } finally {
+        setIsLoadingContent(false);
+      }
+    };
+
+    fetchData();
+  }, [item, scrapeActors, scrapeCrew, checkShowAvailability]);
+
+  if (isLoadingContent || !item || !releaseDateObj) {
+    return <Loading />;
+  }
 
   return (
     <div className="h-full w-full">
       <UserNavHeader navLocation={previousPath || "/"} item={item} />
 
-      <div className="relative w-[96%] h-[60vh] bg-black mx-auto rounded-xl shadow-lg shadow-slate-500/20">
+      {/* Movie Name above banner for mobile/medium screens */}
+      <div className="lg:hidden text-center mt-4 px-4">
+        <h1 className="text-white text-4xl sm:text-5xl font-bold roboto-semibold">
+          {item.title.toUpperCase()}
+        </h1>
+      </div>
+
+      {/* Main movie banner and details section */}
+      <div
+        className="relative w-[96%] max-w-7xl mx-auto rounded-xl shadow-lg shadow-slate-500/20 mt-4 overflow-hidden
+                      min-h-[400px] md:min-h-[500px] lg:min-h-[60vh] flex lg:items-end"
+      >
+        {" "}
+        {/* Added lg:items-end for desktop to match original design */}
+        {/* Background Image with responsive gradients */}
         <div
-          className="w-[80%] h-[100%] rounded-xl bg-no-repeat bg-cover bg-center"
+          className="absolute inset-0 w-full h-full rounded-xl bg-no-repeat bg-cover bg-center"
           style={{
             backgroundImage: item.banner
               ? `url('${item?.banner}')`
@@ -97,216 +137,338 @@ const MovieDetails = () => {
               : "gray",
           }}
         >
-          <div className="absolute w-[80%] h-[100%] rounded-xl bg-gradient-to-r from-slate-950 via-transparent to-black"></div>
-          {/* details */}
-          <div id="name" className="md:pt-16 md:pl-8 w-[60%] pt-0 pl-2 ">
+          {/* Gradient overlay for large screens */}
+          <div className="hidden lg:block absolute inset-0 rounded-xl bg-gradient-to-r from-slate-950 via-transparent to-black"></div>
+          {/* Darker gradient for mobile/medium screens */}
+          <div className="lg:hidden absolute inset-0 rounded-xl bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+        </div>
+        {/* --- Large Screen Layout (lg and up) --- */}
+        <div className="relative z-10 w-full h-full hidden lg:flex">
+          {" "}
+          {/* Container for desktop elements */}
+          {/* Details for large screens */}
+          <div className="flex flex-col justify-end pb-8 pl-8 pr-4 w-[60%]">
+            {" "}
+            {/* Adjusted for flex column */}
+            {/* Title */}
             <span
-              className={` bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent text-xl md:${
-                item.title.length > 23 ? `text-5xl` : `text-7xl`
-              } md:${
-                item.title.length > 23 ? `roboto-bold` : `roboto-semibold`
-              } ml-12 absolute`}
+              className={`
+                        bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent
+                        text-5xl lg:text-6xl xl:text-7xl
+                        ${
+                          item.title.length > 23
+                            ? "roboto-bold"
+                            : "roboto-semibold"
+                        }
+                        mb-4
+                    `}
             >
-              {" "}
               {item.title.toUpperCase()}
             </span>
-            <div className=" pt-8 ml-12 mt-16 text-xl text-justify w-[60%]  text-white">
-              <p className=" mb-12 md:text-base poppins-regular text-lg text-opacity-100 opacity-80">
-                <span className="flex align-baseline">
-                  {" "}
-                  {item.certification == "CERTIFICATION_UA"
-                    ? "U/A"
-                    : item.certification.substring(14)}
-                  &nbsp;Rated
-                  <span className="ml-4 space-x-2 py-2 md:badge md:badge-ghost md:badge-lg border-none text-white md:text-white md:bg-opacity-50">
-                    {" "}
-                    {item.languages.map((lang, i) => {
-                      return <span key={i}>{lang}</span>;
-                    })}
+            {/* Metadata: Certification, Languages, Formats */}
+            <p className="text-white text-base poppins-regular opacity-80 mb-6 flex flex-wrap items-center gap-4">
+              <span className="flex items-center">
+                {item.certification === "CERTIFICATION_UA"
+                  ? "U/A"
+                  : item.certification.substring(14)}{" "}
+                Rated
+              </span>
+              <span className="badge badge-ghost text-white text-sm border-none bg-white/20">
+                {item.languages.map((lang, i) => (
+                  <span key={i} className="px-1">
+                    {lang}
                   </span>
-                  <span className="ml-4 space-x-2 py-2 md:badge md:badge-ghost md:badge-lg border-none text-white md:text-white md:bg-opacity-50 flex">
-                    {" "}
-                    {item.formats.map((format, i) => {
-                      return <span key={i}>{format}</span>;
-                    })}
+                ))}
+              </span>
+              <span className="badge badge-ghost text-white text-sm border-none bg-white/20">
+                {item.formats.map((format, i) => (
+                  <span key={i} className="px-1">
+                    {format}
                   </span>
-                </span>
-              </p>
-              <p className="md:text-2xl word-class w-[70vh] text-white absolute poppins-extralight">
-                {item.description}
-              </p>
-            </div>
-            <div className="m-20 absolute left-[40%]">
-              {/*  {isShowAvl && <button
+                ))}
+              </span>
+            </p>
+            {/* Description */}
+            <p className="text-white text-base poppins-extralight mb-8 max-w-xl">
+              {item.description}
+            </p>
+            {/* Book Tickets Button */}
+            {isShowAvl && (
+              <button
                 onClick={handleGetTheatres}
-                className="btn hover:bg-transparent shadow-md bg-gradient-to-br from-white/90 via-white/80 to-white/90 shadow-slate-800/90 w-64 border-none text-black rounded-lg hover:text-white overflow-hidden "
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="btn w-64 border border-white/20 hover:border-white text-white rounded-lg overflow-hidden
+                            backdrop-blur-md bg-white/10 hover:bg-white/20
+                            shadow-[0_0_10px_rgba(255,255,255,0.3)]
+                            hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]
+                            transition-all duration-300 flex items-center justify-center
+                            mt-auto"
               >
-                <span className="scale-100 text-xl poppins-bold transform transition-transform duration-100">
-                  Book &nbsp;Tickets
+                <span className="text-xl poppins-bold transform transition-transform duration-100">
+                  Book Tickets
                 </span>
-              </button>} */}
-              {isShowAvl && (
-                <button
-                  onClick={handleGetTheatres}
-                  className="btn w-64 border border-white/20 hover:border-white text-white rounded-lg overflow-hidden 
-               backdrop-blur-md bg-white/10 hover:bg-white/20 
-               shadow-[0_0_10px_rgba(255,255,255,0.3)] 
-               hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] 
-               transition-all duration-300 flex items-center justify-center"
-                >
-                  <span className="text-xl poppins-bold transform transition-transform duration-100">
-                    Book &nbsp;Tickets
-                  </span>
-                </button>
-              )}
-            </div>
+              </button>
+            )}
           </div>
-          {/* poster */}
+          {/* Poster and Trailer Button for large screens */}
           <div
-            className="absolute flex items-center justify-center w-[35vh] ring-indigo-900/20 ring-1 ring-offset-1 ring-offset-slate-800/50 h-[90%] bg-center bg-cover bg-no-repeat rounded-xl shadow-slate-800/80 shadow-xl"
+            className="relative -right-28 top-0 shrink-0
+                    w-[250px] h-[375px]
+                    bg-center bg-cover bg-no-repeat rounded-xl shadow-slate-800/80 shadow-xl
+                    ring-indigo-900/20 ring-1 ring-offset-1 ring-offset-slate-800/50"
             style={{
               backgroundImage: `url('${item?.poster}')`,
-              right: "10%",
-              top: "14%",
-              transform: "translateY(-10%)",
             }}
           >
             <button
               type="button"
-              disabled={Object.values(item.trailers).includes("tba") == true}
+              disabled={
+                !item.trailers ||
+                item.trailers.length === 0 ||
+                item.trailers.every((t) => Object.values(t).includes("tba"))
+              }
               onClick={() => document.getElementById("my_modal_2").showModal()}
-              className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular"
+              className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
+                        absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
             >
-              {item.trailers.length > 0
+              {item.trailers && item.trailers.length > 0
                 ? `${item.trailers.reduce(
                     (total, trailer) => total + trailer.trailerUrl.length,
                     0
                   )} Trailer(s)`
-                : ""}
+                : "No Trailers"}
             </button>
 
             <div className="absolute bg-black bg-opacity-50 h-8 w-full rounded-b-xl bottom-0"></div>
-            <div className=" btn-ghost h-[10vh] rounded-xl inset-0 opacity-100  ">
-              {" "}
-              <p className="text-white absolute bottom-1 poppins-regular text-md left-[24%]">
+            <div className="h-[10vh] rounded-xl absolute bottom-0 w-full flex items-center justify-between px-4">
+              <p className="text-white poppins-regular text-md flex items-center">
+                <img src={like} className="h-5 w-5 mr-1" alt="Like icon" />
                 {item.likes >= 1000000
                   ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
                   : item.likes >= 1000
                   ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k"
                   : item.likes}
               </p>
-              <img
-                src={like}
-                className=" bottom-1 left-[6%] absolute h-[31px] w-[31px]"
-              />
-              <div className=" text-white absolute right-5 bottom-1 poppins-regular text-md">
-                {releaseDateObj.toString().substring(8, 10)}{" "}
-                {releaseDateObj.toString().substring(4, 8)}
-                {item.releaseDate.substring(0, 4)}
+              <div className="text-white poppins-regular text-md">
+                {releaseDateObj?.toLocaleDateString("en-US", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </div>
             </div>
           </div>
         </div>
-        {/* cast */}
-        <div className="w-[100%] mt-8 px-16 py-2 rounded-ss-md rounded-e-full rounded-es-2xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-base-300 ">
-          <div className="poppins-semibold text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
-            CAST
+        {/* --- Mobile/Medium Screen Layout (hidden on lg and up) --- */}
+        <div className="relative z-20 w-full h-full flex flex-col justify-between items-center px-4 py-8 lg:hidden">
+          {/* Trailer Button in center */}
+          <div className="flex-grow flex items-center justify-center w-full">
+             <button
+              type="button"
+              disabled={
+                !item.trailers ||
+                item.trailers.length === 0 ||
+                item.trailers.every((t) => Object.values(t).includes("tba"))
+              }
+              onClick={() => document.getElementById("my_modal_2").showModal()}
+              className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
+                        absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
+            >
+              {item.trailers && item.trailers.length > 0
+                ? `${item.trailers.reduce(
+                    (total, trailer) => total + trailer.trailerUrl.length,
+                    0
+                  )} Trailer(s)`
+                : "No Trailers"}
+            </button>
           </div>
-          <div className="text-white poppins-bold text-md flex-wrap flex">
-            {Object.entries(item.cast).map(([member, char], i) => (
-              <div
-                key={i}
-                className="poppins-medium my-5 w-1/8  hover:scale-[1.03] transition-all duration-200 ease-in-out"
-              >
-                <div className="avatar ">
-                  <div className="w-24 rounded-full shadow-md ">
-                    <a
-                      href={`https://www.google.com/search?q=${member
-                        .trim()
-                        .split(" ")
-                        .join("+")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {" "}
-                      <img
-                        src={
-                          !loading
-                            ? Object.entries(castMembers).find(
-                                ([key, url]) =>
-                                  key === member && url !== "No Image"
-                              )?.[1] || user
-                            : user
-                        }
-                      />
-                    </a>
-                  </div>
-                </div>
-                <div className="word-class w-28"> {member} </div>
-                <span className="poppins-extralight-italic text-slate-100/80 word-class w-8">
-                  {char}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* crew */}
-        <div className="w-full mt-8 px-16 py-2 rounded-ss-md rounded-e-full rounded-es-2xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-white/10 ">
-          <div className="poppins-semibold text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
-            CREW
-          </div>
-          <div className="text-white poppins-bold text-xl flex flex-wrap">
-            {item.crew.map((member, i) => (
-              <div
-                key={i}
-                className="poppins-medium my-5 w-1/6 hover:scale-[1.04] hover:translate-y-[-2px] transition-all duration-200 ease-in-out"
-              >
-                <div className="avatar">
-                  <div className="w-32 rounded-xl ring-slate-800/80 ring-2">
-                    <a
-                      href={`https://www.google.com/search?q=${member.name
-                        .trim()
-                        .split(" ")
-                        .join("+")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {" "}
-                      <img
-                        src={
-                          !cLoading
-                            ? Object.entries(crewMembers).find(
-                                ([key, url]) =>
-                                  key === member.name && url !== "No Image"
-                              )?.[1] || user // Fallback to `user` if "No Image"
-                            : user // Display `user` if `cLoading` is true
-                        }
-                        alt={`${member.name}'s profile`}
-                      />
-                    </a>
-                  </div>
-                </div>
-                <div className="word-class w-36">{member.name}</div>
-                <span className="poppins-extralight-italic text-slate-100/80 w-8 word-class">
-                  {member.roles.includes("Director") ? (
-                    <span className="text-transparent poppins-light-italic bg-clip-text bg-gradient-to-r from-indigo-100 via-sky-200 to-teal-100">
-                      {member.roles.join(", ")}
-                    </span>
-                  ) : (
-                    <span>{member.roles.join(", ")}</span>
-                  )}
-                </span>
-              </div>
-            ))}
+
+          {/* Release Date at bottom with black bar */}
+          <div className="w-full bg-black/70 rounded-b-xl py-2 flex justify-center items-center">
+            <div className="text-white poppins-regular text-sm sm:text-base">
+              Release Date:{" "}
+              {releaseDateObj?.toLocaleDateString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Details (Description, Metadata, Book Tickets) for Mobile/Medium screens */}
+      <div className="lg:hidden w-[96%] max-w-7xl mx-auto p-4 sm:p-6 bg-base-200 rounded-xl shadow-lg mt-4">
+        {/* Metadata: Certification, Languages, Formats */}
+        <p className="text-white text-sm sm:text-base poppins-regular opacity-80 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4">
+          <span className="flex items-center">
+            {item.certification === "CERTIFICATION_UA"
+              ? "U/A"
+              : item.certification.substring(14)}{" "}
+            Rated
+          </span>
+          <span className="badge badge-ghost text-white text-xs sm:text-sm border-none bg-white/20">
+            {item.languages.map((lang, i) => (
+              <span key={i} className="px-1">
+                {lang}
+              </span>
+            ))}
+          </span>
+          <span className="badge badge-ghost text-white text-xs sm:text-sm border-none bg-white/20">
+            {item.formats.map((format, i) => (
+              <span key={i} className="px-1">
+                {format}
+              </span>
+            ))}
+          </span>
+        </p>
+
+        {/* Description */}
+        <p className="text-white text-sm sm:text-base poppins-extralight mb-6">
+          {item.description}
+        </p>
+
+        {/* Book Tickets Button */}
+        {isShowAvl && (
+          <button
+            onClick={handleGetTheatres}
+            className="btn w-full border border-white/20 hover:border-white text-white rounded-lg overflow-hidden
+              backdrop-blur-md bg-white/10 hover:bg-white/20
+              shadow-[0_0_10px_rgba(255,255,255,0.3)]
+              hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]
+              transition-all duration-300 flex items-center justify-center"
+          >
+            <span className="text-xl poppins-bold transform transition-transform duration-100">
+              Book Tickets
+            </span>
+          </button>
+        )}
+      </div>
+
+      {/* Cast Section */}
+      <div className="w-[96%] max-w-7xl mx-auto mt-8 px-4 py-6 rounded-xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-base-300">
+        <div className="poppins-semibold text-2xl sm:text-3xl md:text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
+          CAST
+        </div>
+        <div className="text-white poppins-bold text-sm sm:text-base flex flex-wrap justify-center sm:justify-start">
+          {isLoadingContent
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 xl:w-1/8 p-2 flex flex-col items-center text-center"
+                >
+                  <div className="avatar mb-2">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-md skeleton"></div>
+                  </div>
+                  <div className="skeleton h-4 w-3/4 mb-1"></div>
+                  <div className="skeleton h-3 w-1/2"></div>
+                </div>
+              ))
+            : Object.entries(item.cast).map(([member, char], i) => (
+                <div
+                  key={i}
+                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 xl:w-1/8 p-2 flex flex-col items-center text-center
+                           hover:scale-[1.03] transition-all duration-200 ease-in-out"
+                >
+                  <div className="avatar mb-2">
+                    <div className="w-20 sm:w-24 rounded-full shadow-md">
+                      <a
+                        href={`https://www.google.com/search?q=${member
+                          .trim()
+                          .split(" ")
+                          .join("+")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={
+                            Object.entries(castMembers).find(
+                              ([key, url]) =>
+                                key === member && url !== "No Image"
+                            )?.[1] || user
+                          }
+                          alt={`${member}'s profile`}
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="font-semibold text-sm sm:text-base line-clamp-2">
+                    {member}
+                  </div>
+                  <span className="poppins-extralight-italic text-slate-100/80 text-xs sm:text-sm line-clamp-1">
+                    {char}
+                  </span>
+                </div>
+              ))}
+        </div>
+      </div>
+
+      {/* Crew Section */}
+      <div className="w-[96%] max-w-7xl mx-auto mt-8 px-4 py-6 rounded-xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-white/10 mb-8">
+        <div className="poppins-semibold text-2xl sm:text-3xl md:text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
+          CREW
+        </div>
+        <div className="text-white poppins-bold text-sm sm:text-base flex flex-wrap justify-center sm:justify-start">
+          {isLoadingContent
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 p-2 flex flex-col items-center text-center"
+                >
+                  <div className="avatar mb-2">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl ring-slate-800/80 ring-2 skeleton"></div>
+                  </div>
+                  <div className="skeleton h-4 w-3/4 mb-1"></div>
+                  <div className="skeleton h-3 w-1/2"></div>
+                </div>
+              ))
+            : item.crew.map((member, i) => (
+                <div
+                  key={i}
+                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 p-2 flex flex-col items-center text-center
+                           hover:scale-[1.04] hover:translate-y-[-2px] transition-all duration-200 ease-in-out"
+                >
+                  <div className="avatar mb-2">
+                    <div className="w-24 sm:w-28 rounded-xl ring-slate-800/80 ring-2">
+                      <a
+                        href={`https://www.google.com/search?q=${member.name
+                          .trim()
+                          .split(" ")
+                          .join("+")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={
+                            Object.entries(crewMembers).find(
+                              ([key, url]) =>
+                                key === member.name && url !== "No Image"
+                            )?.[1] || user
+                          }
+                          alt={`${member.name}'s profile`}
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="font-semibold text-sm sm:text-base line-clamp-2">
+                    {member.name}
+                  </div>
+                  <span className="poppins-extralight-italic text-slate-100/80 text-xs sm:text-sm line-clamp-1">
+                    {member.roles.includes("Director") ? (
+                      <span className="text-transparent poppins-light-italic bg-clip-text bg-gradient-to-r from-indigo-100 via-sky-200 to-teal-100">
+                        {member.roles.join(", ")}
+                      </span>
+                    ) : (
+                      <span>{member.roles.join(", ")}</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+        </div>
+      </div>
+
+      {/* Trailer Modal */}
       <dialog id="my_modal_2" className="modal language-modal">
         <div className="modal-box max-w-5xl">
           <div className="sticky -top-6 bg-base-100 py-2 border-b-2 border-white/40">
@@ -324,16 +486,15 @@ const MovieDetails = () => {
                       checked={selectedLanguage === language}
                       onChange={(e) => setSelectedLanguage(e.target.value)}
                     />
+
                     <span className="radio-button rounded-2xl">{language}</span>
                   </label>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="ml-32 ">
+          <div className="sm:ml-32 ">
             {/* Filtered trailers based on selected language */}
-
             {item.trailers.filter(
               (trailer) =>
                 selectedLanguage === "All" ||
@@ -345,8 +506,7 @@ const MovieDetails = () => {
                   (trailer) =>
                     selectedLanguage === "All" ||
                     trailer.language === selectedLanguage
-                )
-                .map((trailer, i) => (
+                ).map((trailer, i) => (
                   <div key={i} className="my-4">
                     <h3 className="text-xl font-semibold text-white">
                       {trailer.language} Trailers
@@ -356,9 +516,9 @@ const MovieDetails = () => {
                         <div key={idx} className="flex flex-col items-center">
                           <iframe
                             onClick={() => setActiveVideo(link)}
-                            className="rounded-md mt-2"
-                            width="700"
-                            height="365"
+                            className="rounded-md mt-2 sm:w-[700px] w-[300px] h-[160] sm:h-[365px]"
+                            /* width="700"
+                            height="365" */
                             src={`https://www.youtube.com/embed/${link.substring(
                               17
                             )}`}
@@ -376,18 +536,23 @@ const MovieDetails = () => {
                 ))
             ) : (
               // If no trailers match, show "No videos" message
+
               <div
                 className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center "
                 style={{ width: 700, height: 385 }}
               >
-                <p className="align-middle">No Videos in {selectedLanguage}</p>
+                       
+                <p className="align-middle">No Videos in {selectedLanguage}</p> 
+                   
               </div>
             )}
+             
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button>close</button>
+                    <button>close</button>       {" "}
         </form>
+             {" "}
       </dialog>
     </div>
   );

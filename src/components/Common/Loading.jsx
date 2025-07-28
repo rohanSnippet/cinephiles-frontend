@@ -1,16 +1,21 @@
-import React from 'react'
+import React from "react";
 
 const Loading = () => {
   return (
-      <div className="h-screen justify-center items-center flex">
-        <div className="poppins-extrabold text-3xl text-center text-white space-y-4">
-          <h3>Cinephiles</h3>
-          <div className="">
-            <span className="loading loading-spinner loading-lg text-white/80"></span>
-          </div>
+    <div className="min-h-screen flex justify-center items-center p-4 sm:p-6 lg:p-8 opacity-40">
+      {" "}
+      {/* Added min-h-screen and responsive padding */}
+      <div className="poppins-extrabold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center text-white space-y-4 sm:space-y-6 md:space-y-8">
+        {" "}
+        {/* Responsive font sizes and spacing */}
+        <h3>Cinephiles</h3>
+        <div className="">
+          <span className="loading loading-spinner loading-md sm:loading-lg md:loading-xl text-white/80"></span>{" "}
+          {/* Responsive spinner size */}
         </div>
       </div>
-  )
-}
+    </div>
+  );
+};
 
-export default Loading
+export default Loading;

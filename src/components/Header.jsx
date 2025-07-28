@@ -1,26 +1,44 @@
+// Header.jsx
 import React, { useContext } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import Profile from "./Home/Profile";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "./Context/AuthProvider";
-// import { MdMyLocation } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { MdOutlineAddLocationAlt } from "react-icons/md";
 import useCity from "./Hooks/useCity";
+import useScrollDirection from "./Hooks/useScrollDirection"; // Import the custom hook
 
 const Header = () => {
   const { userData } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const city = useCity();
+  const scrollDirection = useScrollDirection(); // Use the custom hook
 
   const handleSignIn = () => {
     navigate("/login", { state: { nextPath: location.pathname } });
   };
 
   return (
-    <div className="relative w-full">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
+    // Apply conditional classes based on scrollDirection
+    <div
+      className={`
+        w-full fixed top-0 z-max transition-all duration-300 ease-in-out
+        ${
+          scrollDirection === "down"
+            ? "-translate-y-full" // Hide by moving up
+            : "translate-y-0" // Show by moving to original position
+        }
+        ${
+          // Add a background only when scrolling to ensure visibility
+          scrollDirection === "down" || window.pageYOffset > 0
+            ? "bg-gradient-to-b rounded-md from-black/90 via-black/85 to-black/80"
+            : ""
+        }
+      `}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 sm:px-6 lg:px-4">
         <div className="inline-flex items-center space-x-2">
           <span>{/* place your logo here */}</span>
           <span className="font-bold roboto-bold text-2xl hidden md:block text-white">
@@ -38,7 +56,6 @@ const Header = () => {
           />
           <IoSearchOutline className="md:hidden text-white" size={24} />
         </div>
-        {/* <MdMyLocation size={28} className="mr-2  text-gray-100 opacity-90" /> */}
         {city ? (
           <span className="flex mr-4">
             <Link

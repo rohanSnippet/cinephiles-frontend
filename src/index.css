@@ -376,3 +376,8 @@ input[type="radio"]:checked + .radio-button {
     width: 24px; /* Smaller width for smaller screens */
   }
 }
+
+
+.z-max{
+  z-index: 1000;
+}

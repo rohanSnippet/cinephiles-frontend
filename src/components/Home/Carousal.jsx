@@ -64,7 +64,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
       id="cor"
       className="mx-auto md:w-[99%] md:h-[73%] h-[50%] w-[100%] xl:h-[80%] rounded-xl overflow-hidden relative cursor-pointer "
     >
-      <div id="header" className="absolute top-0 left-0 w-full z-10">
+      <div id="header" className="absolute top-0 left-0 w-full z-max">
         {/* Header */}
         <Header />
       </div>

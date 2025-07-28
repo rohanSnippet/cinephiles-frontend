@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import like from "../../assets/like.png";
 import star from "../../assets/star.png";
 import { Link } from "react-router-dom";
@@ -8,14 +8,15 @@ const RecomendedMovieCard = ({ item }) => {
   const { releaseDate, likes } = item;
   const releaseDateObj = new Date(releaseDate);
   const now = Date.now();
+  const hoverRef = useRef();
 
   const displayText = releaseDateObj <= now ? "votes" : "interests";
 
   return (
-    <div className="carousel-item ring-2 ring-white/20 rounded-sm relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40">
+     <div ref={hoverRef} className="carousel-item ring-2 ring-white/20 rounded-xl relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40">
       {item.promoted ? (
         <p
-          className={`absolute bottom-13 poppins-light text-md px-2 text-white bg-green-600 rounded-ss-xl rounded-ee-xl`}
+          className={`absolute bottom-13 group-hover:opacity-20 poppins-light text-md px-2 text-white bg-green-600 rounded-ss-xl rounded-ee-xl z-10`} // Added z-10 to promote tag
         >
           promoted
         </p>
@@ -24,21 +25,22 @@ const RecomendedMovieCard = ({ item }) => {
       )}
       <img
         src={item.poster || noPoster}
-        alt="Burger"
+        alt="Movie Poster" // More descriptive alt text
         loading="lazy"
-        className="object-cover w-full h-full rounded-sm"
+        className="object-cover w-full h-full rounded-xl" // Changed to rounded-xl to match parent
       />
-      <div className="absolute btn-ghost rounded-lg backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300">
+      <div className="absolute btn-ghost backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300 rounded-xl"> {/* Added rounded-xl here */}
         {" "}
         {releaseDateObj <= now ? (
           <img
             src={star}
-            alt=""
+            alt="Star rating"
             className="bottom-[3vh] left-[39%] absolute h-[55px] w-[55px] opacity-80"
           />
         ) : (
           <img
             src={like}
+            alt="Like icon"
             className=" bottom-[3vh] left-[4%] absolute h-[26px] w-[26px]"
           />
         )}

@@ -32,7 +32,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className=" bg-gradient-to-b from-black via-gray-950 to-black w-full h-[100vh] pt-3">
+    <div className=" bg-gradient-to-b from-black via-gray-950 to-black w-full h-[100vh]">
       {/* carousal */}
       <Carousal
         onDownArrowClick={handleScrollAndHideArrow}
