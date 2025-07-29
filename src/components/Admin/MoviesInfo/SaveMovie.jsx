@@ -105,7 +105,7 @@ const SaveMovie = () => {
 
     const transformCrew = { ...data.crew };
     const crew = transformCrewObject(transformCrew);
-    const trailers = transformTrailersObject(data.trailers)
+    const trailers = transformTrailersObject(data.trailers);
     const releaseDate = new Date(data.releaseDate).toISOString().split("T")[0];
 
     const movieData = {
@@ -184,19 +184,7 @@ const SaveMovie = () => {
   const handleURLChange = (event) => {
     setTrailerURL(event.target.value);
   };
-  /*  const handleAddTrailer = () => {
-    if (trailerLang && trailerURL) {
-      const updatedTrailers = {
-        ...getValues("trailers"),
-        [trailerLang]: trailerURL,
-      };
-      setTrailers(updatedTrailers);
-      setValue("trailers", updatedTrailers);
 
-      setTrailerLang("");
-      setTrailerURL("");
-    }
-  }; */
   const handleAddTrailer = () => {
     if (trailerLang && trailerURL) {
       const updatedTrailers = {
@@ -215,19 +203,10 @@ const SaveMovie = () => {
     }
   };
 
-  const handleDeleteTrailer = (language, urlToDelete) => {
-    const updatedTrailers = {
-      ...trailers,
-      [language]: trailers[language].filter((url) => url !== urlToDelete),
-    };
-
-    // Remove the key if no URLs are left
-    if (updatedTrailers[language].length === 0) {
-      delete updatedTrailers[language];
-    }
-
-    setTrailers(updatedTrailers);
-    setValue("trailers", updatedTrailers);
+  const handleDeleteTrailer = (lang, url) => {
+    const updated = { ...trailers };
+    delete updated[lang]; // ✅ correctly delete key from the trailers object
+    setTrailers(updated);
   };
 
   const handleNameChange = (event) => {
@@ -280,8 +259,16 @@ const SaveMovie = () => {
   // console.log(posterImage);
   // console.log(bannerImage);
   const closeDialog = () => {
-    document.getElementById("my_modal_1").close();
-  };
+  // Determine which modal is open and close it
+  const modal1 = document.getElementById("my_modal_1");
+  const modal2 = document.getElementById("my_modal_2");
+  if (modal1 && modal1.open) {
+    modal1.close();
+  }
+  if (modal2 && modal2.open) {
+    modal2.close();
+  }
+};
   const handleRemoveCrew = (index, team) => {
     if (team == "crew") {
       const updatedCrew = Object.entries(crew).filter(
@@ -297,7 +284,7 @@ const SaveMovie = () => {
       setValue("cast", updatedCast);
     }
   };
-  const removeImage = (name) => {
+  /* const removeImage = (name) => {
     if (name === "poster") {
       setMovie((prevMovie) => ({
         ...prevMovie,
@@ -311,7 +298,26 @@ const SaveMovie = () => {
       }));
       setBannerImage("");
     }
-  };
+  }; */
+
+  const removeImage = (name) => {
+  if (name === 'poster') {
+    setPosterImage('');
+  }else{
+    setBannerImage('')
+  }
+};
+  const handleImageChange = (imageUrl, name) => {
+  if (name === 'poster') {
+    setPosterImage(imageUrl);
+     saveImage(imageUrl, name);
+     closeDialog();
+  }else{
+    setBannerImage(imageUrl);
+    saveImage(imageUrl, name);
+    closeDialog();
+  }
+};
   const textFieldStyles = {
     "& .MuiOutlinedInput-root": {
       "& fieldset": {
@@ -337,18 +343,18 @@ const SaveMovie = () => {
       <div className="rounded-xl w-full h-full poppins-regular">
         {/* modal for poster */}
         <dialog id="my_modal_1" className="modal">
-          <div className="modal-box bg-gray-900 text-white">
+          <div className="modal-box bg-gray-800 text-white rounded-lg shadow-xl p-6">
             {/* Dropzone to upload image */}
             <MyDropzone
-              setImage={setPosterImage}
-              closeDialog={closeDialog}
-              saveImage={saveImage}
+              onImageChange={handleImageChange} // Use the new prop
+              currentImage={posterImage} // Pass the current image state
               name="poster"
+              onRemoveImage={removeImage} // Pass the remove function
             />
 
-            <div className="text-center">
+            <div className="text-center my-4">
               <label
-                className="block text-center poppins-light my-2 text-white text-md font-bold mb-2"
+                className="block text-center poppins-light text-gray-400 text-md font-semibold mb-2"
                 htmlFor="title"
               >
                 OR
@@ -356,29 +362,48 @@ const SaveMovie = () => {
 
               {/* URL input field */}
               <TextField
-                label="URL"
+                label="Image URL"
                 type="text"
                 name="poster"
-                className="w-[58vh]"
+                className="w-full" // Use w-full for better responsiveness
                 variant="outlined"
                 value={posterImage}
                 onChange={(e) => setPosterImage(e.target.value)}
-                sx={textFieldStyles}
+                sx={{
+                  ...textFieldStyles,
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.23)", // Lighter border
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "white", // White on hover
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#818CF8", // A subtle purple/blue accent for focus
+                    },
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "rgba(255, 255, 255, 0.7)", // Lighter label
+                  },
+                  "& .MuiInputBase-input": {
+                    color: "white",
+                  },
+                }}
               />
 
               {/* Remove button to set image to null */}
               <button
-                className="btn bg-gray-700 text-white mt-2"
+                className="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md mt-4 transition duration-300 ease-in-out"
                 onClick={() => removeImage("poster")}
               >
-                Remove
+                Remove Image
               </button>
             </div>
 
-            <div className="modal-action">
+            <div className="modal-action flex justify-end gap-3">
               {/* Save button - saves image and closes modal */}
               <button
-                className="btn bg-gray-700 text-white"
+                className="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
                 onClick={() => {
                   saveImage(posterImage, "poster");
                   closeDialog();
@@ -389,7 +414,7 @@ const SaveMovie = () => {
 
               {/* Close button - just closes modal without saving */}
               <button
-                className="btn bg-gray-700 text-white"
+                className="btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
                 onClick={closeDialog}
               >
                 Close
@@ -1015,35 +1040,82 @@ const SaveMovie = () => {
         </form>
         {/* {modal for banner} */}
         <dialog id="my_modal_2" className="modal">
-          <div className="modal-box bg-gray-900 text-white">
+          <div className="modal-box bg-gray-800 text-white rounded-lg shadow-xl p-6">
+            {/* Dropzone to upload image */}
             <MyDropzone
-              setImage={setBannerImage}
-              saveImage={saveImage}
-              closeDialog={closeDialog}
+              onImageChange={handleImageChange} // Use the new prop
+              currentImage={bannerImage} // Pass the current image state
               name="banner"
+              onRemoveImage={removeImage} // Pass the remove function
             />
-            <div className="text-center">
+
+            <div className="text-center my-4">
               <label
-                className="block text-center poppins-light my-2 text-white text-md font-bold mb-2"
+                className="block text-center poppins-light text-gray-400 text-md font-semibold mb-2"
                 htmlFor="title"
               >
                 OR
               </label>
+
+              {/* URL input field */}
               <TextField
-                label="URL"
+                label="Image URL"
                 type="text"
                 name="banner"
-                className="w-[58vh]"
+                className="w-full" // Use w-full for better responsiveness
                 variant="outlined"
                 value={bannerImage}
                 onChange={(e) => setBannerImage(e.target.value)}
-                sx={textFieldStyles}
+                sx={{
+                  ...textFieldStyles,
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "rgba(255, 255, 255, 0.23)", // Lighter border
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "white", // White on hover
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#818CF8", // A subtle purple/blue accent for focus
+                    },
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "rgba(255, 255, 255, 0.7)", // Lighter label
+                  },
+                  "& .MuiInputBase-input": {
+                    color: "white",
+                  },
+                }}
               />
+
+              {/* Remove button to set image to null */}
+              <button
+                className="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md mt-4 transition duration-300 ease-in-out"
+                onClick={() => removeImage("poster")}
+              >
+                Remove Image
+              </button>
             </div>
-            <div className="modal-action">
-              <form method="dialog">
-                <button className="btn bg-gray-700 text-white">Close</button>
-              </form>
+
+            <div className="modal-action flex justify-end gap-3">
+              {/* Save button - saves image and closes modal */}
+              <button
+                className="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
+                onClick={() => {
+                  saveImage(posterImage, "poster");
+                  closeDialog();
+                }}
+              >
+                Save
+              </button>
+
+              {/* Close button - just closes modal without saving */}
+              <button
+                className="btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
+                onClick={closeDialog}
+              >
+                Close
+              </button>
             </div>
           </div>
         </dialog>

@@ -11,13 +11,15 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
   const [bookingData, setBookingData] = useState(() => {
     if (location.state?.selectedData) {
-      return {
+      let data = {
         selectedData: location.state.selectedData,
         movie: location.state.movie,
         updatedScreen: location.state.updatedScreen,
         selectedDate: location.state.selectedDate,
         selectedShow: location.state.selectedShow,
       };
+      sessionStorage.getItem("bookingData", JSON.stringify(data))
+      return data;
     } else {
       const cached = sessionStorage.getItem("bookingData");
       if (cached) {
@@ -192,7 +194,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     return () => clearInterval(interval);
   }, [selectedData, axiosSecure, bookingData, unlockSeats]);
 
-  useEffect(() => {
+ /*  useEffect(() => {
     const handleBeforeUnload = () => {
       if (selectedData && !unlockCalled.current) {
         const payload = JSON.stringify({
@@ -205,19 +207,67 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
           }/bookings/unlock-seats-beacon`,
           payload
         );
-        sessionStorage.removeItem("bookingData");
+        //sessionStorage.removeItem("bookingData");
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [selectedData]);
+  }, [selectedData]); */
 
   useEffect(() => {
-    if (!selectedData) {
-      navigate(fallbackPath, { replace: true });
-    }
+    /* if (!selectedData) {
+      navigate(fallbackPath, { state:{item:movie},replace: true });
+    } */
+    if (bookingData === null) {
+    navigate(fallbackPath, { state: { item: movie }, replace: true });
+  }
   }, [selectedData, navigate, fallbackPath]);
+
+  const handleBack = async () => {
+    if (!selectedData) {
+      navigate(fallbackPath, { replace: true, state: { item: movie } });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Cancel Booking?",
+      text: "Going back will cancel your booking and release the seats. Continue?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, cancel and go back",
+      cancelButtonText: "No, stay here",
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#3085de",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: false,
+      preConfirm: () =>
+        axiosSecure.delete(`/bookings/unlock-seats?showId=${selectedData.showId}&user=${selectedData.user}`)
+          .then((response) => {
+            if (response.data !== "Seats unlocked using unlock seats....") {
+              throw new Error("Seat unlock failed");
+            }
+            return true;
+          })
+          .catch((err) => {
+            Swal.showValidationMessage(`Unlock failed: ${err.message}`);
+            throw err;
+          }),
+    });
+
+    console.log(result)
+
+    if (result.isConfirmed) {
+      console.log(window.history.length)
+      
+      if (window.history.length > 1) {
+        console.log("navigate -1 called")
+        navigate(-1);
+      } else {
+        navigate(fallbackPath, { replace: true, state: { item: movie } });
+      }
+    }
+  };
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -308,6 +358,29 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
   return (
     <div className="flex flex-col md:flex-row w-full min-h-screen">
+      <div className="fixed top-4 left-4 z-50">
+      <button
+        onClick={handleBack}
+        className="flex items-center text-white bg-slate-700 hover:bg-slate-600 transition rounded-full px-3 py-1 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        <span className="hidden sm:inline">Back</span>
+      </button>
+    </div>
+
       {/* Mobile Snack Bar Toggle Button */}
       <div className="md:hidden w-full bg-slate-800 p-3 text-center">
         <button
@@ -328,8 +401,9 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
       {/* Left Side - Snacks (Desktop) */}
       <div className="hidden md:block md:w-3/5 lg:w-2/4 overflow-y-auto min-h-screen bg-slate-900 shadow-xl">
+         
         <div className="bg-gradient-to-br from-fuchsia-900 to-purple-800 text-white p-6 h-1/5 flex items-center justify-center text-3xl font-bold poppins-bold">
-          Delicious Treats Await!
+        Delicious Treats Await!
         </div>
         <div className="p-6 h-4/5">
           <h3 className="text-2xl font-semibold text-white mb-6 poppins-medium">

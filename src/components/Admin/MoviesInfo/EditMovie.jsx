@@ -396,7 +396,17 @@ const getYouTubeVideoId = (url) => {
     }),
   };
 
-
+  const handleImageChange = (imageUrl, name) => {
+  if (name === 'poster') {
+    setPosterImage(imageUrl);
+     saveImage(imageUrl, name);
+     closeDialog1();
+  }else{
+    setBannerImage(imageUrl);
+    saveImage(imageUrl, name);
+    closeDialog2();
+  }
+};
   return (
     <div>
       <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
@@ -408,11 +418,10 @@ const getYouTubeVideoId = (url) => {
           <div className="modal-box bg-gray-900 text-white">
             {/* Dropzone to upload image */}
             <MyDropzone
-              setImage={setPosterImage}
-              closeDialog1={closeDialog1}
-              closeDialog2={null}
-              saveImage={saveImage}
+              onImageChange={handleImageChange} // Use the new prop
+              currentImage={posterImage} // Pass the current image state
               name="poster"
+              onRemoveImage={removeImage} // Pass the remove function
             />
 
             <div className="text-center">
@@ -1148,12 +1157,12 @@ const getYouTubeVideoId = (url) => {
         {/* {modal for banner} */}
         <dialog id="my_modal_2" className="modal">
           <div className="modal-box bg-gray-900 text-white">
-            <MyDropzone
-              setImage={setBannerImage}
-              saveImage={saveImage}
-              closeDialog1={null}
-              closeDialog2={closeDialog2}
+           <MyDropzone
+              onImageChange={handleImageChange} // Use the new prop
+              currentImage={bannerImage} // Pass the current image state
               name="banner"
+              onRemoveImage={removeImage}
+              closeDialog={closeDialog1} // Pass the remove function
             />
             <div className="text-center">
               <label

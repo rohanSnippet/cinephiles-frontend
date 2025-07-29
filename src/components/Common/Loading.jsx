@@ -2,9 +2,7 @@ import React from "react";
 
 const Loading = () => {
   return (
-    <div className="min-h-screen flex justify-center items-center p-4 sm:p-6 lg:p-8 opacity-40">
-      {" "}
-      {/* Added min-h-screen and responsive padding */}
+     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
       <div className="poppins-extrabold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center text-white space-y-4 sm:space-y-6 md:space-y-8">
         {" "}
         {/* Responsive font sizes and spacing */}
@@ -15,6 +13,7 @@ const Loading = () => {
         </div>
       </div>
     </div>
+
   );
 };
 

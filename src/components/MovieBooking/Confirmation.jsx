@@ -83,7 +83,7 @@ const Confirmation = () => {
             <p className="text-gray-100 text-sm">Congrats! Coupons Unlocked.</p>
             <button
               className="bg-amber-500/80 text-white px-3 py-1 rounded text-sm poppins-light"
-              onClick={navigate("/")}
+              onClick={() => navigate("/")}
             >
               Home Page
             </button>
