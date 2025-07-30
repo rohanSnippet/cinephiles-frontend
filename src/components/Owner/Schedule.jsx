@@ -258,7 +258,7 @@ const Schedule = ({ screen, selectedDate, isSelected }) => {
             return (
               <div
                 key={show.id}
-                className="absolute h-full rounded-xl bg-gradient-to-b from-slate-900/90 to-purple-800/30 bg-gradient-to-r from-black/50 via-transparent to-black/40 tooltip tooltip-top"
+                className="absolute h-full rounded-xl sm:bg-gradient-to-b sm:from-slate-900/90 sm:to-purple-800/30 bg-gradient-to-r from-black/50 via-transparent to-black/40 tooltip tooltip-top"
               data-tip={`Actual runtime : ${show.runtime} minutes`}
                 style={{
                   left: startPos,

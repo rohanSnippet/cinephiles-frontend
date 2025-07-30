@@ -358,7 +358,7 @@ const BookSeats = () => {
         <div className="ring-2 ring-slate-600/60 w-full md:w-2/5 rounded-md bg-gradient-to-tr from-transparent via-slate-900 to-transparent shadow-md shadow-slate-700/60 sm:my-0 my-2">
           <div className="flex flex-col items-center md:flex-row md:gap-x-8 md:ml-5">
             <h2
-              className={`roboto-light text-xl mt-2 text-wrap text-balance ${
+              className={`roboto-light text-xl mt-2 text-wrap ${
                 movie.title.length > 10 ? "text-sm md:text-md" : "md:text-3xl"
               }`}
             >
