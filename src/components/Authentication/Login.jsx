@@ -7,7 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import insta from "../../assets/insta.png";
 import { AuthContext } from "../Context/AuthProvider";
 import { FaGithubAlt } from "react-icons/fa";
-import axios from "axios";
+import { baseURL } from "../Services/URL";
 
 const Login = () => {
   const [user, setUser] = useState({ username: "", password: "" });
@@ -109,12 +109,12 @@ const Login = () => {
       }
     }
   };
-
+console.log(baseURL)
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8082/oauth2/authorization/google";
+    window.location.href = `${baseURL}/oauth2/authorization/google`;
   };
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:8082/oauth2/authorization/github";
+    window.location.href = `${baseURL}/oauth2/authorization/github`;
   };
   const handleEye = () => setVisible(!visible);
 

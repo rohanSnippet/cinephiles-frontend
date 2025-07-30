@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import {  SignUpUser, userLogin } from "../Services/URL";
+import {  baseURL, SignUpUser, userLogin } from "../Services/URL";
 import axios from "axios";
 
 export const AuthContext = createContext();
@@ -40,7 +40,7 @@ const AuthProvider = ({ children }) => {
 
     //****************** OAuth2 Methods **********************************/
  const googleSignUp =()=>{
-  window.location.href = "http://localhost:8082/oauth2/authorization/google";
+  window.location.href = `${baseURL}/oauth2/authorization/google`;
  }
 
   //****************** Refresh token Methods **********************************/
@@ -73,7 +73,7 @@ console.log(userData)
   useEffect(() => {
    
      const getSession = ()=>{
-      axios.get(`http://localhost:8082/auth/user-info`,{withCredentials:true}).then((res)=>{
+      axios.get(`${baseURL}/auth/user-info`,{withCredentials:true}).then((res)=>{
         console.log(res.data)
          localStorage.setItem("username",res.data.email)
              setSession(res.data)
@@ -87,7 +87,7 @@ console.log(userData)
   getSession();   
 
    const handleOAuth2Response = async () => {
-    const response = await fetch('http://localhost:8082/auth/callback', {
+    const response = await fetch(`${baseURL}/auth/callback`, {
         method: 'GET',
         credentials: 'include',
     });

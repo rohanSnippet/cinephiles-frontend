@@ -6,7 +6,8 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import { styled } from "@mui/material/styles";
 import Swal from "sweetalert2";
-
+import { useNavigate } from "react-router-dom";
+import { cloudURL } from "../Services/cloudinaryConfig";
 
 const CustomTextField = styled(TextField)(() => ({
   "& .MuiInputBase-input": {
@@ -35,12 +36,12 @@ const CustomTextField = styled(TextField)(() => ({
   },
 }));
 const UpdateProfile = () => {
+  const navigate = useNavigate();
   const [image, setImage] = useState(null);
   const [currUser, setCurrUser] = useState({});
   const [updatedUser, setUpdatedUser] = useState({});
   const [publicId, setPublicId] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const cloudURL = `https://api.cloudinary.com/v1_1/cinephiles-app/image`;
   const axiosSecure = useAxiosSecure();
 
   const handleChange = (e) => {
@@ -53,7 +54,10 @@ const UpdateProfile = () => {
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
+      color:"white",
       icon: "warning",
+      fontFamily:"poppins",
+      background: "rgba(43, 43, 46, 0.845)",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
@@ -64,6 +68,11 @@ const UpdateProfile = () => {
           title: "Done!",
           text: "Your profile has been Updated.",
           icon: "success",
+          color:"white",
+          fontFamily:"poppins",
+          background: "rgba(43, 43, 46, 0.845)",
+          showCloseButton:false,
+          timer:500
         }).then(updateData(e));
       }
     });
@@ -72,9 +81,9 @@ const UpdateProfile = () => {
     if (image) {
       const data = new FormData();
       data.append("file", image);
-      data.append("upload_preset", "Cinephiles");
-      data.append("cloud_name", "cinephiles-app");
-      data.append("folder", "user-profiles");
+      data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+      data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUDNAME);
+      data.append("folder", import.meta.env.VITE_CLOUDINARY_FOLDER);
 
       try {
         const res = await fetch(`${cloudURL}/upload`, {
@@ -93,7 +102,9 @@ const UpdateProfile = () => {
         `/user/update-user/${currUser.id}`,
         updatedUser
       );
-      console.log("User updated successfully", res.data);
+      console.log("User updated successfully", res);
+
+      if(res.status == 200) navigate("/");
     } catch (err) {
       console.error("Error updating user", err);
     }
@@ -115,229 +126,303 @@ const UpdateProfile = () => {
 
   const closeDialog = () => {
     document.getElementById("my_modal_1").close();
-  };    
+  };
 
-   console.log(currUser)
-  // console.log("Updated User : ",updatedUser)
-  
+  const deleteImage = () => {
+    setImage(null);
+    setUpdatedUser((prev) => ({ ...prev, profile: "" }));
+  };
 
-  const deleteImage =()=>{
-    updatedUser.profile="";
-  }
+  const handleImageChange = (imageFileOrUrl, name) => {
+    setImage(imageFileOrUrl);
+    setUpdatedUser((prev) => ({ ...prev, [name]: imageFileOrUrl }));
+    closeDialog();
+  };
+
+  const textFieldStyles = {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "gray",
+      },
+      "&:hover fieldset": {
+        borderColor: "lightgray",
+      },
+    },
+    "& .MuiInputBase-input": {
+      color: "white",
+    },
+    "& .MuiInputLabel-root": {
+      color: "gray",
+    },
+  };
   return (
     <div className="relative w-full h-full bg-gradient-to-tr from-slate-700 via-slate-900 to-slate-700 text-white p-8">
-  {/* Profile Modal */}
-  <dialog id="my_modal_1" className="modal">
-    <div className="modal-box bg-gray-900 text-white">
-      <h3 className="poppins-bold text-lg text-center">UPLOAD PROFILE PICTURE</h3>
-      <MyDropzone setImage={setImage} closeDialog={closeDialog} />
-      <p className="py-4">
-        Press ESC key or click the button below to close
-      </p>
-      <div className="modal-action">
-        <form method="dialog">
-          <button className="btn bg-gray-700 text-white">Close</button>
-        </form>
-      </div>
-    </div>
-  </dialog>
+      {/* Profile Modal */}
+      <dialog id="my_modal_1" className="modal">
+        <div className="modal-box bg-gray-900 text-white">
+          {/* Dropzone to upload image */}
+          <MyDropzone
+            onImageChange={handleImageChange} // Use the new prop
+            currentImage={image} // Pass the current image state
+            name="profile"
+            onRemoveImage={deleteImage} // Pass the remove function
+          />
 
-  {/* Form to fill details */}
-  <form
-    onSubmit={handleSubmit}
-    className="max-w-xl mx-auto bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600 rounded-lg p-8"
-  >
-    {/* Profile Picture Section */}
-    <div className="relative mb-8 mx-auto justify-center flex">
-      <div className="avatar mx-auto mb-4">
-        <div className="w-48 rounded-full overflow-hidden">
-          <img
-            src={
-              image
-                ? image || URL.createObjectURL(image)
-                : currUser.profile ||
-                  "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            }
-            alt="Profile"
+          <div className="text-center">
+            <label
+              className="block text-center poppins-light my-2 text-white text-md font-bold mb-2"
+              htmlFor="title"
+            >
+              OR
+            </label>
+
+            {/* URL input field */}
+            <TextField
+              label="URL"
+              type="text"
+              name="profile"
+              className="w-[58vh]"
+              variant="outlined"
+              value={image || ""}
+              onChange={(e) => {
+                setImage(e.target.value);
+                setUpdatedUser((prev) => ({
+                  ...prev,
+                  profile: e.target.value,
+                }));
+              }}
+              sx={textFieldStyles}
+            />
+
+            {/* Remove button to set image to null */}
+            <button
+              className="btn bg-gray-700 text-white mt-2"
+              onClick={() => deleteImage()}
+            >
+              Remove
+            </button>
+          </div>
+
+          <div className="modal-action">
+            {/* Save button - saves image and closes modal */}
+            <button
+              className="btn bg-gray-700 text-white"
+              onClick={() => {
+                setImage(image);
+                closeDialog();
+              }}
+            >
+              Save
+            </button>
+
+            {/* Close button - just closes modal without saving */}
+            <button
+              className="btn bg-gray-700 text-white"
+              onClick={closeDialog} // ✅ Don't call the function immediately
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Form to fill details */}
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-xl mx-auto bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600 rounded-lg p-8"
+      >
+        {/* Profile Picture Section */}
+        <div className="relative mb-8 mx-auto justify-center flex">
+          <div className="avatar mx-auto mb-4">
+            <div className="w-48 rounded-full overflow-hidden">
+              <img
+                src={
+                  image
+                    ? typeof image === "string"
+                      ? image
+                      : URL.createObjectURL(image)
+                    : currUser.profile ||
+                      "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                }
+                alt="Profile"
+              />
+            </div>
+          </div>
+
+          {/* Buttons on Top of the Image */}
+          <div className="absolute top-[60%] right-[50%] transform translate-x-1/2 translate-y-1/2 space-x-2">
+            <button
+              type="button"
+              className="btn bg-gray-700 text-white rounded-full px-4 py-2 shadow-md"
+              onClick={() => deleteImage()}
+            >
+              Remove
+            </button>
+            <button
+              type="button"
+              className="btn bg-gray-700 text-white rounded-full px-4 py-2 shadow-md"
+              onClick={() => document.getElementById("my_modal_1").showModal()}
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+
+        {/* Form Fields */}
+        <div className="mb-4">
+          <CustomTextField
+            label="Email"
+            type="email"
+            name="username"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.username || ""}
+            onChange={handleChange}
           />
         </div>
-      </div>
 
-      {/* Buttons on Top of the Image */}
-      <div className="absolute top-[60%] right-[50%] transform translate-x-1/2 translate-y-1/2 space-x-2">
-        <button
-          type="button"
-          className="btn bg-gray-700 text-white rounded-full px-4 py-2 shadow-md"
-          onClick={() => deleteImage()}
-        >
-          Remove
+        <div className="mb-4">
+          <CustomTextField
+            label="Phone Number"
+            type="tel"
+            name="phone"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.phone || ""}
+            onChange={handleChange}
+            inputProps={{ maxLength: 10 }}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="First Name"
+            type="text"
+            name="firstName"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.firstName || ""}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="Last Name"
+            type="text"
+            name="lastName"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.lastName || ""}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            type={isFocused || updatedUser.dob ? "date" : "text"} // Change the type based on focus or value
+            label={!isFocused && !updatedUser.dob ? "Date of Birth" : ""}
+            name="dob"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.dob || ""}
+            onChange={handleChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={!isFocused && !updatedUser.dob ? "Date of Birth" : ""} // Set placeholder conditionally
+            className={`relative ${isFocused || updatedUser.dob ? "pt-4" : ""}`} // Adjust padding for label space
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            select
+            label="Gender"
+            name="gender"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.gender || ""}
+            onChange={handleChange}
+          >
+            <MenuItem value="Male">Male</MenuItem>
+            <MenuItem value="Female">Female</MenuItem>
+            <MenuItem value="Others">Others</MenuItem>
+          </CustomTextField>
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="Address Line"
+            type="text"
+            name="addressLine"
+            fullWidth
+            variant="outlined"
+            multiline
+            value={updatedUser.addressLine || ""}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="City"
+            type="text"
+            name="city"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.city || ""}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            select
+            label="State"
+            name="state"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.state || ""}
+            onChange={handleChange}
+          >
+            {states.map((state) => (
+              <MenuItem key={state.value} value={state.value}>
+                {state.label}
+              </MenuItem>
+            ))}
+          </CustomTextField>
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="Pincode"
+            type="text"
+            name="pincode"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.pincode || ""}
+            onChange={handleChange}
+            inputProps={{ maxLength: 6 }}
+          />
+        </div>
+
+        <div className="mb-4">
+          <CustomTextField
+            label="Landmark"
+            type="text"
+            name="landmark"
+            fullWidth
+            variant="outlined"
+            value={updatedUser.landmark || ""}
+            onChange={handleChange}
+          />
+        </div>
+
+        <button type="submit" className="btn bg-base-100 text-white w-full">
+          Update Profile
         </button>
-        <button
-          type="button"
-          className="btn bg-gray-700 text-white rounded-full px-4 py-2 shadow-md"
-          onClick={() => document.getElementById("my_modal_1").showModal()}
-        >
-          Edit
-        </button>
-      </div>
+      </form>
     </div>
-
-    {/* Form Fields */}
-    <div className="mb-4">
-      <CustomTextField
-        label="Email"
-        type="email"
-        name="username"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.username || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="Phone Number"
-        type="tel"
-        name="phone"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.phone || ""}
-        onChange={handleChange}
-        inputProps={{ maxLength: 10 }}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="First Name"
-        type="text"
-        name="firstName"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.firstName || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="Last Name"
-        type="text"
-        name="lastName"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.lastName || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        type={isFocused || updatedUser.dob ? "date" : "text"} // Change the type based on focus or value
-        label={!isFocused && !updatedUser.dob ? "Date of Birth" : ""}
-        name="dob"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.dob || ""}
-        onChange={handleChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        placeholder={!isFocused && !updatedUser.dob ? "Date of Birth" : ""} // Set placeholder conditionally
-        className={`relative ${isFocused || updatedUser.dob ? "pt-4" : ""}`} // Adjust padding for label space
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        select
-        label="Gender"
-        name="gender"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.gender || ""}
-        onChange={handleChange}
-      >
-        <MenuItem value="Male">Male</MenuItem>
-        <MenuItem value="Female">Female</MenuItem>
-        <MenuItem value="Others">Others</MenuItem>
-      </CustomTextField>
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="Address Line"
-        type="text"
-        name="addressLine"
-        fullWidth
-        variant="outlined"
-        multiline
-        value={updatedUser.addressLine || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="City"
-        type="text"
-        name="city"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.city || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        select
-        label="State"
-        name="state"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.state || ""}
-        onChange={handleChange}
-      >
-        {states.map((state) => (
-          <MenuItem key={state.value} value={state.value}>
-            {state.label}
-          </MenuItem>
-        ))}
-      </CustomTextField>
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="Pincode"
-        type="text"
-        name="pincode"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.pincode || ""}
-        onChange={handleChange}
-        inputProps={{ maxLength: 6 }}
-      />
-    </div>
-
-    <div className="mb-4">
-      <CustomTextField
-        label="Landmark"
-        type="text"
-        name="landmark"
-        fullWidth
-        variant="outlined"
-        value={updatedUser.landmark || ""}
-        onChange={handleChange}
-      />
-    </div>
-
-    <button type="submit" className="btn bg-base-100 text-white w-full">
-      Update Profile
-    </button>
-  </form>
-</div>
-
   );
 };
 

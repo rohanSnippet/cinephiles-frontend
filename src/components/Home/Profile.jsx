@@ -7,6 +7,7 @@ import useAxiosSecure from "../Hooks/AxiosSecure";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../Context/AuthProvider";
 import Loading from "../Common/Loading";
+import { baseURL, frontURL } from "../Services/URL";
 
 const Profile = () => {
   const { session, setSession } = useContext(AuthContext);
@@ -37,7 +38,7 @@ const Profile = () => {
     
   
       try {
-        const response = await fetch("http://localhost:8082/auth/logout", {
+        const response = await fetch(`${baseURL}/auth/logout`, {
           method: "POST",
           credentials: "include",
         });
@@ -55,7 +56,7 @@ const Profile = () => {
           });
 
           setTimeout(() => {
-            window.location.href = "http://localhost:5173/";
+            window.location.href = frontURL ;
           }, 1000);
         } 
       } catch (error) {

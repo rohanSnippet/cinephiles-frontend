@@ -1,6 +1,6 @@
 import { SHA1 } from "crypto-js";
 
-const cloudURL = `https://api.cloudinary.com/v1_1/cinephiles-app/image`;
+export const cloudURL = import.meta.env.VITE_CLOUDINARY_API;
 
 export const uploadImageToCloud = async (image, folder_name) => {
   if ((image, folder_name)) {

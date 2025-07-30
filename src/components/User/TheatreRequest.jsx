@@ -8,8 +8,8 @@ import { useNavigate } from "react-router-dom";
 // import { allStates } from "../../assets/states.json";
 
 const config = {
-  cUrl: "https://api.countrystatecity.in/v1/countries",
-  ckey: "M0E4amQ3a2xydU14NkJHcWxPTG0weEI4UmN5eThwMmxqQUdIZXNsdg==",
+  cUrl: import.meta.env.VITE_LOCATION_URL,
+  ckey: import.meta.env.VITE_LOCATION_KEY,
 };
 
 const TheatreRequest = () => {
