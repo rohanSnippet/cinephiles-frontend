@@ -529,7 +529,7 @@ const BookSeats = () => {
             onClick={handleProceed}
             className=" absolute py-2 mt-2 rounded-lg px-32 -ml-36 poppins-regular text-white text-lg bg-gradient-to-tr from-green-600 via-green-600 to-green-600"
           >
-            Pay Rs. {userSeats.price * userSeats.seatsId.length}
+            Pay Rs. {userSeats.price}
           </button>
         </div>
       )}

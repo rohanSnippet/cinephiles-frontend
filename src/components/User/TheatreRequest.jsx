@@ -1,16 +1,149 @@
-import { Autocomplete, MenuItem, TextField } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
+import {
+  Autocomplete,
+  MenuItem,
+  TextField,
+  Typography,
+  Box,
+  Button,
+} from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
 import { IoIosSend } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-// import { allStates } from "../../assets/states.json";
+import { styled } from "@mui/system";
 
 const config = {
   cUrl: import.meta.env.VITE_LOCATION_URL,
   ckey: import.meta.env.VITE_LOCATION_KEY,
 };
+
+const FormContainer = styled(Box)({
+  background: "linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.8))",
+  padding: "3rem",
+  borderRadius: "1rem",
+  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+  width: "100%",
+  maxWidth: "700px",
+  margin: "0 auto",
+  marginTop: "2rem",
+  marginBottom: "2rem",
+  color: "white",
+  fontFamily: "Poppins, sans-serif",
+});
+
+const HeaderBox = styled(Box)({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "1rem",
+  padding: "1rem 2rem",
+  background: "linear-gradient(to right, #000, #333, #000)",
+  borderRadius: "1rem",
+  boxShadow: "0 5px 15px rgba(0, 0, 0, 0.3)",
+  color: "white",
+  fontWeight: "600",
+  fontSize: "1.5rem",
+  marginBottom: "2rem",
+});
+
+const StepIndicator = styled("ul")({
+  display: "flex",
+  justifyContent: "space-between",
+  listStyle: "none",
+  padding: 0,
+  marginBottom: "3rem",
+  "& .step": {
+    cursor: "pointer",
+    padding: "0.5rem 1rem",
+    borderRadius: "2rem",
+    border: "2px solid #555",
+    color: "#aaa",
+    transition: "all 0.3s ease-in-out",
+    "&:hover": {
+      borderColor: "#fff",
+      color: "#fff",
+    },
+  },
+  "& .step-active": {
+    backgroundColor: "#3f51b5",
+    color: "#fff",
+    borderColor: "#3f51b5",
+    boxShadow: "0 0 10px rgba(63, 81, 181, 0.7)",
+  },
+});
+
+const TextFieldStyled = styled(TextField)({
+  "& .MuiOutlinedInput-root": {
+    "& fieldset": {
+      borderColor: "#555",
+    },
+    "&:hover fieldset": {
+      borderColor: "#888",
+    },
+    "&.Mui-focused fieldset": {
+      borderColor: "#3f51b5",
+    },
+    "& .MuiInputBase-input": {
+      color: "white",
+    },
+  },
+  "& .MuiInputLabel-root": {
+    color: "#aaa",
+    "&.Mui-focused": {
+      color: "#3f51b5",
+    },
+  },
+  "& .MuiFormHelperText-root": {
+    color: "#f44336",
+  },
+});
+
+const AutocompleteStyled = styled(Autocomplete)({
+  "& .MuiOutlinedInput-root": {
+    "& fieldset": {
+      borderColor: "#555",
+    },
+    "&:hover fieldset": {
+      borderColor: "#888",
+    },
+    "&.Mui-focused fieldset": {
+      borderColor: "#3f51b5",
+    },
+    "& .MuiInputBase-input": {
+      color: "white",
+    },
+  },
+  "& .MuiInputLabel-root": {
+    color: "#aaa",
+    "&.Mui-focused": {
+      color: "#3f51b5",
+    },
+  },
+});
+
+const FormButton = styled(Button)({
+  backgroundColor: "#3f51b5",
+  color: "white",
+  fontWeight: "bold",
+  borderRadius: "2rem",
+  padding: "0.75rem 1.5rem",
+  "&:hover": {
+    backgroundColor: "#303f9f",
+  },
+});
+
+const NavigationButton = styled(Button)({
+  backgroundColor: "#fff",
+  color: "black",
+  fontWeight: "bold",
+  borderRadius: "2rem",
+  padding: "0.75rem 1.5rem",
+  "&:hover": {
+    backgroundColor: "#eee",
+  },
+});
 
 const TheatreRequest = () => {
   const axiosSecure = useAxiosSecure();
@@ -19,39 +152,22 @@ const TheatreRequest = () => {
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-
   const [selectedCity, setSelectedCity] = useState("");
 
-  const textFieldStyles = {
-    "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: "gray",
-      },
-      "&:hover fieldset": {
-        borderColor: "lightgray",
-      },
-    },
-    "& .MuiInputBase-input": {
-      color: "white",
-    },
-    "& .MuiInputLabel-root": {
-      color: "gray",
-    },
-  };
   const email = localStorage.getItem("username");
   const form = useForm({
-    mode: "onBlur",
+    mode: "all",
     defaultValues: {
       username: email,
-      contact: null,
-      tname: null,
-      tlocation: null,
-      state: selectedState || "",
-      address: null,
-      tscreens: null,
-      pan: null,
-      accountNo: null,
-      cgstNo: null,
+      contact: "",
+      tname: "",
+      tlocation: "",
+      state: "",
+      address: "",
+      tscreens: "",
+      pan: "",
+      accountNo: "",
+      cgstNo: "",
     },
   });
 
@@ -61,7 +177,7 @@ const TheatreRequest = () => {
     setValue,
     getValues,
     trigger,
-    formState: { errors },
+    formState: { errors, isValid },
   } = form;
 
   useEffect(() => {
@@ -72,25 +188,24 @@ const TheatreRequest = () => {
         });
         const data = await response.json();
         setStates(data);
-        // console.log(data);
       } catch (error) {
         console.error("Error loading Indian states:", error);
       }
     };
-
     loadIndianStates();
-  }, [config]);
+  }, []);
 
   const handleStateChange = async (e) => {
     const stateCode = e.target.value;
-    const stateName = states.find((state) => state.iso2 === stateCode).name;
+    const stateName =
+      states.find((state) => state.iso2 === stateCode)?.name || "";
     setSelectedState(stateCode);
-    setSelectedCity(""); // Reset city when state changes
-    setCities([]); // Clear previous cities
-    setValue("tlocation", ""); // Reset the location value in your form
+    setSelectedCity("");
+    setCities([]);
+    setValue("tlocation", "");
     setValue("state", stateName);
+
     if (stateCode) {
-      // Fetch cities of the selected Indian state
       try {
         const response = await fetch(
           `${config.cUrl}/IN/states/${stateCode}/cities`,
@@ -105,10 +220,10 @@ const TheatreRequest = () => {
   };
 
   const steps = [
-    { step: 1, name: "Theatre details" },
+    { step: 1, name: "Theatre Details" },
     { step: 2, name: "Location" },
-    { step: 3, name: "Documents Verification" },
-    { step: 4, name: "Review Details" },
+    { step: 3, name: "Documents" },
+    { step: 4, name: "Review" },
   ];
 
   const nextStep = async () => {
@@ -124,23 +239,21 @@ const TheatreRequest = () => {
 
   const onSubmit = (data) => {
     Swal.fire({
-      title: "Save Theatre Details",
-      text: "You won't be able to revert this!",
+      title: "Confirm Theatre Details",
+      text: "Are you sure you want to submit this request?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
+      confirmButtonColor: "#3f51b5",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, make a request!",
+      confirmButtonText: "Yes, submit it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           const res = await axiosSecure.post(`/make-request`, data);
-          console.log(res);
-
           if (res) {
             Swal.fire({
-              title: "Done!",
-              text: "Your request has been Sent.",
+              title: "Success!",
+              text: "Your request has been sent.",
               icon: "success",
             });
           }
@@ -152,14 +265,15 @@ const TheatreRequest = () => {
             icon: "error",
           });
         }
+        navigate("/");
       }
-      navigate("/");
     });
   };
 
   const changeCurStep = (idx) => {
-    setCurrentStep(idx + 1); // Set to the correct step
+    setCurrentStep(idx + 1);
   };
+
   const getUniqueCities = (cities) => {
     return cities.filter(
       (city, index, self) =>
@@ -167,338 +281,290 @@ const TheatreRequest = () => {
     );
   };
 
-  const uniqueCities = getUniqueCities(cities); // Filter unique cities
+  const uniqueCities = getUniqueCities(cities);
 
   return (
-    <div className="bg-gradient-to-br from-black to-black/80 min-h-screen">
-      <div className="mx-[60vh] ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
-        <IoIosSend size={32} className="ml-8" /> THEATRE REQUEST
-      </div>
-
-      <div className="text-center">
+    <Box
+      sx={{
+        background: "linear-gradient(to bottom, #000, #333)",
+        minHeight: "100vh",
+        padding: "2rem",
+      }}
+    >
+      <HeaderBox>
+        <IoIosSend size={32} /> THEATRE REQUEST
+      </HeaderBox>
+      <FormContainer>
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Steps indicator */}
-          <ul className="steps mb-8 text-white poppins-medium">
+          <StepIndicator>
             {steps.map((stepObj, index) => (
-              <button
-                onClick={() => changeCurStep(index)}
+              <li
                 key={index}
                 className={`step ${
                   currentStep >= stepObj.step ? "step-accent" : ""
                 }`}
+                onClick={() => changeCurStep(index)}
               >
                 {stepObj.name}
-              </button>
+              </li>
             ))}
-          </ul>
+          </StepIndicator>
 
-          {/* Theatre details */}
           {currentStep === 1 && (
-            <div className="gap-x-8 text-white">
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  Theatre Name
-                </label>
-                <TextField
-                  label="Theatre Name"
-                  type="text"
-                  name="tname"
-                  className="w-[68vh]"
-                  variant="outlined"
-                  {...register("tname", { required: "Provide Theatre Name?" })}
-                  sx={textFieldStyles}
-                  error={!!errors.tname}
-                  helperText={errors.tname ? errors.tname.message : ""}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  Theatre Contact
-                </label>
-                <TextField
-                  label="Contact"
-                  type="number"
-                  className="w-[68vh]"
-                  name="contact"
-                  variant="outlined"
-                  {...register("contact", {
-                    required: "Contact is required",
-                    minLength: {
-                      value: 10,
-                      message: "Contact number must be at least 10 digits",
-                    },
-                    maxLength: {
-                      value: 10,
-                      message: "Contact number must be at most 15 digits",
-                    },
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.contact}
-                  helperText={errors.contact ? errors.contact.message : ""}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  Number of Screens
-                </label>
-                <TextField
-                  label="Screens"
-                  type="number"
-                  name="tscreens"
-                  className="w-[68vh]"
-                  variant="outlined"
-                  {...register("tscreens", {
-                    required: "Provide number of screens",
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.tscreens}
-                  helperText={errors.tscreens ? errors.tscreens.message : ""}
-                />
-              </div>
-
-              <div className="space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+            >
+              <TextFieldStyled
+                label="Theatre Name"
+                type="text"
+                {...register("tname", {
+                  required: "Theatre name is required.",
+                })}
+                error={!!errors.tname}
+                helperText={errors.tname?.message}
+                fullWidth
+              />
+              <TextFieldStyled
+                label="Theatre Contact"
+                type="number"
+                {...register("contact", {
+                  required: "Contact number is required.",
+                  minLength: {
+                    value: 10,
+                    message: "Contact number must be 10 digits.",
+                  },
+                  maxLength: {
+                    value: 10,
+                    message: "Contact number must be 10 digits.",
+                  },
+                })}
+                error={!!errors.contact}
+                helperText={errors.contact?.message}
+                fullWidth
+              />
+              <TextFieldStyled
+                label="Number of Screens"
+                type="number"
+                {...register("tscreens", {
+                  required: "Number of screens is required.",
+                })}
+                error={!!errors.tscreens}
+                helperText={errors.tscreens?.message}
+                fullWidth
+              />
+              <Box sx={{ textAlign: "right", marginTop: "1rem" }}>
+                <FormButton type="button" onClick={nextStep}>
                   Next
-                </button>
-              </div>
-            </div>
+                </FormButton>
+              </Box>
+            </Box>
           )}
 
-          {/* Location step */}
           {currentStep === 2 && (
-            <div className="gap-x-8 mx-[60vh] text-white bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl rounded-xl">
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  Theatre Location
-                </label>
-                <TextField
-                  label="Address"
-                  type="text"
-                  className="w-[72vh] textarea"
-                  name="address"
-                  variant="outlined"
-                  {...register("address", {
-                    required: "Address is required",
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.address}
-                  helperText={errors.address ? errors.address.message : ""}
-                />
-              </div>
-
-              {/* State Select */}
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  State
-                </label>
-                <TextField
-                  select
-                  label="State"
-                  className="w-[68vh]"
-                  name="state"
-                  variant="outlined"
-                  value={selectedState}
-                  onChange={(e) => {
-                    handleStateChange(e);
-                  }}
-                  sx={textFieldStyles}
-                  error={!!errors.state}
-                  helperText={errors.state ? errors.state.message : ""}
-                >
-                  <MenuItem value="">Select State</MenuItem>
-                  {states.map((state) => (
-                    <MenuItem key={state.iso2} value={state.iso2}>
-                      {state.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </div>
-
-              {/* City Select */}
-              <div className="mb-4">
-                <label className="block text-white text-center text-sm font-bold mb-2">
-                  City
-                </label>
-                <Autocomplete
-                  className="w-[68vh] ml-[11vh]"
-                  options={uniqueCities}
-                  getOptionLabel={(city) => city.name} // Display city names in the dropdown
-                  value={
-                    selectedCity
-                      ? uniqueCities.find((city) => city.name === selectedCity)
-                      : null
-                  }
-                  onChange={(e, newValue) => {
-                    setSelectedCity(newValue ? newValue.name : ""); // Set selected city
-                    setValue("tlocation", newValue ? newValue.name : ""); // Set form value
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="City"
-                      variant="outlined"
-                      sx={textFieldStyles}
-                      error={!!errors.tlocation}
-                      helperText={
-                        errors.tlocation ? errors.tlocation.message : ""
-                      }
-                      disabled={!selectedState}
-                    />
-                  )}
-                  disabled={!selectedState}
-                  isOptionEqualToValue={(option, value) =>
-                    option.name === value.name
-                  }
-                />
-              </div>
-
-              <div className="space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+            >
+              <TextFieldStyled
+                label="Address"
+                type="text"
+                {...register("address", { required: "Address is required." })}
+                error={!!errors.address}
+                helperText={errors.address?.message}
+                fullWidth
+                multiline
+                rows={3}
+              />
+              <TextFieldStyled
+                select
+                label="State"
+                value={selectedState}
+                onChange={handleStateChange}
+                error={!!errors.state}
+                helperText={errors.state?.message}
+                fullWidth
+              >
+                <MenuItem value="">Select State</MenuItem>
+                {states.map((state) => (
+                  <MenuItem key={state.iso2} value={state.iso2}>
+                    {state.name}
+                  </MenuItem>
+                ))}
+              </TextFieldStyled>
+              <AutocompleteStyled
+                options={uniqueCities}
+                getOptionLabel={(city) => city.name}
+                value={
+                  selectedCity
+                    ? uniqueCities.find((city) => city.name === selectedCity)
+                    : null
+                }
+                onChange={(e, newValue) => {
+                  setSelectedCity(newValue ? newValue.name : "");
+                  setValue("tlocation", newValue ? newValue.name : "");
+                }}
+                renderInput={(params) => (
+                  <TextFieldStyled
+                    {...params}
+                    label="City"
+                    {...register("tlocation", {
+                      required: "City is required.",
+                    })}
+                    error={!!errors.tlocation}
+                    helperText={errors.tlocation?.message}
+                  />
+                )}
+                disabled={!selectedState}
+                isOptionEqualToValue={(option, value) =>
+                  option.name === value.name
+                }
+                fullWidth
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "1rem",
+                }}
+              >
+                <NavigationButton type="button" onClick={prevStep}>
                   Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+                </NavigationButton>
+                <FormButton type="button" onClick={nextStep}>
                   Next
-                </button>
-              </div>
-            </div>
+                </FormButton>
+              </Box>
+            </Box>
           )}
 
-          {/* Pan , accNo , cgstNo */}
           {currentStep === 3 && (
-            <div className="gap-x-8 text-white">
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-4">
-                  Account Number
-                </label>
-                <TextField
-                  label="Account No"
-                  type="text"
-                  className="w-[72vh] textarea"
-                  name="accountNo"
-                  variant="outlined"
-                  {...register("accountNo", {
-                    required: "accountNo is required",
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.accountNo}
-                  helperText={errors.accountNo ? errors.accountNo.message : ""}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  Pan Number
-                </label>
-                <TextField
-                  label="Pan Number"
-                  type="text"
-                  className="w-[72vh] textarea"
-                  name="pan"
-                  variant="outlined"
-                  {...register("pan", {
-                    required: "pan is required",
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.pan}
-                  helperText={errors.pan ? errors.pan.message : ""}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-white text-sm font-bold mb-2">
-                  CGST Number(Optional)
-                </label>
-                <TextField
-                  label="CGST No"
-                  type="text"
-                  className="w-[72vh] textarea"
-                  name="cgstNo"
-                  variant="outlined"
-                  {...register("cgstNo", {
-                    required: "cgstNo is required",
-                  })}
-                  sx={textFieldStyles}
-                  error={!!errors.cgstNo}
-                  helperText={errors.cgstNo ? errors.cgstNo.message : ""}
-                />
-              </div>
-
-              <div className="space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+            >
+              <TextFieldStyled
+                label="Account Number"
+                type="text"
+                {...register("accountNo", {
+                  required: "Account number is required.",
+                })}
+                error={!!errors.accountNo}
+                helperText={errors.accountNo?.message}
+                fullWidth
+              />
+              <TextFieldStyled
+                label="PAN Number"
+                type="text"
+                {...register("pan", { required: "PAN number is required." })}
+                error={!!errors.pan}
+                helperText={errors.pan?.message}
+                fullWidth
+              />
+              <TextFieldStyled
+                label="CGST Number (Optional)"
+                type="text"
+                {...register("cgstNo")}
+                fullWidth
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "1rem",
+                }}
+              >
+                <NavigationButton type="button" onClick={prevStep}>
                   Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+                </NavigationButton>
+                <FormButton type="button" onClick={nextStep}>
                   Next
-                </button>
-              </div>
-            </div>
+                </FormButton>
+              </Box>
+            </Box>
           )}
-          {/* Review*/}
-          {currentStep === 4 && (
-            <div className="gap-x-8 text-white">
-              <div className="mb-2">
-                <label className="block text-white text-sm font-bold mb-4">
-                  Theatre Name : {`${getValues("tname")}`}
-                </label>
-                <label className="block text-white text-sm font-bold mb-4">
-                  Number of Screens in theatre : {`${getValues("tscreens")}`}
-                </label>
-                <label className="block text-white text-sm font-bold mb-4">
-                  Theatre Contact Number: {`${getValues("contact")}`}
-                </label>
-                <label className="block text-white text-sm font-bold mb-4">
-                  Location : {getValues("address")}, {getValues("tlocation")},{" "}
-                  {getValues("state")}
-                </label>
-                <label className="block text-white text-sm font-bold mb-4">
-                  PAN Number : {`${getValues("pan")}`}
-                </label>
-                <label className="block text-white text-sm font-bold mb-4">
-                  Account Number : {`${getValues("accountNo")}`}
-                </label>
-              </div>
 
-              <div className="space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
-                >
+          {currentStep === 4 && (
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  color: "#fff",
+                  fontWeight: "bold",
+                  borderBottom: "2px solid #555",
+                  paddingBottom: "0.5rem",
+                }}
+              >
+                Review Details
+              </Typography>
+              <Box>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    Theatre Name:
+                  </span>{" "}
+                  {getValues("tname")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    Screens:
+                  </span>{" "}
+                  {getValues("tscreens")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    Contact:
+                  </span>{" "}
+                  {getValues("contact")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    Location:
+                  </span>{" "}
+                  {getValues("address")}, {getValues("tlocation")},{" "}
+                  {getValues("state")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    PAN Number:
+                  </span>{" "}
+                  {getValues("pan")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    Account Number:
+                  </span>{" "}
+                  {getValues("accountNo")}
+                </Typography>
+                <Typography variant="body1">
+                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
+                    CGST Number:
+                  </span>{" "}
+                  {getValues("cgstNo") || "N/A"}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "1rem",
+                }}
+              >
+                <NavigationButton type="button" onClick={prevStep}>
                   Previous
-                </button>
-                <button
-                  type="Submit"
-                  className="btn bg-white text-black w-20 rounded-xl hover:bg-success"
+                </NavigationButton>
+                <FormButton
+                  type="submit"
+                  disabled={
+                   !isValid
+                  }
                 >
                   Submit
-                </button>
-              </div>
-            </div>
+                </FormButton>
+              </Box>
+            </Box>
           )}
         </form>
-      </div>
-    </div>
+      </FormContainer>
+    </Box>
   );
 };
 

@@ -13,7 +13,7 @@ const ShowDetails = () => {
   const [datesStr, setDatesStr] = useState([]);
   const axiosSecure = useAxiosSecure();
   const [movies, setMovies] = useState([]);
-
+  const [showDetails, setShowDetails] = useState([]);
   const [screens, setScreens] = useState([]);
   const [currScreen, setCurrScreen] = useState();
   const [selectedDate, setSelectedDate] = useState();
@@ -138,7 +138,7 @@ const ShowDetails = () => {
       handleButtonClick("showDate", selectedDate);
     }
   }, [selectedDate]);
-
+ console.log(showDetails)
 
    function addRuntimeToStartTime(startTime, runtime,field) {
     console.log(startTime)
@@ -190,8 +190,8 @@ const ShowDetails = () => {
     } = await Swal.fire({
       title: `${currScreen.sname}`,
       imageUrl: `${currMovie.banner}`,
-      imageWidth: 400,
-      imageHeight: 200,
+      imageWidth: 300,
+      imageHeight: 300,
       background: "rgba(43, 43, 46, 0.845)",
       width: "750px",
       color: "#fff",
@@ -461,6 +461,7 @@ useEffect(() => {
                       selectedDate={selectedDate}
                     /> */}
                     <Schedule
+                      setShowsDetails={setShowDetails}
                       isSelected={currScreen?.id == screen.id}
                       screen={screen}
                       selectedDate={selectedDate}

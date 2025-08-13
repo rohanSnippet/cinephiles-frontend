@@ -3,7 +3,7 @@ import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
 import { MdEdit, MdInfoOutline, MdOutlineDelete } from "react-icons/md";
 
-const Schedule = ({ screen, selectedDate, isSelected }) => {
+const Schedule = ({ screen, selectedDate, isSelected, setShowsDetails }) => {
   const [shows, setShows] = useState([]);
   const [dragging, setDragging] = useState(null);
   const [offsetX, setOffsetX] = useState(0);
@@ -79,6 +79,7 @@ const Schedule = ({ screen, selectedDate, isSelected }) => {
         (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start)
       );
       setShows(sortedShows);
+      setShowsDetails(sortedShows);
     } catch (error) {
       console.error("Error fetching shows:", error);
       Swal.fire({ title: "Error loading shows", icon: "error", timer: 2000 });

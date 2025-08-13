@@ -184,14 +184,15 @@ const ScreenLayout = () => {
           </p>
         )}
         {updatedScreen.tiers.map((tier, index) => {
+           const gridColumns = tier.columns + 1;
           // Reset index for each tier
-          return (
+           return (
             <div key={index} className={`mt-4 ${layout.center} z-90 `}>
               <h2>
                 {tier.tiername} (₹{tier.price})
               </h2>
               <hr className="border-gray-600 border-double text-white" />
-              <div id="seatArr" className="mb-8">
+              <div id="seatArr" className="mb-8 overflow-x-auto">
                 {tier.seats.map((seat, seatIndex) => {
                   const isFirstInRow = seatIndex % tier.columns === 0;
                   const isLastInRow = (seatIndex + 1) % tier.columns === 0;
@@ -218,7 +219,7 @@ const ScreenLayout = () => {
                       </span>
                       {isLastInRow && <br />}
                     </React.Fragment>
-                  );
+                  ); 
                 })}
               </div>
             </div>

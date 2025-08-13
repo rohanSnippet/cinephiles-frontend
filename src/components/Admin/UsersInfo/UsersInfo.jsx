@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { PiFilmReelBold } from "react-icons/pi";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import { IoIosMail } from "react-icons/io";
-import { MdAdminPanelSettings } from "react-icons/md";
+import { MdAdminPanelSettings, MdMovieEdit } from "react-icons/md";
 import { GrUserManager } from "react-icons/gr";
 import { FaUser } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -28,12 +28,11 @@ const UsersInfo = () => {
     getAllUsers();
   }, []);
   return (
-    <div className="relative mx-auto">
+    <div className="relative w-full p-4 sm:p-6 lg:p-8 bg-gray-800 rounded-lg min-h-screen">
       {" "}
-      <div className="w-full h-16 bg-gradient-to-br from-black via-gray-900 to-black ring-2 ring-gray-900 ring-offset-2 rounded-xl">
-        <h1 className="poppins-bold text-xl pl-6 pt-4 text-white flex">
-          <PiFilmReelBold size={28} className="mr-3" /> MANAGE USERS
-        </h1>
+      <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex flex-col sm:flex-row items-center justify-center sm:justify-start bg-gradient-to-br from-black via-gray-900 to-black mb-6 shadow-2xl text-white shadow-slate-600 p-4 sm:p-5 text-xl sm:text-2xl poppins-semibold gap-x-4">
+        <MdMovieEdit size={32} className="mb-2 sm:mb-0 sm:ml-4 flex-shrink-0" />{" "}
+        <span className="text-center sm:text-left">MANAGE USERS</span>
       </div>
       {/* filter & sort options */}
       <div></div>
@@ -57,7 +56,12 @@ const UsersInfo = () => {
               </div>
             </div>
             <div className="flex justify-evenly gap-x-2 absolute poppins-light text-md  left-[30%] pt-1  text-white/90 ">
-             {user.provider=="google"?  <FcGoogle size={24} /> :<IoIosMail size={24} /> }{user.username}
+              {user.provider == "google" ? (
+                <FcGoogle size={24} />
+              ) : (
+                <IoIosMail size={24} />
+              )}
+              {user.username}
             </div>
             <div className="absolute poppins-light text-md  left-[50%] pt-1  text-white/90 ">
               {user.phone || "Contact Not Provided"}

@@ -55,12 +55,12 @@ const AdminDashboardLayout = () => {
               >
                 <MdDashboardCustomize className="text-xl" /> {/* Larger icon */}
               </label>
-              <button className="btn rounded-full px-6 bg-green-500 hover:bg-green-600 flex items-center gap-2 text-white sm:hidden"> {/* Adjusted green color, added hover */}
+              <button className="btn rounded-full px-6 bg-green-600/80 hover:bg-red-500/80 hover:shadow-md hover:shadow-red-500/40 hover:border-none flex items-center gap-2 text-white sm:hidden"> {/* Adjusted green color, added hover */}
                 <FaRegUser />
                 Logout
               </button>
             </div>
-            <div className="mt-5 md:mt-2 mx-4 flex-grow overflow-y-auto"> {/* Added flex-grow and overflow-y-auto for content scrolling */}
+            <div className=" md:mt-2 mx-2 flex-grow w-full overflow-y-auto"> {/* Added flex-grow and overflow-y-auto for content scrolling */}
               <Outlet />
             </div>
           </div>

@@ -77,6 +77,7 @@ const SaveMovie = () => {
     { label: "Fantasy", value: "fantasy" },
     { label: "Adventure", value: "adventure" },
     { label: "Sci-Fi", value: "sci-Fi" },
+    { label: "Drama", value: "Drama" },
   ];
 
   const formats = [
@@ -90,7 +91,7 @@ const SaveMovie = () => {
     { label: "Director", value: "Director" },
     { label: "Producer", value: "Producer" },
     { label: "Cinematography", value: "Cinematography" },
-    { label: "Music Composer", value: "Music Composer" },
+    { label: "Musician", value: "Musician" },
     { label: "Writer", value: "Writer" },
     { label: "Screenplay", value: "Screenplay" },
     { label: "Dialog Writer", value: "Dialog Writer" },

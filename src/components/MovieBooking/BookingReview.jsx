@@ -32,7 +32,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   const { selectedData, movie, selectedShow, selectedDate, updatedScreen } =
     bookingData || {};
 
-  const baseAmt = selectedData?.price * selectedData?.seatsId.length || 0;
+  const baseAmt = selectedData?.price || 0;
   const taxes = {
     cgst: baseAmt * 0.09,
     sgst: baseAmt * 0.09,
@@ -481,10 +481,10 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
       </div>
 
       {/* Right Side - Movie Details */}
-      <div className="flex-1 md:w-2/5 lg:w-1/4 bg-gradient-to-br from-slate-800 to-slate-900 text-white min-h-screen p-6 shadow-xl relative">
+      <div className="flex-1 md:w-2/5 lg:w-1/4 bg-gradient-to-br from-slate-800 to-slate-900 text-white min-h-screen px-6 py-2 shadow-xl relative">
         <div className="bg-slate-800/90 rounded-xl p-6 space-y-6 shadow-2xl backdrop-blur-sm backdrop-filter border border-slate-700">
           {/* Timer Section */}
-          <div className="text-center bg-slate-700/60 rounded-lg py-4 px-3 mb-6 shadow-inner">
+          <div className="text-center bg-slate-700/60 rounded-lg py-2 px-3 mb-2 shadow-inner">
             <p className="text-lg poppins-regular mb-2 text-slate-300">
               You have
             </p>
@@ -494,13 +494,13 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
                   minutes < 1 ? `text-red-400` : `text-green-400`
                 }`}
               >
-                <span className="countdown font-mono font-bold text-5xl">
+                <span className="countdown font-mono font-bold text-3xl">
                   <span style={{ "--value": minutes % 60 }}></span>
                 </span>
                 <span className="poppins-medium text-lg">min</span>
               </div>
               <span
-                className={`font-mono font-bold text-5xl ${
+                className={`font-mono font-bold text-3xl ${
                   minutes < 1 ? `text-red-400` : `text-green-400`
                 }`}
               >
@@ -511,7 +511,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
                   minutes < 1 ? `text-red-400` : `text-green-400`
                 }`}
               >
-                <span className="countdown font-mono font-bold text-5xl">
+                <span className="countdown font-mono font-bold text-3xl">
                   <span style={{ "--value": secs }}></span>
                 </span>
                 <span className="poppins-medium text-lg">sec</span>
@@ -523,7 +523,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
           </div>
 
           {/* Movie Info Section */}
-          <div className="rounded-lg shadow-xl bg-slate-700/40 p-5 border border-slate-600">
+          <div className="rounded-lg shadow-xl bg-slate-700/40 px-5 py-2 border border-slate-600">
             <h3 className="text-2xl font-bold mb-4 text-green-300 poppins-bold">
               Booking Summary
             </h3>

@@ -16,20 +16,20 @@ const MovieDetails = () => {
   const location = useLocation();
   const axiosSecure = useAxiosSecure();
   const city = useCity();
-
+  const { item, previousPath } = location.state || {};
   const [castMembers, setCastMembers] = useState([]);
   const [crewMembers, setCrewMembers] = useState([]);
-  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [isLoadingContent, setIsLoadingContent] = useState(!!item);
   const [isShowAvl, setIsShowAvl] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("All");
 
-  const { item, previousPath } = location.state || {};
+
   const releaseDateObj = item ? new Date(item.releaseDate) : null;
 
   useEffect(() => {
     if (!item) {
       console.error("Movie item not found in location state.");
-      setIsLoadingContent(true);
+      setIsLoadingContent(false);
       return;
     }
     window.scrollTo(0, 0);
@@ -43,6 +43,7 @@ const MovieDetails = () => {
     if (!item?.cast) return [];
     try {
       const res = await axiosPublic.post(`/actor/scrape`, item.cast);
+      console.log(res.data ," in scrapeActors Method. ")
       return res.data?.urls || [];
     } catch (error) {
       console.error("Error scraping actors:", error);
@@ -107,6 +108,11 @@ const MovieDetails = () => {
   if (isLoadingContent || !item || !releaseDateObj) {
     return <Loading />;
   }
+
+  if (!isLoadingContent && !item) {
+  return <div className="text-white text-center mt-10">No movie found.</div>;
+}
+
 
   return (
     <div className="h-full w-full">
