@@ -184,45 +184,45 @@ const ScreenLayout = () => {
           </p>
         )}
         {updatedScreen.tiers.map((tier, index) => {
-           const gridColumns = tier.columns + 1;
+          const gridColumns = tier.columns + 1;
           // Reset index for each tier
-           return (
+          return (
             <div key={index} className={`mt-4 ${layout.center} z-90 `}>
               <h2>
                 {tier.tiername} (₹{tier.price})
               </h2>
               <hr className="border-gray-600 border-double text-white" />
               <div id="seatArr" className="mb-8 overflow-x-auto">
-                {tier.seats.map((seat, seatIndex) => {
-                  const isFirstInRow = seatIndex % tier.columns === 0;
-                  const isLastInRow = (seatIndex + 1) % tier.columns === 0;
+                  {tier.seats.map((seat, seatIndex) => {
+                    const isFirstInRow = seatIndex % tier.columns === 0;
+                    const isLastInRow = (seatIndex + 1) % tier.columns === 0;
 
-                  const useatId = `${index}-${seatIndex}`;
-                  const isSelected = selectedSeats.includes(useatId);
+                    const useatId = `${index}-${seatIndex}`;
+                    const isSelected = selectedSeats.includes(useatId);
 
-                  return (
-                    <React.Fragment key={useatId}>
-                      {isFirstInRow && (
-                        <span className="text-sm font-semibold mr-2 z-30">
-                          {alphabet[curIdx++]}
+                    return (
+                      <React.Fragment key={useatId}>
+                        {isFirstInRow && (
+                          <span className="text-sm font-semibold mr-2 z-30">
+                            {alphabet[curIdx++]}
+                          </span>
+                        )}
+                        <span
+                          onClick={() => handleSeatClick(index, seatIndex)}
+                          className={`seat ${
+                            seat.status
+                          } text-sm cursor-pointer z-30 relative ${
+                            isSelected ? "selected-seat" : ""
+                          }`}
+                        >
+                          {seat.seatId.replace(/\D/g, "")}
                         </span>
-                      )}
-                      <span
-                        onClick={() => handleSeatClick(index, seatIndex)}
-                        className={`seat ${
-                          seat.status
-                        } text-sm cursor-pointer z-30 relative ${
-                          isSelected ? "selected-seat" : ""
-                        }`}
-                      >
-                        {seat.seatId.replace(/\D/g, "")}
-                      </span>
-                      {isLastInRow && <br />}
-                    </React.Fragment>
-                  ); 
-                })}
+                        {isLastInRow && <br />}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
           );
         })}
         <h1 className="absolute poppins-bold text-[20vh] top-[20%] left-[12%] opacity-40">
