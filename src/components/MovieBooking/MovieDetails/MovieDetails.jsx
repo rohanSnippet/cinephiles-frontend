@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import UserNavHeader from "../UserNavHeader";
 import like from "../../../assets/like.png";
@@ -16,15 +16,22 @@ const MovieDetails = () => {
   const location = useLocation();
   const axiosSecure = useAxiosSecure();
   const city = useCity();
-  const { item, previousPath } = location.state || {};
+  const { item: locationItem, previousPath } = location.state || {};
+  
+  // Use a ref to prevent unnecessary re-renders from location.state
+  const itemRef = React.useRef(locationItem);
+  const [item] = useState(itemRef.current);
+  
   const [castMembers, setCastMembers] = useState([]);
   const [crewMembers, setCrewMembers] = useState([]);
-  const [isLoadingContent, setIsLoadingContent] = useState(!!item);
+  const [isLoadingContent, setIsLoadingContent] = useState(!locationItem);
   const [isShowAvl, setIsShowAvl] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("All");
 
-
-  const releaseDateObj = item ? new Date(item.releaseDate) : null;
+  // Memoize the release date to prevent unnecessary recalculations
+  const releaseDateObj = useMemo(() => {
+    return item ? new Date(item.releaseDate) : null;
+  }, [item?.releaseDate]);
 
   useEffect(() => {
     if (!item) {
@@ -43,7 +50,6 @@ const MovieDetails = () => {
     if (!item?.cast) return [];
     try {
       const res = await axiosPublic.post(`/actor/scrape`, item.cast);
-      console.log(res.data ," in scrapeActors Method. ")
       return res.data?.urls || [];
     } catch (error) {
       console.error("Error scraping actors:", error);
@@ -82,19 +88,23 @@ const MovieDetails = () => {
       if (!item) {
         return;
       }
+
+      // Show initial content immediately, then load additional data
       setIsLoadingContent(true);
 
       try {
-        const [fetchedCastMembers, fetchedCrewMembers, showAvailability] =
-          await Promise.all([
-            scrapeActors(),
-            scrapeCrew(),
-            checkShowAvailability(),
-          ]);
+        // Prioritize showing availability first
+        const showAvailability = await checkShowAvailability();
+        setIsShowAvl(showAvailability);
+        
+        // Then load cast and crew in parallel
+        const [fetchedCastMembers, fetchedCrewMembers] = await Promise.all([
+          scrapeActors(),
+          scrapeCrew(),
+        ]);
 
         setCastMembers(fetchedCastMembers);
         setCrewMembers(fetchedCrewMembers);
-        setIsShowAvl(showAvailability);
       } catch (error) {
         console.error("Failed to fetch all movie details:", error);
       } finally {
@@ -105,14 +115,31 @@ const MovieDetails = () => {
     fetchData();
   }, [item, scrapeActors, scrapeCrew, checkShowAvailability]);
 
-  if (isLoadingContent || !item || !releaseDateObj) {
-    return <Loading />;
+  // Early return if no item
+  if (!item) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white text-center">
+          <p className="text-xl">No movie found.</p>
+          <button 
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  if (!isLoadingContent && !item) {
-  return <div className="text-white text-center mt-10">No movie found.</div>;
-}
-
+  // Memoize the trailer count to avoid recalculating
+  const trailerCount = useMemo(() => {
+    if (!item.trailers) return 0;
+    return item.trailers.reduce(
+      (total, trailer) => total + (trailer.trailerUrl?.length || 0),
+      0
+    );
+  }, [item.trailers]);
 
   return (
     <div className="h-full w-full">
@@ -130,16 +157,14 @@ const MovieDetails = () => {
         className="relative w-[96%] max-w-7xl mx-auto rounded-xl shadow-lg shadow-slate-500/20 mt-4 overflow-hidden
                       min-h-[400px] md:min-h-[500px] lg:min-h-[60vh] flex lg:items-end"
       >
-        {" "}
-        {/* Added lg:items-end for desktop to match original design */}
         {/* Background Image with responsive gradients */}
         <div
           className="absolute inset-0 w-full h-full rounded-xl bg-no-repeat bg-cover bg-center"
           style={{
             backgroundImage: item.banner
-              ? `url('${item?.banner}')`
+              ? `url('${item.banner}')`
               : item.poster
-              ? `url('${item?.poster}')`
+              ? `url('${item.poster}')`
               : "gray",
           }}
         >
@@ -148,14 +173,11 @@ const MovieDetails = () => {
           {/* Darker gradient for mobile/medium screens */}
           <div className="lg:hidden absolute inset-0 rounded-xl bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
         </div>
+        
         {/* --- Large Screen Layout (lg and up) --- */}
         <div className="relative z-10 w-full h-full hidden lg:flex">
-          {" "}
-          {/* Container for desktop elements */}
           {/* Details for large screens */}
           <div className="flex flex-col justify-end pb-8 pl-8 pr-4 w-[60%]">
-            {" "}
-            {/* Adjusted for flex column */}
             {/* Title */}
             <span
               className={`
@@ -171,6 +193,7 @@ const MovieDetails = () => {
             >
               {item.title.toUpperCase()}
             </span>
+            
             {/* Metadata: Certification, Languages, Formats */}
             <p className="text-white text-base poppins-regular opacity-80 mb-6 flex flex-wrap items-center gap-4">
               <span className="flex items-center">
@@ -194,10 +217,12 @@ const MovieDetails = () => {
                 ))}
               </span>
             </p>
+            
             {/* Description */}
             <p className="text-white text-base poppins-extralight mb-8 max-w-xl">
               {item.description}
             </p>
+            
             {/* Book Tickets Button */}
             {isShowAvl && (
               <button
@@ -215,6 +240,7 @@ const MovieDetails = () => {
               </button>
             )}
           </div>
+          
           {/* Poster and Trailer Button for large screens */}
           <div
             className="relative -right-28 top-0 shrink-0
@@ -222,32 +248,23 @@ const MovieDetails = () => {
                     bg-center bg-cover bg-no-repeat rounded-xl shadow-slate-800/80 shadow-xl
                     ring-indigo-900/20 ring-1 ring-offset-1 ring-offset-slate-800/50"
             style={{
-              backgroundImage: `url('${item?.poster}')`,
+              backgroundImage: `url('${item.poster}')`,
             }}
           >
             <button
               type="button"
-              disabled={
-                !item.trailers ||
-                item.trailers.length === 0 ||
-                item.trailers.every((t) => Object.values(t).includes("tba"))
-              }
+              disabled={trailerCount === 0}
               onClick={() => document.getElementById("my_modal_2").showModal()}
               className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
                         absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
             >
-              {item.trailers && item.trailers.length > 0
-                ? `${item.trailers.reduce(
-                    (total, trailer) => total + trailer.trailerUrl.length,
-                    0
-                  )} Trailer(s)`
-                : "No Trailers"}
+              {trailerCount > 0 ? `${trailerCount} Trailer(s)` : "No Trailers"}
             </button>
 
             <div className="absolute bg-black bg-opacity-50 h-8 w-full rounded-b-xl bottom-0"></div>
             <div className="h-[10vh] rounded-xl absolute bottom-0 w-full flex items-center justify-between px-4">
               <p className="text-white poppins-regular text-md flex items-center">
-                <img src={like} className="h-5 w-5 mr-1" alt="Like icon" />
+                <img src={like} className="h-5 w-5 mr-1" alt="Like icon" loading="lazy" />
                 {item.likes >= 1000000
                   ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
                   : item.likes >= 1000
@@ -264,27 +281,19 @@ const MovieDetails = () => {
             </div>
           </div>
         </div>
+        
         {/* --- Mobile/Medium Screen Layout (hidden on lg and up) --- */}
         <div className="relative z-20 w-full h-full flex flex-col justify-between items-center px-4 py-8 lg:hidden">
           {/* Trailer Button in center */}
           <div className="flex-grow flex items-center justify-center w-full">
-             <button
+            <button
               type="button"
-              disabled={
-                !item.trailers ||
-                item.trailers.length === 0 ||
-                item.trailers.every((t) => Object.values(t).includes("tba"))
-              }
+              disabled={trailerCount === 0}
               onClick={() => document.getElementById("my_modal_2").showModal()}
               className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
                         absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
             >
-              {item.trailers && item.trailers.length > 0
-                ? `${item.trailers.reduce(
-                    (total, trailer) => total + trailer.trailerUrl.length,
-                    0
-                  )} Trailer(s)`
-                : "No Trailers"}
+              {trailerCount > 0 ? `${trailerCount} Trailer(s)` : "No Trailers"}
             </button>
           </div>
 
@@ -394,6 +403,7 @@ const MovieDetails = () => {
                           }
                           alt={`${member}'s profile`}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       </a>
                     </div>
@@ -453,6 +463,7 @@ const MovieDetails = () => {
                           }
                           alt={`${member.name}'s profile`}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       </a>
                     </div>
@@ -475,93 +486,89 @@ const MovieDetails = () => {
       </div>
 
       {/* Trailer Modal */}
-      <dialog id="my_modal_2" className="modal language-modal">
-        <div className="modal-box max-w-5xl">
-          <div className="sticky -top-6 bg-base-100 py-2 border-b-2 border-white/40">
-            <h3 className="roboto-bold text-lg text-white text-center">
-              VIDEOS
-            </h3>
-            <div className="flex flex-wrap gap-2 my-2 justify-center">
-              {["All", ...item.languages].map((language, i) => (
-                <div key={i}>
-                  <label>
-                    <input
-                      type="radio"
-                      name="language"
-                      value={language}
-                      checked={selectedLanguage === language}
-                      onChange={(e) => setSelectedLanguage(e.target.value)}
-                    />
-
-                    <span className="radio-button rounded-2xl">{language}</span>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="sm:ml-32 ">
-            {/* Filtered trailers based on selected language */}
-            {item.trailers.filter(
-              (trailer) =>
-                selectedLanguage === "All" ||
-                trailer.language === selectedLanguage
-            ).length > 0 ? (
-              // If there are filtered trailers, render them
-              item.trailers
-                .filter(
-                  (trailer) =>
-                    selectedLanguage === "All" ||
-                    trailer.language === selectedLanguage
-                ).map((trailer, i) => (
-                  <div key={i} className="my-4">
-                    <h3 className="text-xl font-semibold text-white">
-                      {trailer.language} Trailers
-                    </h3>
-                    <div className="flex flex-wrap space-x-4 mt-2">
-                      {trailer.trailerUrl.map((link, idx) => (
-                        <div key={idx} className="flex flex-col items-center">
-                          <iframe
-                            onClick={() => setActiveVideo(link)}
-                            className="rounded-md mt-2 sm:w-[700px] w-[300px] h-[160] sm:h-[365px]"
-                            /* width="700"
-                            height="365" */
-                            src={`https://www.youtube.com/embed/${link.substring(
-                              17
-                            )}`}
-                            title="YouTube video player"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            referrerPolicy="strict-origin-when-cross-origin"
-                            allowFullScreen
-                          ></iframe>
-                          {/* <p className="text-white mt-2">Trailer {idx + 1}</p> */}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-            ) : (
-              // If no trailers match, show "No videos" message
-
-              <div
-                className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center "
-                style={{ width: 700, height: 385 }}
-              >
-                       
-                <p className="align-middle">No Videos in {selectedLanguage}</p> 
-                   
-              </div>
-            )}
-             
-          </div>
-        </div>
-        <form method="dialog" className="modal-backdrop">
-                    <button>close</button>       {" "}
-        </form>
-             {" "}
-      </dialog>
+      <TrailerModal 
+        item={item} 
+        selectedLanguage={selectedLanguage} 
+        setSelectedLanguage={setSelectedLanguage} 
+      />
     </div>
   );
 };
+
+// Extracted TrailerModal component to reduce main component complexity
+const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }) => {
+  const filteredTrailers = React.useMemo(() => {
+    if (!item.trailers) return [];
+    return item.trailers.filter(
+      (trailer) =>
+        selectedLanguage === "All" ||
+        trailer.language === selectedLanguage
+    );
+  }, [item.trailers, selectedLanguage]);
+
+  return (
+    <dialog id="my_modal_2" className="modal language-modal">
+      <div className="modal-box max-w-5xl">
+        <div className="sticky -top-6 bg-base-100 py-2 border-b-2 border-white/40">
+          <h3 className="roboto-bold text-lg text-white text-center">
+            VIDEOS
+          </h3>
+          <div className="flex flex-wrap gap-2 my-2 justify-center">
+            {["All", ...item.languages].map((language, i) => (
+              <div key={i}>
+                <label>
+                  <input
+                    type="radio"
+                    name="language"
+                    value={language}
+                    checked={selectedLanguage === language}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                  />
+                  <span className="radio-button rounded-2xl">{language}</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="sm:ml-32">
+          {filteredTrailers.length > 0 ? (
+            filteredTrailers.map((trailer, i) => (
+              <div key={i} className="my-4">
+                <h3 className="text-xl font-semibold text-white">
+                  {trailer.language} Trailers
+                </h3>
+                <div className="flex flex-wrap space-x-4 mt-2">
+                  {trailer.trailerUrl.map((link, idx) => (
+                    <div key={idx} className="flex flex-col items-center">
+                      <iframe
+                        className="rounded-md mt-2 sm:w-[700px] w-[300px] h-[160] sm:h-[365px]"
+                        src={`https://www.youtube.com/embed/${link.substring(17)}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div
+              className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center"
+              style={{ width: 700, height: 385 }}
+            >
+              <p className="align-middle">No Videos in {selectedLanguage}</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+});
 
 export default MovieDetails;

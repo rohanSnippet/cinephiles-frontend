@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const baseURL = import.meta.env.VITE_APP_BASE_URL; // Ensure correct API base URL
+export const baseURL = import.meta.env.VITE_APP_BASE_URL || "https://cinephiles-backend.onrender.com"; // Ensure correct API base URL
 export const frontURL = import.meta.env.VITE_APP_FRONTEND_URL; // Ensure correct API base URL
 
 

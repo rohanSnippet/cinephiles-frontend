@@ -109,7 +109,7 @@ const Login = () => {
       }
     }
   };
-console.log(baseURL)
+
   const handleGoogleLogin = () => {
     window.location.href = `${baseURL}/oauth2/authorization/google`;
   };
@@ -119,37 +119,52 @@ console.log(baseURL)
   const handleEye = () => setVisible(!visible);
 
   return (
-    <div className="relative h-[100vh] w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
-      <div className="absolute h-[55vh] w-[80vh] ml-[30%] mt-[10%] rounded-xl bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600">
-        <span className="flex justify-center absolute left-[35%] top-[15%] space-x-12">
-          <button onClick={handleGoogleLogin}>
-            <FcGoogle
-            onClick={googleSignUp}
-              size={34}
-              className="bg-white rounded-full cursor-pointer"
-            />
-          </button>
-          <button onClick={handleGithubLogin}>
-            <FaGithubAlt
-              size={34}
-              className="text-black bg-white rounded-full cursor-pointer"
-            />
-          </button>
-          <span className="bg-white rounded-full p-[6px] cursor-pointer">
-            <img src={insta} className="w-[25px] h-[25px] bg-white" />
-          </span>
-        </span>
-        <div id="login" className="w-[80%] ml-[10%] pt-[20%] text-center">
-          <h1 className="poppins-semibold text-center text-white text-xl">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600 p-6 md:p-8">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="poppins-semibold text-white text-2xl md:text-3xl text-center mb-2">
             Sign In
           </h1>
-          <form method="dialog" onSubmit={handleSubmit}>
-            <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2 relative">
+          <p className="text-gray-400 text-sm text-center">
+            Welcome back! Please enter your details
+          </p>
+        </div>
+
+        {/* Social login buttons */}
+        <div className="flex justify-center space-x-4 mb-6">
+          <button 
+            onClick={handleGoogleLogin}
+            className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Sign in with Google"
+          >
+            <FcGoogle size={24} />
+          </button>
+          <button 
+            onClick={handleGithubLogin}
+            className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label="Sign in with GitHub"
+          >
+            <FaGithubAlt size={24} className="text-white" />
+          </button>
+        </div>
+
+        <div className="relative flex items-center my-6">
+          <div className="flex-grow border-t border-gray-600"></div>
+          <span className="mx-4 flex-shrink text-gray-400 text-sm">or</span>
+          <div className="flex-grow border-t border-gray-600"></div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-gray-300 text-sm">
+              Email
+            </label>
+            <div className="relative">
               <input
-                className="roboto-regular"
+                className="w-full px-4 py-3 bg-transparent border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 type="email"
                 id="email"
-                placeholder="Email"
+                placeholder="Enter your email"
                 value={user.username}
                 onChange={(e) => setDetails("username", e.target.value)}
                 required
@@ -158,46 +173,67 @@ console.log(baseURL)
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
                 fill="currentColor"
-                className="h-4 w-4 absolute right-4 opacity-70"
+                className="h-4 w-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               >
                 <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
                 <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
               </svg>
+            </div>
+            {errors.email && (
+              <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-gray-300 text-sm">
+              Password
             </label>
-            <label className="input input-bordered my-5 rounded-2xl flex items-center gap-2">
+            <div className="relative">
               <input
                 type={visible ? "password" : "text"}
-                name="password"
-                className="grow roboto-regular"
+                id="password"
+                className="w-full px-4 py-3 bg-transparent border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
                 onChange={(e) => setDetails("password", e.target.value)}
                 value={user.password}
                 minLength={6}
-                placeholder="Enter password"
+                placeholder="Enter your password"
               />
-              {visible ? (
-                <GoEye onClick={handleEye} className="cursor-pointer" />
-              ) : (
-                <GoEyeClosed onClick={handleEye} className="cursor-pointer" />
-              )}
-            </label>
-            <button
-              type="submit"
-              className="bg-gradient-to-br from-white via-gray-100 to-gray-300 hover:scale-110 transition-transform duration-300 px-4 py-1 rounded-2xl text-black shadow-md mt-0"
-            >
-              Sign In
-            </button>
+              <button
+                type="button"
+                onClick={handleEye}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                aria-label={visible ? "Show password" : "Hide password"}
+              >
+                {visible ? <GoEye size={18} /> : <GoEyeClosed size={18} />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-red-400 text-xs mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-br from-white via-gray-100 to-gray-300 hover:from-gray-100 hover:to-white transition-all duration-300 py-3 rounded-xl text-black font-medium shadow-md mt-2"
+          >
+            Sign In
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-gray-400 text-sm">
+            Don't have an account?{" "}
             <Link
               to="/Signup"
-              className="absolute px-4 py-1 mt-10 left-[30%] text-white text-md underline hover:text-blue-500"
+              className="text-blue-400 hover:text-blue-300 underline transition-colors"
+              state={location.state}
             >
-              Don't have an account? Sign Up
+              Sign Up
             </Link>
-          </form>
+          </p>
         </div>
       </div>
-
-   
     </div>
   );
 };
