@@ -8,6 +8,7 @@ import insta from "../../assets/insta.png";
 import { AuthContext } from "../Context/AuthProvider";
 import { FaGithubAlt } from "react-icons/fa";
 import { baseURL } from "../Services/URL";
+import { SwalStyles } from "../../Styles/StylesServer";
 
 const Login = () => {
   const [user, setUser] = useState({ username: "", password: "" });
@@ -15,8 +16,17 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
+  const [loading, setLoading] = useState(false);
   const { signIn, googleSignUp } = useContext(AuthContext);
   const axiosSecure = useAxiosSecure();
+
+  // Add these styles to your CSS
+
+  if (typeof document !== "undefined") {
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = SwalStyles;
+    document.head.appendChild(styleSheet);
+  }
 
   // Using optional chaining with default values to avoid destructure errors
   const {
@@ -50,6 +60,7 @@ const Login = () => {
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
+      setLoading(true);
       const { username, password } = user;
       try {
         const data = await signIn(username, password);
@@ -61,22 +72,43 @@ const Login = () => {
 
           const Toast = Swal.mixin({
             toast: true,
-            position: "top",
+            position: "top-end",
             showConfirmButton: false,
-            timer: 1000,
+            timer: 2000,
             timerProgressBar: true,
-            background: "linear-gradient(to right, #000000 , #2D3436)",
+            background:
+              "linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #2D3436 100%)",
             color: "#fff",
+            iconColor: "#4ade80",
+            customClass: {
+              container: "swal-container",
+              popup: "swal-popup",
+              title: "swal-title",
+              timerProgressBar: "swal-progress",
+            },
             didOpen: (toast) => {
               toast.onmouseenter = Swal.stopTimer;
               toast.onmouseleave = Swal.resumeTimer;
+
+              // Add custom animation
+              toast.style.transform = "translateX(100%)";
+              toast.style.transition = "transform 0.3s ease-out";
+              setTimeout(() => {
+                toast.style.transform = "translateX(0)";
+              }, 10);
+            },
+            willClose: (toast) => {
+              // Add exit animation
+              toast.style.transition =
+                "transform 0.3s ease-in, opacity 0.3s ease-in";
+              toast.style.transform = "translateX(100%)";
+              toast.style.opacity = "0";
             },
           });
-
           Toast.fire({
             icon: "success",
             title: `Welcome ${currUser?.firstName || ""} ${
-              currUser?.lastName || currUser.username
+              currUser?.lastName || currUser?.username || ""
             }`,
           });
 
@@ -106,6 +138,8 @@ const Login = () => {
           footer: '<a href="#">Try again</a>',
         });
         console.error("Login error:", error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -119,8 +153,23 @@ const Login = () => {
   const handleEye = () => setVisible(!visible);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl bg-gradient-to-br from-black/90 via-black/50 to-black/20 shadow-2xl shadow-slate-600 p-6 md:p-8">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8">
+      {/* Home Button */}
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-4 right-4 md:top-6 md:right-6 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 z-10"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+        </svg>
+        <span className="hidden sm:inline">Home</span>
+      </button>
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl bg-gradient-to-br from-black/90 via-black/50 to-black/40 rounded-xl py-8 md:py-10 lg:py-12 px-4 md:px-6 lg:px-8 shadow-2xl shadow-gray-700">
         <div className="flex flex-col items-center mb-6">
           <h1 className="poppins-semibold text-white text-2xl md:text-3xl text-center mb-2">
             Sign In
@@ -132,20 +181,20 @@ const Login = () => {
 
         {/* Social login buttons */}
         <div className="flex justify-center space-x-4 mb-6">
-          <button 
+          <button
             onClick={handleGoogleLogin}
             className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
             aria-label="Sign in with Google"
           >
             <FcGoogle size={24} />
           </button>
-          <button 
+          {/*  <button 
             onClick={handleGithubLogin}
             className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
             aria-label="Sign in with GitHub"
           >
             <FaGithubAlt size={24} className="text-white" />
-          </button>
+          </button> */}
         </div>
 
         <div className="relative flex items-center my-6">
@@ -215,23 +264,21 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-br from-white via-gray-100 to-gray-300 hover:from-gray-100 hover:to-white transition-all duration-300 py-3 rounded-xl text-black font-medium shadow-md mt-2"
+            className="w-full bg-gradient-to-br from-white via-white/90 to-gray-300 hover:scale-105 transition-transform duration-300 py-3 rounded-2xl text-black font-medium poppins-regular shadow-md shadow-slate-500/50 hover:text-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
           >
-            Sign In
+            {loading ? "Logging in... " : "Login"}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-400 text-sm">
-            Don't have an account?{" "}
-            <Link
-              to="/Signup"
-              className="text-blue-400 hover:text-blue-300 underline transition-colors"
-              state={location.state}
-            >
-              Sign Up
-            </Link>
-          </p>
+        {/* Login Link */}
+        <div className="text-center mt-6">
+          <Link
+            to="/Signup"
+            className="text-white text-sm md:text-base roboto-light underline hover:text-blue-400 transition-colors"
+          >
+            Don't have an account? Sign up.
+          </Link>
         </div>
       </div>
     </div>
