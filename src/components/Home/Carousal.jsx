@@ -86,15 +86,33 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
         id="content"
         className="absolute flex  text-white justify-center h-[70%]  bottom-[0%] w-full"
       >
-        <div id="name" className="md:pt-16 md:pl-8 w-[60%] pt-0 pl-2 ">
-          <span className="  text-xl md:text-7xl roboto-semibold md:roboto-semibold ml-12 opacity-70">
+        {/*  <div id="name" className="md:pt-16 md:pl-8 w-[60%] pt-0 pl-2 ">
+          <span className="text-xl sm:text-7xl sm:poppins-bold roboto-semibold ml-12 opacity-70">
             {" "}
             {videos[currentVideoIndex].name}
           </span>
-          <div className=" pt-4 ml-12 text-xl text-justify w-[60%] poppins-light  text-white">
-            <p className="md:text-xl">{videos[currentVideoIndex].desc}</p>
+          <div className=" pt-4 ml-12 text-justify w-[60%] poppins-light  text-white">
+            <p className="md:text-lg text-xs lg:text-xl">{videos[currentVideoIndex].desc}</p>
+          </div>
+        </div> */}
+
+        <div
+          id="name"
+          className="w-full md:w-[60%] pt-2 sm:pt-6 md:pt-12 lg:pt-16 px-4 sm:px-6 md:pl-8"
+        >
+          {/* Name - Responsive font sizes */}
+          <span className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl poppins-bold md:poppins-bold roboto-semibold opacity-70 block mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+            {videos[currentVideoIndex].name}
+          </span>
+
+          {/* Description - Responsive text and width */}
+          <div className="text-justify w-full sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[55%] 2xl:w-[50%] poppins-light text-white">
+            <p className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-md xl:text-xl leading-relaxed sm:leading-loose md:leading-loose">
+              {videos[currentVideoIndex].desc}
+            </p>
           </div>
         </div>
+
         <div id="poster" className=" justify-start ">
           <img
             className="object-cover h-[60%] md:h-full rounded-3xl opacity-75"
@@ -113,7 +131,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
         muted
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/80"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80"></div>
       {showArrow && (
         <div
           onClick={onDownArrowClick}
@@ -149,7 +167,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
       {/* Previous Button */}
       <button
         onClick={handlePrevious}
-        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 sm:p-4 rounded-full transition-all duration-300 focus:outline-none group"
+        className="absolute hidden sm:block left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 sm:p-4 rounded-full transition-all duration-300 focus:outline-none group"
         aria-label="Previous slide"
       >
         <FaChevronLeft
@@ -161,7 +179,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
       {/* Next Button */}
       <button
         onClick={handleNext}
-        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 sm:p-4 rounded-full transition-all duration-300 focus:outline-none group"
+        className="absolute hidden sm:block right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 sm:p-4 rounded-full transition-all duration-300 focus:outline-none group"
         aria-label="Next slide"
       >
         <FaChevronRight
@@ -171,7 +189,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
       </button>
 
       {/* Indicator Dots */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-30 flex space-x-3">
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-30 hidden sm:flex space-x-3">
         {videos.map((_, index) => (
           <button
             key={index}

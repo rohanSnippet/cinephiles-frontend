@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Slider from "react-slick";
 import RecomendedMovieCard from "../Home/RecomendedMovieCard";
 import "slick-carousel/slick/slick.css";
@@ -13,15 +13,23 @@ const RecentMovies = () => {
   const [movies, setMovies] = useState([]);
   const [cities, setCities] = useState([]);
   const city = useCity();
-
   const axiosSecure = useAxiosSecure();
-
   const [isLoading, setIsLoading] = useState(true);
+  const sliderRef = useRef(null);
 
+  // Memoized city data processing
+  const cityData = useMemo(() => {
+    const foundRegion = regions.find(r => r.region === city) || regions2.find(r => r.region === city);
+    return foundRegion ? foundRegion.cities : [city];
+  }, [city]);
+
+  // Optimized movie fetching
   const fetchMovies = useCallback(async () => {
+    if (cities.length === 0) return;
+    
+    setIsLoading(true);
     try {
       const cityQuery = cities.join(",");
-
       const res = await axiosSecure.get(`/movie/by-city?cities=${cityQuery}`);
       setMovies(res.data);
     } catch (error) {
@@ -31,173 +39,167 @@ const RecentMovies = () => {
     }
   }, [axiosSecure, cities]);
 
-  const fetchCities = useCallback(async () => {
-    let foundCities = null;
-
-    regions.forEach((r) => {
-      if (r.region === city) {
-        foundCities = r.cities;
-      }
-    });
-
-    if (!foundCities) {
-      regions2.forEach((r) => {
-        if (r.region === city) {
-          foundCities = r.cities; // Store the cities from the region
-        }
-      });
-    }
-
-    if (!foundCities) {
-      setCities([city]);
-    } else {
-      setCities(foundCities);
-    }
-  }, [city]);
-
+  // Load cities only once
   useEffect(() => {
-    fetchCities();
-  }, [city]);
+    setCities(cityData);
+  }, [cityData]);
 
+  // Fetch movies when cities change
   useEffect(() => {
-    if (cities.length > 0) {
-      fetchMovies(); // Fetch movies only after cities are set
-    }
-  }, [cities, fetchMovies]);
+    fetchMovies();
+  }, [fetchMovies]);
 
-  // console.log(cities);
-  const sortedMovies = movies
-    .slice()
-    .sort((a, b) => {
-      if (a.promoted !== b.promoted) return b.promoted - a.promoted;
-      return new Date(b.releaseDate) - new Date(a.releaseDate);
-    })
-    .filter((movie) => movie.bookingOpen);
+  // Memoized sorted movies
+  const sortedMovies = useMemo(() => 
+    movies
+      .slice()
+      .sort((a, b) => {
+        if (a.promoted !== b.promoted) return b.promoted - a.promoted;
+        return new Date(b.releaseDate) - new Date(a.releaseDate);
+      })
+      .filter(movie => movie.bookingOpen),
+    [movies]
+  );
 
-  //console.log(cities);
-  const sliderRef = useRef(null);
-  const settings = {
+  // Responsive slider settings
+  const settings = useMemo(() => ({
     dots: false,
     infinite: false,
     speed: 500,
-    slidesToShow: Math.min(sortedMovies.length, 5), // Adjust based on the number of movies
-    slidesToScroll: Math.min(sortedMovies.length, 5), // Adjust based on the number of movies
+    slidesToShow: Math.min(sortedMovies.length, 5),
+    slidesToScroll: Math.min(sortedMovies.length, 2),
     centerMode: false,
-    arrows: false, // Disable default arrows
+    arrows: false,
     responsive: [
+      {
+        breakpoint: 1920, // Large desktop
+        settings: {
+          slidesToShow: Math.min(sortedMovies.length, 5),
+          slidesToScroll: Math.min(sortedMovies.length, 2),
+        },
+      },
       {
         breakpoint: 1480, // 2xl screens
         settings: {
           slidesToShow: Math.min(sortedMovies.length, 4),
-          slidesToScroll: Math.min(sortedMovies.length, 4),
-        },
-      },
-      {
-        breakpoint: 1180, // xl screens
-        settings: {
-          slidesToShow: Math.min(sortedMovies.length, 3),
-          slidesToScroll: Math.min(sortedMovies.length, 3),
-        },
-      },
-      {
-        breakpoint: 520, // Small screens
-        settings: {
-          slidesToShow: Math.min(sortedMovies.length, 2),
           slidesToScroll: Math.min(sortedMovies.length, 2),
         },
       },
+      {
+        breakpoint: 1024, // lg screens
+        settings: {
+          slidesToShow: Math.min(sortedMovies.length, 3),
+          slidesToScroll: Math.min(sortedMovies.length, 2),
+        },
+      },
+      {
+        breakpoint: 768, // md screens
+        settings: {
+          slidesToShow: Math.min(sortedMovies.length, 2),
+          slidesToScroll: Math.min(sortedMovies.length, 1),
+        },
+      },
+      {
+        breakpoint: 480, // sm screens
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+          centerMode: true,
+          centerPadding: '40px',
+        },
+      },
     ],
-  };
-  const sliderStyle = {
-    display: "flex",
-    justifyContent: sortedMovies.length < 5 ? "center" : "flex-start", // Align items
-    gap: "10px", // Add space between items
-  };
-  const loaderCount = [1, 2, 3, 4];
+  }), [sortedMovies.length]);
+
+  const loaderCount = useMemo(() => [1, 2, 3, 4], []);
+
   return (
     <div className="relative overflow-hidden -mt-8 md:mt-20 bg-gradient-to-b from-black/70 via-gray-900">
-      <div className="h-[30vh] w-[90%] mx-auto mb-12 md:mb-4">
-        <h1 className="text-white pt-9 text-3xl md:text-6xl poppins-extrabold">
+      {/* Header Section */}
+      <div className="w-[90%] mx-auto mb-8 md:mb-4 pt-8 md:pt-12">
+        <h1 className="text-white text-2xl md:text-4xl lg:text-6xl poppins-extrabold mb-4 md:mb-6">
           GET YOUR TICKETS NOW
         </h1>
-        <p className="text-white pt-5 roboto-light text-2xl md:text-lg">
-          Don’t miss out on the action! Secure your tickets today and be among
-        </p>
-        <p className="text-white roboto-light text-2xl md:text-lg">
-          the first to experience the excitement. Act fast and grab your spot
-        </p>
+        <div className="text-white roboto-light text-base md:text-lg space-y-2">
+          <p>Don't miss out on the action! Secure your tickets today and be among</p>
+          <p>the first to experience the excitement. Act fast and grab your spot</p>
+        </div>
       </div>
-      <div className="relative">
+
+      {/* Slider Section */}
+      <div className="relative px-4 md:px-8 lg:px-16">
         {!isLoading && sortedMovies.length > 0 ? (
-          <Slider
-            ref={sliderRef}
-            {...settings}
-            className="relative"
-            style={sliderStyle}
-          >
-            {sortedMovies.map((item, i) => (
-              <div key={i} className="flex justify-center items-center px-8">
-                <RecomendedMovieCard item={item} />
-              </div>
-            ))}
-          </Slider>
+          <div className="relative">
+            <Slider ref={sliderRef} {...settings}>
+              {sortedMovies.map((item, i) => (
+                <div key={item.id || i} className="px-2 md:px-3 lg:px-4">
+                  <RecomendedMovieCard item={item} />
+                </div>
+              ))}
+            </Slider>
+
+            {/* Navigation Arrows - Only show if there are enough movies */}
+            {sortedMovies.length > 3 && (
+              <>
+                <button
+                  onClick={() => sliderRef.current?.slickPrev()}
+                  className="absolute top-1/2 -left-2 md:-left-4 lg:-left-6 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 md:p-3 rounded-full shadow-lg transition-all duration-200"
+                  aria-label="Previous movies"
+                >
+                  <svg
+                    className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-800"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => sliderRef.current?.slickNext()}
+                  className="absolute top-1/2 -right-2 md:-right-4 lg:-right-6 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 md:p-3 rounded-full shadow-lg transition-all duration-200"
+                  aria-label="Next movies"
+                >
+                  <svg
+                    className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-gray-800"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
         ) : (
-          <div className="pl-[26vh] flex gap-10">
+          // Skeleton Loaders
+          <div className="flex justify-center gap-4 md:gap-6 lg:gap-8 px-4">
             {loaderCount.map((l) => (
-              <div key={l} className="flex w-64 flex-col gap-4">
-                <div className="skeleton h-64 w-full"></div>
-                <div className="skeleton h-4 w-28"></div>
+              <div key={l} className="flex flex-col gap-3 w-[45vw] sm:w-[30vw] md:w-[22vw] lg:w-[18vw] xl:w-[15vw]">
+                <div className="skeleton h-48 md:h-56 lg:h-64 w-full rounded-lg"></div>
+                <div className="skeleton h-4 w-3/4"></div>
                 <div className="skeleton h-4 w-full"></div>
-                <div className="skeleton h-4 w-full"></div>
-                <div className="skeleton h-4 w-full"></div>
+                <div className="skeleton h-4 w-5/6"></div>
               </div>
             ))}
           </div>
         )}
-
-        {/* Custom Next Arrow */}
-        <button
-          onClick={() => sliderRef.current.slickNext()}
-          className="absolute top-2/3 right-4 transform -translate-y-1/2 z-10 bg-white p-2 rounded-full shadow-md"
-        >
-          <svg
-            className="w-6 h-6 text-gray-800"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-
-        {/* Custom Prev Arrow */}
-        <button
-          onClick={() => sliderRef.current.slickPrev()}
-          className="absolute top-2/3 left-4 transform -translate-y-1/2 z-10 bg-white p-2 rounded-full shadow-md"
-        >
-          <svg
-            className="w-6 h-6 text-gray-800"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
       </div>
-      <div className="mt-7 py-3">
+
+      {/* Explore More Button */}
+       <div className="mt-7 py-3">
         <Link
           to={`/All-Movies`}
           className="badge bg-transparent border-double border-white text-white hover:transition-transform hover:scale-105 hover:bg-gradient-to-br hover:from-white/10 hover:via-white/20 hover:to-white/35 hover:bg-opacity-15 poppins-regular text-2xl py-5 px-7"
@@ -209,4 +211,4 @@ const RecentMovies = () => {
   );
 };
 
-export default RecentMovies;
+export default React.memo(RecentMovies);
