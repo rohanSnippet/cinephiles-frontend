@@ -41,6 +41,7 @@ const AuthProvider = ({ children }) => {
     //****************** OAuth2 Methods **********************************/
  const googleSignUp =()=>{
   window.location.href = `${baseURL}/oauth2/authorization/google`;
+  console.log("auth called on "+baseURL+"/oauth2/authorization/google")
  }
 
   //****************** Refresh token Methods **********************************/
@@ -91,6 +92,7 @@ console.log(userData)
         method: 'GET',
         credentials: 'include',
     });
+    console.log(response)
 
     if (response.ok) {
         const data = await response.json();

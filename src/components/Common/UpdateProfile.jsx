@@ -115,6 +115,8 @@ const UpdateProfile = () => {
       try {
         const response = await axiosSecure.get(`/user?username=${username}`);
         setCurrUser(response.data);
+        console.log(response)
+        setImage(response?.data?.profile)
         setUpdatedUser(response.data);
         setPublicId(response.data.publicId);
       } catch (error) {
