@@ -126,9 +126,9 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
         preConfirm: async () => {
           try {
             const response = await axiosSecure.delete(
-              `/bookings/unlock-seats?showId=${selectedData.showId}&user=${selectedData.user}`
+              `/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`
             );
-            if (response.data !== "Seats unlocked using unlock seats....") {
+            if (response.data !== "Seats unlocked using cancel seats....") {
               throw new Error("Server declined seat unlock.");
             }
             sessionStorage.removeItem("bookingData");
@@ -242,9 +242,9 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
       showLoaderOnConfirm: true,
       allowOutsideClick: false,
       preConfirm: () =>
-        axiosSecure.delete(`/bookings/unlock-seats?showId=${selectedData.showId}&user=${selectedData.user}`)
+        axiosSecure.delete(`/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`)
           .then((response) => {
-            if (response.data !== "Seats unlocked using unlock seats....") {
+            if (response.data !== "Seats unlocked using cancel seats....") {
               throw new Error("Seat unlock failed");
             }
             return true;
