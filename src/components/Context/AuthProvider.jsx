@@ -70,12 +70,12 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-console.log(userData)
+
   useEffect(() => {
    
      const getSession = ()=>{
       axios.get(`${baseURL}/auth/user-info`,{withCredentials:true}).then((res)=>{
-        console.log(res.data)
+        //console.log("Get Session : ",res.data)
          localStorage.setItem("username",res.data.email)
              setSession(res.data)
               //  console.log(res.data)

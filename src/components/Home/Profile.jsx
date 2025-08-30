@@ -27,10 +27,6 @@ const Profile = () => {
         setLoading(false); // Set loading to false after fetching
       }
     };
-
-     setTimeout(() => {
-      
-    }, 1000);
     getUser();
   }, [username]);
 
@@ -68,10 +64,10 @@ const Profile = () => {
   const [isAdmin, isAdminLoading] = useAdmin();
   const [isOwner, isOwnerLoading] = useOwner();
 
-  if (loading) {
+ /*  if (loading) {
     return <Loading/>; // Show a loading state while fetching
-  }
-
+  } */
+// console.log("Profile page :", session.picture)
   return (
     <div className="drawer drawer-end z-50">
       <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
@@ -82,7 +78,7 @@ const Profile = () => {
             className="drawer-button btn btn-ghost btn-circle avatar btn-md"
           >
             <div className="rounded-full">
-              <img alt="User Avatar" src={user.profile} />
+              <img alt="User Avatar" src={`${session?.picture || user.profile}`} />
             </div>
           </label>
         ) : (

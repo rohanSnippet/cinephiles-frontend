@@ -13,7 +13,12 @@ const RecomendedMovieCard = ({ item }) => {
   const displayText = releaseDateObj <= now ? "votes" : "interests";
 
   return (
-     <div ref={hoverRef} className="carousel-item ring-2 ring-white/20 rounded-xl relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40">
+    <Link
+      to={`/movie-details`}
+      state={{ item: item, previousPath: `/` }}
+      ref={hoverRef}
+      className="carousel-item ring-2 ring-white/20 rounded-xl relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40"
+    >
       {item.promoted ? (
         <p
           className={`absolute bottom-13 group-hover:opacity-20 poppins-light text-md px-2 text-white bg-green-600 rounded-ss-xl rounded-ee-xl z-10`} // Added z-10 to promote tag
@@ -29,8 +34,9 @@ const RecomendedMovieCard = ({ item }) => {
         loading="lazy"
         className="object-cover w-full h-full rounded-xl" // Changed to rounded-xl to match parent
       />
-      <div className="absolute btn-ghost backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300 rounded-xl"> {/* Added rounded-xl here */}
+      <div className="absolute btn-ghost backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300 rounded-xl">
         {" "}
+        {/* Added rounded-xl here */}{" "}
         {releaseDateObj <= now ? (
           <img
             src={star}
@@ -56,13 +62,13 @@ const RecomendedMovieCard = ({ item }) => {
           {releaseDateObj.toString().substring(4, 8)}
           {releaseDate.substring(0, 4)}
         </p>
-        <Link
+        {/* <Link
           to={`/movie-details`}
           state={{ item: item, previousPath: `/` }}
           className="absolute top-[50%] poppins-light hover:font-bold text-2xl left-[32%] bg-black bg-opacity-60 px-4 py-1 rounded-md hover:-translate-y-3 hover:shadow-sm hover:shadow-white/60 duration-300 hover:bg-white hover:text-black hover:bg-opacity-50"
         >
           Book{" "}
-        </Link>
+        </Link> */}
         <p className=" absolute top-[0%] w-full poppins-bold text-xl text-white">
           {item.title.toUpperCase()}
         </p>
@@ -74,7 +80,7 @@ const RecomendedMovieCard = ({ item }) => {
           ""
         )}
       </div>
-    </div>
+    </Link>
   );
 };
 

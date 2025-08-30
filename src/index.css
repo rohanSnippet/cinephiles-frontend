@@ -405,3 +405,12 @@ input[type="radio"]:checked + .radio-button {
 .animate-ping-slow {
   animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+
+@keyframes shine-badge {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+.animate-shine {
+  animation: shine 3s ease-in-out infinite;
+}

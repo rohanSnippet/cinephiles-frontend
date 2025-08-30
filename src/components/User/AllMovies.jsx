@@ -133,7 +133,7 @@ const AllMovies = () => {
                           onChange={(e) => handleSortChange(e.target.value)}
                           className="sr-only"
                         />
-                        <span className={`px-3 py-1 rounded-2xl text-sm flex items-center gap-1 ${selectedSort === option.value ? 'bg-blue-700' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                        <span className={`px-3 py-1 rounded-2xl text-sm flex items-center gap-1 ${selectedSort === option.value ? 'bg-slate-300 text-black' : 'bg-slate-800 hover:bg-slate-700'}`}>
                           {option.icon && <span>{option.icon}</span>}
                           <span>{option.label}</span>
                         </span>
@@ -153,7 +153,7 @@ const AllMovies = () => {
                           onChange={(e) => handleFilterChange(e.target.value)}
                           className="sr-only"
                         />
-                        <span className={`px-3 py-1 rounded-2xl text-sm ${selectedGenre === genre ? 'bg-blue-700' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                        <span className={`px-3 py-1 rounded-2xl text-sm ${selectedGenre === genre ? 'bg-slate-300 text-black' : 'bg-slate-800 hover:bg-slate-700'}`}>
                           {genre}
                         </span>
                       </label>
@@ -176,13 +176,11 @@ const AllMovies = () => {
                 </div>
               </div>
 
-              {/* Movies Grid */}
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 justify-center">
+              {/* Movies Grid - Adjusted for proper card display */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
                 {filteredAndSortedMovies.length > 0 ? (
                   filteredAndSortedMovies.map((movie) => (
-                    <div key={movie._id || movie.id} className="flex justify-center">
-                      <MovieCard item={movie} />
-                    </div>
+                    <MovieCard key={movie._id || movie.id} item={movie} />
                   ))
                 ) : (
                   <div className="col-span-full text-center py-8 text-gray-400">

@@ -106,9 +106,6 @@ const Header = () => {
           <span className="font-bold roboto-bold text-2xl text-white">
             <Link to="/">Cinephiles</Link>
           </span>
-          <span className="font-bold roboto-bold text-2xl text-white sm:hidden">
-            <Link to="/">CP</Link>
-          </span>
         </div>
 
         {/* Desktop Search */}
@@ -221,7 +218,7 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <MdOutlineAddLocationAlt size={20} className="mr-2" />
-                <span>Set Location</span>
+                <span className="poppins-semibold">Set Location</span>
               </Link>
             )}
 
