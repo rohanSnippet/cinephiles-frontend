@@ -13,25 +13,26 @@ const Profile = () => {
   const { session, setSession } = useContext(AuthContext);
   const username = localStorage.getItem("username");
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Add a loading state
+  const [loading, setLoading] = useState(true);
   const axiosSecure = useAxiosSecure();
 
   useEffect(() => {
     const getUser = async () => {
       try {
+        setLoading(true); 
         const res = await axiosSecure.get(`/user?username=${username}`);
-        setUser(res.data);
+        if(res.data) setUser(res.data);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false); // Set loading to false after fetching
       }
     };
-    getUser();
-  }, [username]);
+   if (username) {
+        getUser();
+    }
+  }, [username, axiosSecure]);
 
   const handleLogout = async () => {
-    
   
       try {
         const response = await fetch(`${baseURL}/auth/logout`, {
@@ -42,6 +43,7 @@ const Profile = () => {
         if (response.ok) {
           localStorage.removeItem("access-token");
           localStorage.removeItem("username");
+          localStorage.removeItem("token-expiry");
           setSession(null);
 
           Swal.fire({
@@ -51,9 +53,9 @@ const Profile = () => {
             showConfirmButton: false,
           });
 
-          setTimeout(() => {
+          /* setTimeout(() => {
             window.location.href = frontURL ;
-          }, 1000);
+          }, 1000); */
         } 
       } catch (error) {
         console.error("An error occurred during logout", error);
@@ -61,24 +63,20 @@ const Profile = () => {
     
   };
 
-  const [isAdmin, isAdminLoading] = useAdmin();
-  const [isOwner, isOwnerLoading] = useOwner();
+  const [isAdmin] = useAdmin();
+  const [isOwner] = useOwner();
 
- /*  if (loading) {
-    return <Loading/>; // Show a loading state while fetching
-  } */
-// console.log("Profile page :", session.picture)
   return (
     <div className="drawer drawer-end z-50">
       <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content transition-all duration-300 ">
-        {user && user.profile ? (
+        {user ? (
           <label
             htmlFor="my-drawer-4"
             className="drawer-button btn btn-ghost btn-circle avatar btn-md"
           >
-            <div className="rounded-full">
-              <img alt="User Avatar" src={`${session?.picture || user.profile}`} />
+            <div className="rounded-3xl">
+              <img alt="User Avatar" src={user?.profile || session?.picture} />
             </div>
           </label>
         ) : (
