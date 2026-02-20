@@ -18,14 +18,11 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
         selectedDate: location.state.selectedDate,
         selectedShow: location.state.selectedShow,
       };
-      sessionStorage.getItem("bookingData", JSON.stringify(data))
+      sessionStorage.setItem("bookingData", JSON.stringify(data));
       return data;
     } else {
       const cached = sessionStorage.getItem("bookingData");
-      if (cached) {
-        return JSON.parse(cached);
-      }
-      return null;
+      return cached ? JSON.parse(cached) : null;
     }
   });
 
@@ -33,148 +30,63 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     bookingData || {};
 
   const baseAmt = selectedData?.price || 0;
-  const taxes = {
-    cgst: baseAmt * 0.09,
-    sgst: baseAmt * 0.09,
-  };
+  const taxes = { cgst: baseAmt * 0.09, sgst: baseAmt * 0.09 };
 
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
-  const [isSnackbarOpen, setIsSnackbarOpen] = useState(false); // State for mobile snacks bar
-
-  const pushedRef = useRef(false);
-  const isAlertOpen = useRef(false);
-  const unlockCalled = useRef(false);
+  const [isSnackbarOpen, setIsSnackbarOpen] = useState(false);
 
   const fallbackPath = location.state?.from ?? fallback;
-
-  const unlockSeats = useCallback(async () => {
-    if (unlockCalled.current || !selectedData) {
-      return;
-    }
-    unlockCalled.current = true;
-
-    try {
-      const response = await axiosSecure.delete(
-        `/bookings/unlock-seats?showId=${selectedData.showId}&user=${selectedData.user}`
-      );
-      const ok = response.data === "Seats unlocked using unlock seats....";
-
-      if (ok) {
-        Swal.fire({
-          icon: "info",
-          title: "Session Expired!",
-          text: "Your booking session has expired. The selected seats have been released.",
-          timer: 2000,
-          showConfirmButton: false,
-        }).then(() => {
-          sessionStorage.removeItem("bookingData");
-          navigate(fallbackPath, { replace: true, state: { item: movie } });
-        });
-      } else {
-        console.warn("Unlock seats response not 'ok':", response.data);
-        Swal.fire({
-          icon: "warning",
-          title: "Booking Interrupted!",
-          text: "Your booking could not be completed. Please try again.",
-          timer: 2000,
-          showConfirmButton: false,
-        }).then(() => {
-          sessionStorage.removeItem("bookingData");
-          navigate(fallbackPath, { replace: true, state: { item: movie } });
-        });
-      }
-    } catch (error) {
-      console.error("Unlock seats failed:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error!",
-        text: "Could not release seats. Please check your network.",
-        timer: 2000,
-        showConfirmButton: false,
-      }).then(() => {
-        sessionStorage.removeItem("bookingData");
-        navigate(fallbackPath, { replace: true, state: { item: movie } });
-      });
-    }
-  }, [selectedData, axiosSecure, navigate, fallbackPath, movie]);
+  const handledTimeout = useRef(false);
 
   useEffect(() => {
-    if (!pushedRef.current) {
-      window.history.pushState(null, "", window.location.href);
-      pushedRef.current = true;
-    }
-
-    const handlePopState = (event) => {
-      if (isAlertOpen.current) {
-        window.history.pushState(null, "", window.location.href);
-        return;
+    const handleBeforeUnload = (e) => {
+      if (selectedData) {
+        // Use standard URL format for cancel
+        const url = `${import.meta.env.VITE_APP_API_BASE_URL}/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`;
+        navigator.sendBeacon(url);
       }
-
-      isAlertOpen.current = true;
-      Swal.fire({
-        title: "Cancel Booking?",
-        text: "Going back will cancel your current transaction and release the selected seats. Do you want to continue?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, cancel and leave",
-        cancelButtonText: "No, stay here",
-        confirmButtonColor: "#EF4444",
-        cancelButtonColor: "#3085de",
-        showLoaderOnConfirm: true,
-        allowOutsideClick: false,
-        preConfirm: async () => {
-          try {
-            const response = await axiosSecure.delete(
-              `/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`
-            );
-            if (response.data !== "Seats unlocked using cancel seats....") {
-              throw new Error("Server declined seat unlock.");
-            }
-            sessionStorage.removeItem("bookingData");
-            return true;
-          } catch (err) {
-            Swal.showValidationMessage(`Action failed: ${err.message}`);
-            return false;
-          }
-        },
-      }).then((result) => {
-        isAlertOpen.current = false;
-
-        if (result.isConfirmed && result.value) {
-          window.removeEventListener("popstate", handlePopState);
-          if (window.history.length > 1) {
-            navigate(-1);
-          } else {
-            navigate(fallbackPath, { replace: true, state: { item: movie } });
-          }
-        } else {
-          window.history.pushState(null, "", window.location.href);
-        }
-      });
     };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [selectedData]);
 
-    window.addEventListener("popstate", handlePopState);
+  // --- 2. Handle Timer Expiration ---
+  const handleSessionExpired = useCallback(() => {
+    if (handledTimeout.current) return;
+    handledTimeout.current = true;
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [navigate, fallbackPath, axiosSecure, selectedData, movie]);
+    // The backend naturally expires the lock via DB timestamp, no explicit API call needed here
+    Swal.fire({
+      icon: "info",
+      title: "Session Expired!",
+      text: "Your booking session has expired. The selected seats have been released.",
+      timer: 2500,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+    }).then(() => {
+      sessionStorage.removeItem("bookingData");
+      navigate(fallbackPath, { replace: true, state: { item: movie } });
+    });
+  }, [navigate, fallbackPath, movie]);
 
+  // --- 3. Manage Countdown Timer ---
   useEffect(() => {
     if (!selectedData) return;
-
-    sessionStorage.setItem("bookingData", JSON.stringify(bookingData));
 
     const fetchRemainingTime = async () => {
       try {
         const response = await axiosSecure.get(
-          `/bookings/remaining-time?showId=${selectedData.showId}&user=${selectedData.user}`
+          `/bookings/remaining-time?showId=${selectedData.showId}&user=${selectedData.user}`,
         );
-        setTime(response.data);
+        const remaining = parseInt(response.data, 10);
+        if (remaining <= 0) {
+          handleSessionExpired();
+        } else {
+          setTime(remaining);
+        }
       } catch (error) {
         console.error("Error fetching remaining time:", error);
-        unlockSeats();
       }
     };
 
@@ -182,97 +94,77 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
     const interval = setInterval(() => {
       setTime((prev) => {
-        if (prev > 0) return prev - 1;
-        clearInterval(interval);
-        if (!unlockCalled.current) {
-          unlockSeats();
+        if (prev === null) return null;
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleSessionExpired();
+          return 0;
         }
-        return 0;
+        return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [selectedData, axiosSecure, bookingData, unlockSeats]);
+  }, [selectedData, axiosSecure, handleSessionExpired]);
 
- /*  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (selectedData && !unlockCalled.current) {
-        const payload = JSON.stringify({
-          showId: selectedData.showId,
-          user: selectedData.user,
-        });
-        navigator.sendBeacon(
-          `${
-            import.meta.env.VITE_APP_API_BASE_URL
-          }/bookings/unlock-seats-beacon`,
-          payload
-        );
-        //sessionStorage.removeItem("bookingData");
-      }
-    };
+  // --- 4. Intercept Back Button / Cancel Intent ---
+  const handleBack = async (e) => {
+    if (e) e.preventDefault(); // For UI Back Button
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [selectedData]); */
-
-  useEffect(() => {
-    /* if (!selectedData) {
-      navigate(fallbackPath, { state:{item:movie},replace: true });
-    } */
-    if (bookingData === null) {
-    navigate(fallbackPath, { state: { item: movie }, replace: true });
-  }
-  }, [selectedData, navigate, fallbackPath]);
-
-  const handleBack = async () => {
     if (!selectedData) {
       navigate(fallbackPath, { replace: true, state: { item: movie } });
       return;
     }
 
-    const result = await Swal.fire({
+    Swal.fire({
       title: "Cancel Booking?",
-      text: "Going back will cancel your booking and release the seats. Continue?",
+      text: "Going back will cancel your current transaction and release the selected seats. Do you want to continue?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, cancel and go back",
+      confirmButtonText: "Yes, cancel and leave",
       cancelButtonText: "No, stay here",
       confirmButtonColor: "#EF4444",
       cancelButtonColor: "#3085de",
       showLoaderOnConfirm: true,
       allowOutsideClick: false,
-      preConfirm: () =>
-        axiosSecure.delete(`/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`)
-          .then((response) => {
-            if (response.data !== "Seats unlocked using cancel seats....") {
-              throw new Error("Seat unlock failed");
-            }
-            return true;
-          })
-          .catch((err) => {
-            Swal.showValidationMessage(`Unlock failed: ${err.message}`);
-            throw err;
-          }),
-    });
-
-    console.log(result)
-
-    if (result.isConfirmed) {
-      console.log(window.history.length)
-      
-      if (window.history.length > 1) {
-        console.log("navigate -1 called")
-        navigate(-1);
-      } else {
+      preConfirm: async () => {
+        try {
+          await axiosSecure.delete(
+            `/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`,
+          );
+          sessionStorage.removeItem("bookingData");
+          handledTimeout.current = true; // prevent timeout alert from firing
+          return true;
+        } catch (err) {
+          return true; // Still navigate away even if network fails
+        }
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
         navigate(fallbackPath, { replace: true, state: { item: movie } });
+      } else {
+        // Push state back so back button works again
+        window.history.pushState(null, "", window.location.href);
       }
-    }
+    });
   };
 
+  // Bind browser back button to handleBack
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, []);
+
+  useEffect(() => {
+    if (!bookingData) {
+      navigate(fallbackPath, { state: { item: movie }, replace: true });
+    }
+  }, [bookingData, navigate, fallbackPath, movie]);
+
   const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return { minutes, secs };
+    if (seconds === null) return { minutes: 0, secs: 0 };
+    return { minutes: Math.floor(seconds / 60), secs: seconds % 60 };
   };
   const { minutes, secs } = formatTime(time);
 
@@ -303,7 +195,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
       const { data } = await axiosSecure.post(
         "/api/payment/create-order",
-        payload
+        payload,
       );
 
       cashfree
@@ -350,36 +242,51 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   };
 
   const snacks = [
-    { name: "Crispy Popcorn", price: 200, emoji: "🍿", bgColor: "bg-orange-600" },
-    { name: "Spicy Samosas (2 Pcs)", price: 120, emoji: "🥟", bgColor: "bg-red-600" },
+    {
+      name: "Crispy Popcorn",
+      price: 200,
+      emoji: "🍿",
+      bgColor: "bg-orange-600",
+    },
+    {
+      name: "Spicy Samosas (2 Pcs)",
+      price: 120,
+      emoji: "🥟",
+      bgColor: "bg-red-600",
+    },
     { name: "Veg Sandwich", price: 150, emoji: "🥪", bgColor: "bg-green-600" },
-    { name: "Soft Drink (Large)", price: 90, emoji: "🥤", bgColor: "bg-blue-600" },
+    {
+      name: "Soft Drink (Large)",
+      price: 90,
+      emoji: "🥤",
+      bgColor: "bg-blue-600",
+    },
   ];
 
   return (
     <div className="flex flex-col md:flex-row w-full min-h-screen">
       <div className="fixed top-4 left-4 z-50">
-      <button
-        onClick={handleBack}
-        className="flex items-center text-white bg-slate-700 hover:bg-slate-600 transition rounded-full px-3 py-1 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <button
+          onClick={handleBack}
+          className="flex items-center text-white bg-slate-700 hover:bg-slate-600 transition rounded-full px-3 py-1 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        <span className="hidden sm:inline">Back</span>
-      </button>
-    </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span className="hidden sm:inline">Back</span>
+        </button>
+      </div>
 
       {/* Mobile Snack Bar Toggle Button */}
       <div className="md:hidden w-full bg-slate-800 p-3 text-center">
@@ -401,9 +308,8 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
       {/* Left Side - Snacks (Desktop) */}
       <div className="hidden md:block md:w-3/5 lg:w-2/4 overflow-y-auto min-h-screen bg-slate-900 shadow-xl">
-         
         <div className="bg-gradient-to-br from-fuchsia-900 to-purple-800 text-white p-6 h-1/5 flex items-center justify-center text-3xl font-bold poppins-bold">
-        Delicious Treats Await!
+          Delicious Treats Await!
         </div>
         <div className="p-6 h-4/5">
           <h3 className="text-2xl font-semibold text-white mb-6 poppins-medium">
@@ -589,7 +495,9 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
                   </div>
 
                   <div className="col-span-2">
-                    <p className="text-gray-400">Seats ({selectedData.seatsId.length})</p>
+                    <p className="text-gray-400">
+                      Seats ({selectedData.seatsId.length})
+                    </p>
                     <p className="text-lg font-semibold break-words">
                       {selectedData.seatsId.map((seat, index) => (
                         <span key={index}>
@@ -650,7 +558,8 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
                     <div className="flex justify-between font-bold text-xl text-green-300">
                       <span>Total:</span>
                       <span>
-                        &#x20B9; {(baseAmt + taxes.sgst + taxes.cgst).toFixed(2)}
+                        &#x20B9;{" "}
+                        {(baseAmt + taxes.sgst + taxes.cgst).toFixed(2)}
                       </span>
                     </div>
                   </div>

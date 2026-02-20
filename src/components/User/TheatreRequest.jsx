@@ -1,149 +1,15 @@
-import {
-  Autocomplete,
-  MenuItem,
-  TextField,
-  Typography,
-  Box,
-  Button,
-} from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
 import { IoIosSend } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-import { styled } from "@mui/system";
 
+// Configuration for Location API
 const config = {
   cUrl: import.meta.env.VITE_LOCATION_URL,
   ckey: import.meta.env.VITE_LOCATION_KEY,
 };
-
-const FormContainer = styled(Box)({
-  background: "linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.8))",
-  padding: "3rem",
-  borderRadius: "1rem",
-  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-  width: "100%",
-  maxWidth: "700px",
-  margin: "0 auto",
-  marginTop: "2rem",
-  marginBottom: "2rem",
-  color: "white",
-  fontFamily: "Poppins, sans-serif",
-});
-
-const HeaderBox = styled(Box)({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "1rem",
-  padding: "1rem 2rem",
-  background: "linear-gradient(to right, #000, #333, #000)",
-  borderRadius: "1rem",
-  boxShadow: "0 5px 15px rgba(0, 0, 0, 0.3)",
-  color: "white",
-  fontWeight: "600",
-  fontSize: "1.5rem",
-  marginBottom: "2rem",
-});
-
-const StepIndicator = styled("ul")({
-  display: "flex",
-  justifyContent: "space-between",
-  listStyle: "none",
-  padding: 0,
-  marginBottom: "3rem",
-  "& .step": {
-    cursor: "pointer",
-    padding: "0.5rem 1rem",
-    borderRadius: "2rem",
-    border: "2px solid #555",
-    color: "#aaa",
-    transition: "all 0.3s ease-in-out",
-    "&:hover": {
-      borderColor: "#fff",
-      color: "#fff",
-    },
-  },
-  "& .step-active": {
-    backgroundColor: "#3f51b5",
-    color: "#fff",
-    borderColor: "#3f51b5",
-    boxShadow: "0 0 10px rgba(63, 81, 181, 0.7)",
-  },
-});
-
-const TextFieldStyled = styled(TextField)({
-  "& .MuiOutlinedInput-root": {
-    "& fieldset": {
-      borderColor: "#555",
-    },
-    "&:hover fieldset": {
-      borderColor: "#888",
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: "#3f51b5",
-    },
-    "& .MuiInputBase-input": {
-      color: "white",
-    },
-  },
-  "& .MuiInputLabel-root": {
-    color: "#aaa",
-    "&.Mui-focused": {
-      color: "#3f51b5",
-    },
-  },
-  "& .MuiFormHelperText-root": {
-    color: "#f44336",
-  },
-});
-
-const AutocompleteStyled = styled(Autocomplete)({
-  "& .MuiOutlinedInput-root": {
-    "& fieldset": {
-      borderColor: "#555",
-    },
-    "&:hover fieldset": {
-      borderColor: "#888",
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: "#3f51b5",
-    },
-    "& .MuiInputBase-input": {
-      color: "white",
-    },
-  },
-  "& .MuiInputLabel-root": {
-    color: "#aaa",
-    "&.Mui-focused": {
-      color: "#3f51b5",
-    },
-  },
-});
-
-const FormButton = styled(Button)({
-  backgroundColor: "#3f51b5",
-  color: "white",
-  fontWeight: "bold",
-  borderRadius: "2rem",
-  padding: "0.75rem 1.5rem",
-  "&:hover": {
-    backgroundColor: "#303f9f",
-  },
-});
-
-const NavigationButton = styled(Button)({
-  backgroundColor: "#fff",
-  color: "black",
-  fontWeight: "bold",
-  borderRadius: "2rem",
-  padding: "0.75rem 1.5rem",
-  "&:hover": {
-    backgroundColor: "#eee",
-  },
-});
 
 const TheatreRequest = () => {
   const axiosSecure = useAxiosSecure();
@@ -152,9 +18,11 @@ const TheatreRequest = () => {
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [selectedCity, setSelectedCity] = useState("");
 
   const email = localStorage.getItem("username");
+  
   const form = useForm({
     mode: "all",
     defaultValues: {
@@ -180,6 +48,7 @@ const TheatreRequest = () => {
     formState: { errors, isValid },
   } = form;
 
+  // --- Logic: Load States ---
   useEffect(() => {
     const loadIndianStates = async () => {
       try {
@@ -195,13 +64,16 @@ const TheatreRequest = () => {
     loadIndianStates();
   }, []);
 
+  // --- Logic: Handle State Change & Load Cities ---
   const handleStateChange = async (e) => {
     const stateCode = e.target.value;
-    const stateName =
-      states.find((state) => state.iso2 === stateCode)?.name || "";
+    const stateName = states.find((state) => state.iso2 === stateCode)?.name || "";
+    
     setSelectedState(stateCode);
     setSelectedCity("");
     setCities([]);
+    
+    // Update React Hook Form values
     setValue("tlocation", "");
     setValue("state", stateName);
 
@@ -219,10 +91,17 @@ const TheatreRequest = () => {
     }
   };
 
+  // --- Logic: Handle City Change ---
+  const handleCityChange = (e) => {
+     const cityName = e.target.value;
+     setSelectedCity(cityName);
+     setValue("tlocation", cityName);
+  };
+
   const steps = [
-    { step: 1, name: "Theatre Details" },
+    { step: 1, name: "Details" },
     { step: 2, name: "Location" },
-    { step: 3, name: "Documents" },
+    { step: 3, name: "Docs" },
     { step: 4, name: "Review" },
   ];
 
@@ -237,15 +116,24 @@ const TheatreRequest = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
+  const changeCurStep = async (idx) => {
+    // Only allow jumping back or to the immediate next if valid
+    if (idx + 1 < currentStep) {
+        setCurrentStep(idx + 1);
+    }
+  };
+
   const onSubmit = (data) => {
     Swal.fire({
       title: "Confirm Theatre Details",
       text: "Are you sure you want to submit this request?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3f51b5",
+      confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, submit it!",
+      background: "#1a1a1a",
+      color: "#fff"
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -255,23 +143,23 @@ const TheatreRequest = () => {
               title: "Success!",
               text: "Your request has been sent.",
               icon: "success",
+              background: "#1a1a1a",
+              color: "#fff"
             });
           }
         } catch (error) {
-          console.error("Error saving movie:", error);
+          console.error("Error saving request:", error);
           Swal.fire({
             title: "Error!",
             text: "There was an error sending your request.",
             icon: "error",
+            background: "#1a1a1a",
+            color: "#fff"
           });
         }
         navigate("/");
       }
     });
-  };
-
-  const changeCurStep = (idx) => {
-    setCurrentStep(idx + 1);
   };
 
   const getUniqueCities = (cities) => {
@@ -283,288 +171,296 @@ const TheatreRequest = () => {
 
   const uniqueCities = getUniqueCities(cities);
 
+  // --- Helper Components for Styles ---
+  const InputGroup = ({ label, error, children }) => (
+    <div className="space-y-2">
+      <label className="text-gray-300 text-sm font-medium ml-1">{label}</label>
+      <div className="relative">
+        {children}
+      </div>
+      {error && <p className="text-red-400 text-xs ml-1">{error}</p>}
+    </div>
+  );
+
+  const baseInputClass = "w-full px-4 py-3 bg-transparent border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
+
   return (
-    <Box
-      sx={{
-        background: "linear-gradient(to bottom, #000, #333)",
-        minHeight: "100vh",
-        padding: "2rem",
-      }}
-    >
-      <HeaderBox>
-        <IoIosSend size={32} /> THEATRE REQUEST
-      </HeaderBox>
-      <FormContainer>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <StepIndicator>
-            {steps.map((stepObj, index) => (
-              <li
-                key={index}
-                className={`step ${
-                  currentStep >= stepObj.step ? "step-accent" : ""
-                }`}
-                onClick={() => changeCurStep(index)}
-              >
-                {stepObj.name}
-              </li>
-            ))}
-          </StepIndicator>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 bg-black">
+      {/* Home Button */}
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-4 right-4 md:top-6 md:right-6 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 z-10"
+      >
+        <span className="hidden sm:inline">Home</span>
+      </button>
 
+      <div className="w-full max-w-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-black rounded-2xl py-8 md:py-10 px-4 md:px-8 shadow-2xl shadow-gray-800 border border-gray-800">
+        
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-3 mb-2 text-white">
+             <IoIosSend size={28} className="text-blue-500" />
+             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
+               Theatre Request
+             </h1>
+          </div>
+          <p className="text-gray-400 text-sm text-center">
+            Partner with us to manage your shows
+          </p>
+        </div>
+
+        {/* Stepper */}
+        <div className="mb-8">
+            <div className="flex justify-between items-center relative">
+                {/* Connecting Line */}
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-0.5 bg-gray-700 -z-10"></div>
+                
+                {steps.map((s, i) => {
+                    const isActive = currentStep >= s.step;
+                    const isCurrent = currentStep === s.step;
+                    return (
+                        <div 
+                            key={i} 
+                            onClick={() => changeCurStep(i)}
+                            className={`flex flex-col items-center cursor-pointer group bg-gray-900 px-2`}
+                        >
+                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 
+                                ${isActive ? "bg-blue-600 border-blue-600 text-white" : "bg-gray-800 border-gray-600 text-gray-400 group-hover:border-gray-400"}
+                                ${isCurrent ? "ring-4 ring-blue-500/30" : ""}
+                            `}>
+                                {s.step}
+                            </div>
+                            <span className={`text-xs mt-2 font-medium ${isActive ? "text-blue-400" : "text-gray-500"}`}>
+                                {s.name}
+                            </span>
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* STEP 1: Basic Details */}
           {currentStep === 1 && (
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-            >
-              <TextFieldStyled
-                label="Theatre Name"
-                type="text"
-                {...register("tname", {
-                  required: "Theatre name is required.",
-                })}
-                error={!!errors.tname}
-                helperText={errors.tname?.message}
-                fullWidth
-              />
-              <TextFieldStyled
-                label="Theatre Contact"
-                type="number"
-                {...register("contact", {
-                  required: "Contact number is required.",
-                  minLength: {
-                    value: 10,
-                    message: "Contact number must be 10 digits.",
-                  },
-                  maxLength: {
-                    value: 10,
-                    message: "Contact number must be 10 digits.",
-                  },
-                })}
-                error={!!errors.contact}
-                helperText={errors.contact?.message}
-                fullWidth
-              />
-              <TextFieldStyled
-                label="Number of Screens"
-                type="number"
-                {...register("tscreens", {
-                  required: "Number of screens is required.",
-                })}
-                error={!!errors.tscreens}
-                helperText={errors.tscreens?.message}
-                fullWidth
-              />
-              <Box sx={{ textAlign: "right", marginTop: "1rem" }}>
-                <FormButton type="button" onClick={nextStep}>
-                  Next
-                </FormButton>
-              </Box>
-            </Box>
-          )}
+            <div className="space-y-4 animate-fadeIn">
+              <InputGroup label="Theatre Name" error={errors.tname?.message}>
+                <input
+                  className={baseInputClass}
+                  placeholder="Enter Theatre Name"
+                  {...register("tname", { required: "Theatre name is required." })}
+                />
+              </InputGroup>
 
-          {currentStep === 2 && (
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-            >
-              <TextFieldStyled
-                label="Address"
-                type="text"
-                {...register("address", { required: "Address is required." })}
-                error={!!errors.address}
-                helperText={errors.address?.message}
-                fullWidth
-                multiline
-                rows={3}
-              />
-              <TextFieldStyled
-                select
-                label="State"
-                value={selectedState}
-                onChange={handleStateChange}
-                error={!!errors.state}
-                helperText={errors.state?.message}
-                fullWidth
-              >
-                <MenuItem value="">Select State</MenuItem>
-                {states.map((state) => (
-                  <MenuItem key={state.iso2} value={state.iso2}>
-                    {state.name}
-                  </MenuItem>
-                ))}
-              </TextFieldStyled>
-              <AutocompleteStyled
-                options={uniqueCities}
-                getOptionLabel={(city) => city.name}
-                value={
-                  selectedCity
-                    ? uniqueCities.find((city) => city.name === selectedCity)
-                    : null
-                }
-                onChange={(e, newValue) => {
-                  setSelectedCity(newValue ? newValue.name : "");
-                  setValue("tlocation", newValue ? newValue.name : "");
-                }}
-                renderInput={(params) => (
-                  <TextFieldStyled
-                    {...params}
-                    label="City"
-                    {...register("tlocation", {
-                      required: "City is required.",
-                    })}
-                    error={!!errors.tlocation}
-                    helperText={errors.tlocation?.message}
-                  />
-                )}
-                disabled={!selectedState}
-                isOptionEqualToValue={(option, value) =>
-                  option.name === value.name
-                }
-                fullWidth
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "1rem",
-                }}
-              >
-                <NavigationButton type="button" onClick={prevStep}>
-                  Previous
-                </NavigationButton>
-                <FormButton type="button" onClick={nextStep}>
-                  Next
-                </FormButton>
-              </Box>
-            </Box>
-          )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InputGroup label="Contact Number" error={errors.contact?.message}>
+                    <input
+                      type="number"
+                      className={baseInputClass}
+                      placeholder="10-digit Mobile Number"
+                      {...register("contact", {
+                        required: "Contact number is required.",
+                        minLength: { value: 10, message: "Must be 10 digits." },
+                        maxLength: { value: 10, message: "Must be 10 digits." },
+                      })}
+                    />
+                  </InputGroup>
 
-          {currentStep === 3 && (
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-            >
-              <TextFieldStyled
-                label="Account Number"
-                type="text"
-                {...register("accountNo", {
-                  required: "Account number is required.",
-                })}
-                error={!!errors.accountNo}
-                helperText={errors.accountNo?.message}
-                fullWidth
-              />
-              <TextFieldStyled
-                label="PAN Number"
-                type="text"
-                {...register("pan", { required: "PAN number is required." })}
-                error={!!errors.pan}
-                helperText={errors.pan?.message}
-                fullWidth
-              />
-              <TextFieldStyled
-                label="CGST Number (Optional)"
-                type="text"
-                {...register("cgstNo")}
-                fullWidth
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "1rem",
-                }}
-              >
-                <NavigationButton type="button" onClick={prevStep}>
-                  Previous
-                </NavigationButton>
-                <FormButton type="button" onClick={nextStep}>
-                  Next
-                </FormButton>
-              </Box>
-            </Box>
-          )}
+                  <InputGroup label="Number of Screens" error={errors.tscreens?.message}>
+                    <input
+                      type="number"
+                      className={baseInputClass}
+                      placeholder="e.g. 4"
+                      {...register("tscreens", { required: "Required." })}
+                    />
+                  </InputGroup>
+              </div>
 
-          {currentStep === 4 && (
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#fff",
-                  fontWeight: "bold",
-                  borderBottom: "2px solid #555",
-                  paddingBottom: "0.5rem",
-                }}
-              >
-                Review Details
-              </Typography>
-              <Box>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    Theatre Name:
-                  </span>{" "}
-                  {getValues("tname")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    Screens:
-                  </span>{" "}
-                  {getValues("tscreens")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    Contact:
-                  </span>{" "}
-                  {getValues("contact")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    Location:
-                  </span>{" "}
-                  {getValues("address")}, {getValues("tlocation")},{" "}
-                  {getValues("state")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    PAN Number:
-                  </span>{" "}
-                  {getValues("pan")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    Account Number:
-                  </span>{" "}
-                  {getValues("accountNo")}
-                </Typography>
-                <Typography variant="body1">
-                  <span style={{ fontWeight: "bold", color: "#aaa" }}>
-                    CGST Number:
-                  </span>{" "}
-                  {getValues("cgstNo") || "N/A"}
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "1rem",
-                }}
-              >
-                <NavigationButton type="button" onClick={prevStep}>
-                  Previous
-                </NavigationButton>
-                <FormButton
-                  type="submit"
-                  disabled={
-                   !isValid
-                  }
+              <div className="flex justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
-                  Submit
-                </FormButton>
-              </Box>
-            </Box>
+                  Next
+                </button>
+              </div>
+            </div>
           )}
+
+          {/* STEP 2: Location */}
+          {currentStep === 2 && (
+            <div className="space-y-4 animate-fadeIn">
+              <InputGroup label="Address" error={errors.address?.message}>
+                <textarea
+                  rows="3"
+                  className={baseInputClass}
+                  placeholder="Street Address, Area, Landmark..."
+                  {...register("address", { required: "Address is required." })}
+                />
+              </InputGroup>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <InputGroup label="State" error={errors.state?.message}>
+                    <select
+                        className={`${baseInputClass} appearance-none cursor-pointer`}
+                        value={selectedState}
+                        onChange={handleStateChange}
+                    >
+                        <option value="" className="bg-gray-800 text-gray-400">Select State</option>
+                        {states.map((st) => (
+                            <option key={st.iso2} value={st.iso2} className="bg-gray-800 text-white">
+                                {st.name}
+                            </option>
+                        ))}
+                    </select>
+                 </InputGroup>
+
+                 <InputGroup label="City" error={errors.tlocation?.message}>
+                    <select
+                        className={`${baseInputClass} appearance-none cursor-pointer`}
+                        disabled={!selectedState}
+                        onChange={handleCityChange}
+                        // We rely on getValues or local state for the value logic here
+                        defaultValue="" 
+                    >
+                         <option value="" className="bg-gray-800">Select City</option>
+                         {uniqueCities.map((c, i) => (
+                             <option key={i} value={c.name} className="bg-gray-800">
+                                 {c.name}
+                             </option>
+                         ))}
+                    </select>
+                 </InputGroup>
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Documents */}
+          {currentStep === 3 && (
+            <div className="space-y-4 animate-fadeIn">
+               <InputGroup label="Account Number" error={errors.accountNo?.message}>
+                <input
+                  type="text"
+                  className={baseInputClass}
+                  placeholder="Bank Account Number"
+                  {...register("accountNo", { required: "Account No. is required." })}
+                />
+              </InputGroup>
+
+              <InputGroup label="PAN Number" error={errors.pan?.message}>
+                <input
+                  type="text"
+                  className={baseInputClass}
+                  placeholder="Permanent Account Number"
+                  {...register("pan", { required: "PAN is required." })}
+                />
+              </InputGroup>
+
+              <InputGroup label="CGST Number (Optional)" error={errors.cgstNo?.message}>
+                <input
+                  type="text"
+                  className={baseInputClass}
+                  placeholder="GSTIN"
+                  {...register("cgstNo")}
+                />
+              </InputGroup>
+
+              <div className="flex justify-between pt-4">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Review */}
+          {currentStep === 4 && (
+            <div className="space-y-6 animate-fadeIn">
+               <div className="border-b border-gray-700 pb-2">
+                   <h2 className="text-xl text-white font-semibold">Review Details</h2>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                   <div className="space-y-1">
+                       <p className="text-gray-400">Theatre Name</p>
+                       <p className="text-white text-lg font-medium">{getValues("tname")}</p>
+                   </div>
+                   <div className="space-y-1">
+                       <p className="text-gray-400">Screens</p>
+                       <p className="text-white text-lg font-medium">{getValues("tscreens")}</p>
+                   </div>
+                   <div className="space-y-1">
+                       <p className="text-gray-400">Contact</p>
+                       <p className="text-white text-lg font-medium">{getValues("contact")}</p>
+                   </div>
+                   <div className="space-y-1">
+                       <p className="text-gray-400">Location</p>
+                       <p className="text-white text-lg font-medium">
+                           {getValues("tlocation")}, {getValues("state")}
+                       </p>
+                       <p className="text-gray-500 text-xs">{getValues("address")}</p>
+                   </div>
+                   <div className="space-y-1">
+                       <p className="text-gray-400">PAN Number</p>
+                       <p className="text-white text-lg font-medium">{getValues("pan")}</p>
+                   </div>
+                   <div className="space-y-1">
+                       <p className="text-gray-400">Account Number</p>
+                       <p className="text-white text-lg font-medium">{getValues("accountNo")}</p>
+                   </div>
+               </div>
+
+              <div className="flex justify-between pt-6">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isValid}
+                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          )}
+
         </form>
-      </FormContainer>
-    </Box>
+      </div>
+    </div>
   );
 };
 
