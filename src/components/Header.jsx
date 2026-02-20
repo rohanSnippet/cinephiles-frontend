@@ -111,17 +111,6 @@ const Header = () => {
 
         {/* Desktop Search */}
         <div className="hidden md:flex grow justify-center mx-4">
-          {/*  <div className="relative w-full max-w-md">
-            <input
-              className="h-10 w-full shadow-sm shadow-gray-600 rounded-3xl bg-transparent px-4 py-2 text-md placeholder:text-gray-300 text-white ring-1 ring-gray-400 hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
-              type="text"
-              placeholder="Search movies, shows, and more"
-            />
-            <IoSearchOutline
-              className="absolute right-3 top-2.5 text-white"
-              size={20}
-            />
-          </div> */}
           <SearchBar />
         </div>
 
