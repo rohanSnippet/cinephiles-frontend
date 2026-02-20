@@ -42,6 +42,7 @@ const Header = () => {
   };
 
   useEffect(() => {
+    if (username == null || username == undefined) return;
     const getUser = async () => {
       try {
         const res = await axiosSecure.get(`/user?username=${username}`);
@@ -110,7 +111,7 @@ const Header = () => {
 
         {/* Desktop Search */}
         <div className="hidden md:flex grow justify-center mx-4">
-         {/*  <div className="relative w-full max-w-md">
+          {/*  <div className="relative w-full max-w-md">
             <input
               className="h-10 w-full shadow-sm shadow-gray-600 rounded-3xl bg-transparent px-4 py-2 text-md placeholder:text-gray-300 text-white ring-1 ring-gray-400 hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
               type="text"
@@ -121,7 +122,7 @@ const Header = () => {
               size={20}
             />
           </div> */}
-          <SearchBar/>
+          <SearchBar />
         </div>
 
         {/* Mobile Search Toggle */}
@@ -224,7 +225,6 @@ const Header = () => {
 
             {userData && userData.username ? (
               <div className="py-2 px-3">
-
                 {/* <Profile mobileView={true} onSelect={() => setIsMobileMenuOpen(false)} /> */}
                 <ul className="menu w-80 min-h-full text-white text-lg gap-y-1 poppins-regular rounded-2xl">
                   <li>
