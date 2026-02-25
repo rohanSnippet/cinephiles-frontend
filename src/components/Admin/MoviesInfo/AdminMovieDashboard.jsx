@@ -29,6 +29,7 @@ const AdminMovieDashboard = () => {
     try {
       const res = await axiosSecure.get(`/movie/all-movies`);
       setMovies(res.data); // Store fetched movies in the state
+      console.log(res.data)
     } catch (err) {
       console.error("Error fetching movies:", err);
       setError("Failed to fetch movies. Please try again.");
@@ -284,12 +285,16 @@ const AdminMovieDashboard = () => {
                           )}
                         </th>
                         <td>
-                          <Link
-                            to={`/movie-details/${movie.id}`}
+                          <button
+                             onClick={() =>
+                              navigate(`/admin/Edit-Movie`, {
+                                state: { selectedMovie: movie },
+                              })
+                            }
                             className="text-teal-400 hover:text-teal-300 transition-colors duration-200"
                           >
                             {movie.title}
-                          </Link>
+                          </button>
                         </td>
                         <td>{movie.genre.join(", ")}</td>
                         <td>{movie.languages.join(", ")}</td>

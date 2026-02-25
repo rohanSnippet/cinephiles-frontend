@@ -62,7 +62,7 @@ const UserNavHeader = ({ navLocation, item }) => {
           timer: 1000,
           showConfirmButton: false,
         });
-        
+
         setIsMobileMenuOpen(false);
 
         setTimeout(() => {
@@ -77,13 +77,18 @@ const UserNavHeader = ({ navLocation, item }) => {
   return (
     <div
       className={`
-        w-full sticky top-0 z-50 transition-transform duration-300 ease-in-out border-b border-white/10
-        bg-transparent backdrop-blur-xl shadow-sm
+        w-full sticky top-0 z-50 transition-all duration-300 ease-in-out
         ${scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"}
+        ${
+          scrollDirection === "down" ||
+          (typeof window !== "undefined" && window.pageYOffset > 0)
+            ? "bg-gradient-to-b from-black/95 via-black/90 to-black/85 backdrop-blur-sm"
+            : ""
+        }
       `}
     >
       <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        
+
         {/* Left Section: Back Button + Logo */}
         <div className="flex items-center space-x-1 md:space-x-3">
           <button
@@ -93,12 +98,12 @@ const UserNavHeader = ({ navLocation, item }) => {
           >
             <IoChevronBackSharp size={28} />
           </button>
-          <span className="font-bold roboto-bold text-xl md:text-2xl text-white">
+          <span className="font-bold roboto-bold text-2xl text-white">
             <Link to="/">Cinephiles</Link>
           </span>
         </div>
 
-        {/* Center Section: Desktop Search (Reusing SearchBar) */}
+        {/* Center Section: Desktop Search */}
         <div className="hidden md:flex grow justify-center mx-4">
           <SearchBar />
         </div>
@@ -112,7 +117,7 @@ const UserNavHeader = ({ navLocation, item }) => {
 
         {/* Mobile Search Input Overlay */}
         {showSearch && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-transparent backdrop-blur-2xl p-3 shadow-lg border-b border-white/10">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 p-3 shadow-lg roboto-light">
             <SearchBar isMobile={true} onClose={toggleSearch} />
           </div>
         )}
@@ -123,15 +128,15 @@ const UserNavHeader = ({ navLocation, item }) => {
             <div className="flex items-center mr-2">
               <Link
                 to="/location"
-                className="rounded-3xl roboto-light hover:bg-white/10 transition-colors text-sm font-semibold text-white px-3 py-1.5"
+                className="rounded-3xl roboto-light hover:bg-black/20 text-sm font-semibold text-white px-3 py-1.5"
               >
                 {city.length > 15 ? `${city.substring(0, 15)}...` : city}
               </Link>
-              <MdKeyboardArrowDown className="text-gray-300" size={20} />
+              <MdKeyboardArrowDown className="text-white" size={20} />
             </div>
           ) : (
-            <Link to="/location" className="mr-2 p-2 hover:bg-white/10 rounded-full transition-colors">
-              <MdOutlineAddLocationAlt size={24} className="text-gray-100" />
+            <Link to="/location" className="mr-2">
+              <MdOutlineAddLocationAlt size={28} className="text-gray-100 opacity-85 hover:opacity-100" />
             </Link>
           )}
 
@@ -141,7 +146,7 @@ const UserNavHeader = ({ navLocation, item }) => {
             <button
               type="button"
               onClick={handleSignIn}
-              className="rounded-3xl shadow-sm bg-blue-600/90 hover:bg-blue-500 backdrop-blur-md transition-colors px-5 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black"
+              className="rounded-3xl shadow-sm shadow-gray-600 roboto-regular ring-1 ring-gray-400 hover:bg-black/20 px-4 py-2 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
               Sign in
             </button>
@@ -162,68 +167,60 @@ const UserNavHeader = ({ navLocation, item }) => {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-black/40 backdrop-blur-2xl p-4 shadow-xl border-t border-white/10 min-h-screen">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-lg p-4 shadow-lg border-t border-gray-800">
           <div className="flex flex-col space-y-4">
+
             {/* Mobile Location */}
             {city ? (
               <Link
                 to="/location"
-                className="flex items-center justify-between text-white py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors"
+                className="flex items-center justify-between text-white py-2 px-3 rounded-lg hover:bg-gray-800"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="font-medium">{city}</span>
-                <MdKeyboardArrowDown size={22} />
+                <span>{city}</span>
+                <MdKeyboardArrowDown size={20} />
               </Link>
             ) : (
               <Link
                 to="/location"
-                className="flex items-center text-white py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors"
+                className="flex items-center text-white py-2 px-3 rounded-lg hover:bg-gray-800"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <MdOutlineAddLocationAlt size={22} className="mr-3 text-blue-400" />
-                <span className="font-medium">Set Location</span>
+                <MdOutlineAddLocationAlt size={20} className="mr-2" />
+                <span className="poppins-semibold">Set Location</span>
               </Link>
             )}
 
             {/* Mobile Auth/Profile Actions */}
             {userData && userData.username ? (
-              <div className="py-2">
-                <ul className="flex flex-col gap-2 text-white text-lg">
+              <div className="py-2 px-3">
+                <ul className="menu w-80 min-h-full text-white text-lg gap-y-1 poppins-regular rounded-2xl">
                   <li>
-                    <Link to="/update-profile" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">Edit Profile</Link>
+                    <a href="/update-profile">Edit Profile</a>
                   </li>
                   <li>
-                    <Link to="/update-profile" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">Your Wishlist</Link>
+                    <a href="/update-profile">Your Wishlist</a>
                   </li>
                   <li>
-                    <Link to="/Orders" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">Your Orders</Link>
+                    <a href="/Orders">Your Orders</a>
                   </li>
-                  
                   {!isOwner && !isAdmin && (
                     <li>
-                      <Link to="/theatre-request" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">List Your Shows</Link>
+                      <a href="/theatre-request">List Your Shows</a>
                     </li>
                   )}
                   {isOwner && (
                     <li>
-                      <Link to="/owner" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">Owner Dashboard</Link>
+                      <a href="/owner">Owner Dashboard</a>
                     </li>
                   )}
                   {isAdmin && (
                     <li>
-                      <Link to="/admin" className="block py-3 px-4 rounded-xl hover:bg-white/10 transition-colors">Admin Dashboard</Link>
+                      <a href="/admin">Admin Dashboard</a>
                     </li>
                   )}
-                  
-                  <div className="h-px bg-white/10 my-2"></div>
-                  
                   <li>
-                    <button 
-                      onClick={handleLogout} 
-                      className="w-full text-left py-3 px-4 rounded-xl text-red-400 hover:bg-red-500/20 transition-colors font-medium"
-                    >
-                      Logout
-                    </button>
+                    <a onClick={handleLogout}>Logout</a>
                   </li>
                 </ul>
               </div>
@@ -231,7 +228,7 @@ const UserNavHeader = ({ navLocation, item }) => {
               <button
                 type="button"
                 onClick={handleSignIn}
-                className="w-full rounded-xl bg-blue-600/90 hover:bg-blue-500 backdrop-blur-md py-3.5 text-lg font-semibold text-white text-center transition-colors mt-4"
+                className="rounded-lg bg-white/10 hover:bg-white/20 px-4 py-3 text-base font-semibold text-white text-center mt-4"
               >
                 Sign in
               </button>

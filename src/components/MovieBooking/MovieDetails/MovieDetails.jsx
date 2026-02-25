@@ -1,13 +1,24 @@
-import React, { useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import UserNavHeader from "../UserNavHeader";
 import like from "../../../assets/like.png";
 import useAxiosPublic from "../../Hooks/AxiosPublic";
-import user from "../../../assets/user_2.png";
+import userPlaceholder from "../../../assets/user_2.png";
 import { AuthContext } from "../../Context/AuthProvider";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import useCity from "../../Hooks/useCity";
-import Loading from "../../Common/Loading";
+
+// Framer Motion Variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 const MovieDetails = () => {
   const navigate = useNavigate();
@@ -16,123 +27,101 @@ const MovieDetails = () => {
   const location = useLocation();
   const axiosSecure = useAxiosSecure();
   const city = useCity();
+
+  // Extract state passed from router (e.g., from SearchBar click)
   const { item: locationItem, previousPath } = location.state || {};
-  
-  // Use a ref to prevent unnecessary re-renders from location.state
-  const itemRef = React.useRef(locationItem);
-  const [item] = useState(itemRef.current);
-  
-  const [castMembers, setCastMembers] = useState([]);
-  const [crewMembers, setCrewMembers] = useState([]);
-  const [isLoadingContent, setIsLoadingContent] = useState(!locationItem);
+
+  // Component State
+  const [item, setItem] = useState(locationItem);
+  const [castImages, setCastImages] = useState({});
+  const [crewImages, setCrewImages] = useState({});
   const [isShowAvl, setIsShowAvl] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("All");
 
-  // Memoize the release date to prevent unnecessary recalculations
+  // 1. Handle Navigation/Route Changes (The Search Bar Fix)
+  useEffect(() => {
+    if (locationItem) {
+      setItem(locationItem);
+      // Reset images when a new movie is loaded
+      setCastImages({});
+      setCrewImages({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [locationItem]);
+
+  // Memoize release date
   const releaseDateObj = useMemo(() => {
     return item ? new Date(item.releaseDate) : null;
   }, [item?.releaseDate]);
 
+  // 2. Data Fetching (Incremental/Streaming Logic)
   useEffect(() => {
-    if (!item) {
-      console.error("Movie item not found in location state.");
-      setIsLoadingContent(false);
-      return;
+    if (!item) return;
+
+    // Check Ticket Availability
+    const checkAvl = async () => {
+      if (!item?.id || (!userData?.currLocation && !city)) return;
+      try {
+        const res = await axiosSecure.get(
+          `/show/by-city?movieId=${item.id}&cities=${userData.currLocation || city}`
+        );
+        setIsShowAvl(res.data?.length > 0);
+      } catch (err) {
+        console.error("Availability error:", err);
+      }
+    };
+    checkAvl();
+
+    // Fetch Cast Incrementally (Fire & Forget)
+    if (item.cast) {
+      Object.keys(item.cast).forEach(async (actorName) => {
+        try {
+          const res = await axiosPublic.get(
+            `/actor/scrape-single?name=${encodeURIComponent(actorName)}&isCrew=false`
+          );
+          setCastImages((prev) => ({ ...prev, [actorName]: res.data.url }));
+        } catch (error) {
+          setCastImages((prev) => ({ ...prev, [actorName]: "No Image" }));
+        }
+      });
     }
-    window.scrollTo(0, 0);
-  }, [item]);
+
+    // Fetch Crew Incrementally (Fire & Forget)
+    if (item.crew) {
+      item.crew.forEach(async (crewMember) => {
+        try {
+          const res = await axiosPublic.get(
+            `/actor/scrape-single?name=${encodeURIComponent(crewMember.name)}&isCrew=true`
+          );
+          setCrewImages((prev) => ({ ...prev, [crewMember.name]: res.data.url }));
+        } catch (error) {
+          setCrewImages((prev) => ({ ...prev, [crewMember.name]: "No Image" }));
+        }
+      });
+    }
+  }, [item, axiosPublic, axiosSecure, city, userData?.currLocation]);
 
   const handleGetTheatres = () => {
     navigate("/all-shows", { state: { item } });
   };
 
-  const scrapeActors = useCallback(async () => {
-    if (!item?.cast) return [];
-    try {
-      const res = await axiosPublic.post(`/actor/scrape`, item.cast);
-      return res.data?.urls || [];
-    } catch (error) {
-      console.error("Error scraping actors:", error);
-      return [];
-    }
-  }, [axiosPublic, item?.cast]);
-
-  const scrapeCrew = useCallback(async () => {
-    if (!item?.crew) return [];
-    try {
-      const res = await axiosPublic.post(`/actor/scrape-crew`, item.crew);
-      return res.data?.urls || [];
-    } catch (error) {
-      console.error("Error scraping crew:", error);
-      return [];
-    }
-  }, [axiosPublic, item?.crew]);
-
-  const checkShowAvailability = useCallback(async () => {
-    if (!item?.id || (!userData?.currLocation && !city)) return false;
-    try {
-      const res = await axiosSecure.get(
-        `/show/by-city?movieId=${item.id}&cities=${
-          userData.currLocation || city
-        }`
-      );
-      return res.data?.length > 0;
-    } catch (error) {
-      console.error("Error fetching show availability:", error);
-      return false;
-    }
-  }, [axiosSecure, item?.id, userData?.currLocation, city]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!item) {
-        return;
-      }
-
-      // Show initial content immediately, then load additional data
-      setIsLoadingContent(true);
-
-      try {
-        // Prioritize showing availability first
-        const showAvailability = await checkShowAvailability();
-        setIsShowAvl(showAvailability);
-        
-        // Then load cast and crew in parallel
-        const [fetchedCastMembers, fetchedCrewMembers] = await Promise.all([
-          scrapeActors(),
-          scrapeCrew(),
-        ]);
-
-        setCastMembers(fetchedCastMembers);
-        setCrewMembers(fetchedCrewMembers);
-      } catch (error) {
-        console.error("Failed to fetch all movie details:", error);
-      } finally {
-        setIsLoadingContent(false);
-      }
-    };
-
-    fetchData();
-  }, [item, scrapeActors, scrapeCrew, checkShowAvailability]);
-
-  // Early return if no item
+  // Fallback for missing movie data
   if (!item) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-center">
-          <p className="text-xl">No movie found.</p>
-          <button 
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0f1a]">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="text-white text-center">
+          <p className="text-2xl poppins-semibold text-slate-300">Movie not found</p>
+          <button
             onClick={() => navigate(-1)}
-            className="mt-4 px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="mt-6 px-8 py-3 bg-indigo-600 rounded-full hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/30 poppins-medium"
           >
             Go Back
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  // Memoize the trailer count to avoid recalculating
   const trailerCount = useMemo(() => {
     if (!item.trailers) return 0;
     return item.trailers.reduce(
@@ -142,430 +131,286 @@ const MovieDetails = () => {
   }, [item.trailers]);
 
   return (
-    <div className="h-full w-full">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen w-full bg-[#0a0f1a] pb-12 overflow-x-hidden"
+    >
       <UserNavHeader navLocation={previousPath || "/"} item={item} />
 
-      {/* Movie Name above banner for mobile/medium screens */}
-      <div className="lg:hidden text-center mt-4 px-4">
-        <h1 className="text-white text-4xl sm:text-5xl font-bold roboto-semibold">
-          {item.title.toUpperCase()}
-        </h1>
-      </div>
-
-      {/* Main movie banner and details section */}
-      <div
-        className="relative w-[96%] max-w-7xl mx-auto rounded-xl shadow-lg shadow-slate-500/20 mt-4 overflow-hidden
-                      min-h-[400px] md:min-h-[500px] lg:min-h-[60vh] flex lg:items-end"
-      >
-        {/* Background Image with responsive gradients */}
-        <div
-          className="absolute inset-0 w-full h-full rounded-xl bg-no-repeat bg-cover bg-center"
-          style={{
-            backgroundImage: item.banner
-              ? `url('${item.banner}')`
-              : item.poster
-              ? `url('${item.poster}')`
-              : "gray",
-          }}
-        >
-          {/* Gradient overlay for large screens */}
-          <div className="hidden lg:block absolute inset-0 rounded-xl bg-gradient-to-r from-slate-950 via-transparent to-black"></div>
-          {/* Darker gradient for mobile/medium screens */}
-          <div className="lg:hidden absolute inset-0 rounded-xl bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+      {/* Hero Banner Section */}
+      <div className="relative w-full min-h-[55vh] sm:min-h-[60vh] lg:min-h-[75vh] flex flex-col justify-end">
+        {/* Background Layer */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden">
+          <motion.div
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="w-full h-full bg-no-repeat bg-cover bg-top lg:bg-center"
+            style={{
+              backgroundImage: item.banner ? `url('${item.banner}')` : item.poster ? `url('${item.poster}')` : "gray",
+            }}
+          />
+          {/* Gradient Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-[#0a0f1a]/80 lg:via-[#0a0f1a]/60 to-transparent"></div>
+          <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#0a0f1a] via-[#0a0f1a]/80 to-transparent w-3/4"></div>
         </div>
-        
-        {/* --- Large Screen Layout (lg and up) --- */}
-        <div className="relative z-10 w-full h-full hidden lg:flex">
-          {/* Details for large screens */}
-          <div className="flex flex-col justify-end pb-8 pl-8 pr-4 w-[60%]">
-            {/* Title */}
-            <span
-              className={`
-                        bg-gradient-to-r from-indigo-200/90 via-white to-white bg-clip-text text-transparent
-                        text-5xl lg:text-6xl xl:text-7xl
-                        ${
-                          item.title.length > 23
-                            ? "roboto-bold"
-                            : "roboto-semibold"
-                        }
-                        mb-4
-                    `}
+
+        {/* Content Container */}
+        <div className="relative z-10 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-12 pb-8 lg:pb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-8 lg:gap-12">
+
+          {/* Left/Top Content: Details */}
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col flex-1 max-w-3xl mt-24 lg:mt-0"
+          >
+            <h1 className={`text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-slate-300 drop-shadow-lg mb-4
+              ${item.title.length > 20 ? "text-4xl sm:text-5xl lg:text-6xl" : "text-5xl sm:text-6xl lg:text-7xl"}
+              roboto-bold tracking-tight text-center lg:text-left`}
             >
               {item.title.toUpperCase()}
-            </span>
-            
-            {/* Metadata: Certification, Languages, Formats */}
-            <p className="text-white text-base poppins-regular opacity-80 mb-6 flex flex-wrap items-center gap-4">
-              <span className="flex items-center">
-                {item.certification === "CERTIFICATION_UA"
-                  ? "U/A"
-                  : item.certification.substring(14)}{" "}
-                Rated
+            </h1>
+
+            {/* Metadata Badges */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6 poppins-medium">
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm">
+                {item.certification === "CERTIFICATION_UA" ? "U/A" : item.certification.substring(14)} Rated
               </span>
-              <span className="badge badge-ghost text-white text-sm border-none bg-white/20">
-                {item.languages.map((lang, i) => (
-                  <span key={i} className="px-1">
-                    {lang}
-                  </span>
-                ))}
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
+                {item.languages.map((lang, i) => <span key={i}>{lang}</span>)}
               </span>
-              <span className="badge badge-ghost text-white text-sm border-none bg-white/20">
-                {item.formats.map((format, i) => (
-                  <span key={i} className="px-1">
-                    {format}
-                  </span>
-                ))}
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
+                {item.formats.map((format, i) => <span key={i}>{format}</span>)}
               </span>
-            </p>
-            
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex items-center gap-1">
+                <img src={like} className="h-4 w-4" alt="Like" loading="lazy" />
+                {item.likes >= 1000000 ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : item.likes >= 1000 ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k" : item.likes}
+              </span>
+            </div>
+
             {/* Description */}
-            <p className="text-white text-base poppins-extralight mb-8 max-w-xl">
+            <p className="hidden sm:block text-slate-300 text-base md:text-lg poppins-light leading-relaxed mb-8 text-center lg:text-left drop-shadow-md">
               {item.description}
             </p>
-            
-            {/* Book Tickets Button */}
-            {isShowAvl && (
-              <button
-                onClick={handleGetTheatres}
-                className="btn w-64 border border-white/20 hover:border-white text-white rounded-lg overflow-hidden
-                            backdrop-blur-md bg-white/10 hover:bg-white/20
-                            shadow-[0_0_10px_rgba(255,255,255,0.3)]
-                            hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]
-                            transition-all duration-300 flex items-center justify-center
-                            mt-auto"
-              >
-                <span className="text-xl poppins-bold transform transition-transform duration-100">
-                  Book Tickets
-                </span>
-              </button>
-            )}
-          </div>
-          
-          {/* Poster and Trailer Button for large screens */}
-          <div
-            className="relative -right-28 top-0 shrink-0
-                    w-[250px] h-[375px]
-                    bg-center bg-cover bg-no-repeat rounded-xl shadow-slate-800/80 shadow-xl
-                    ring-indigo-900/20 ring-1 ring-offset-1 ring-offset-slate-800/50"
-            style={{
-              backgroundImage: `url('${item.poster}')`,
-            }}
-          >
-            <button
-              type="button"
-              disabled={trailerCount === 0}
-              onClick={() => document.getElementById("my_modal_2").showModal()}
-              className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
-                        absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
-            >
-              {trailerCount > 0 ? `${trailerCount} Trailer(s)` : "No Trailers"}
-            </button>
 
-            <div className="absolute bg-black bg-opacity-50 h-8 w-full rounded-b-xl bottom-0"></div>
-            <div className="h-[10vh] rounded-xl absolute bottom-0 w-full flex items-center justify-between px-4">
-              <p className="text-white poppins-regular text-md flex items-center">
-                <img src={like} className="h-5 w-5 mr-1" alt="Like icon" loading="lazy" />
-                {item.likes >= 1000000
-                  ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
-                  : item.likes >= 1000
-                  ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k"
-                  : item.likes}
-              </p>
-              <div className="text-white poppins-regular text-md">
-                {releaseDateObj?.toLocaleDateString("en-US", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+              {isShowAvl && (
+                <button
+                  onClick={handleGetTheatres}
+                  className="btn border-none bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] transition-all duration-300 w-full sm:w-auto px-10 h-14 poppins-semibold text-lg"
+                >
+                  Book Tickets
+                </button>
+              )}
+              <button
+                disabled={trailerCount === 0}
+                onClick={() => document.getElementById("trailer_modal").showModal()}
+                className="btn border border-white/30 bg-white/5 hover:bg-white/10 backdrop-blur-md text-white rounded-lg transition-all duration-300 w-full sm:w-auto px-8 h-14 poppins-medium"
+              >
+                {trailerCount > 0 ? `Watch Trailer (${trailerCount})` : "No Trailers"}
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Right Content: Floating Poster */}
+          <motion.div
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+            className="hidden lg:flex flex-col items-center shrink-0 z-20"
+          >
+            <div className="w-64 xl:w-72 aspect-[2/3] rounded-xl shadow-2xl shadow-black/80 ring-1 ring-white/20 overflow-hidden relative group">
+              <img src={item.poster} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <div className="absolute bottom-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent p-4 flex justify-between items-end">
+                <span className="text-white poppins-medium text-sm">Release Date</span>
+                <span className="text-white poppins-bold text-sm">
+                  {releaseDateObj?.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
               </div>
             </div>
-          </div>
-        </div>
-        
-        {/* --- Mobile/Medium Screen Layout (hidden on lg and up) --- */}
-        <div className="relative z-20 w-full h-full flex flex-col justify-between items-center px-4 py-8 lg:hidden">
-          {/* Trailer Button in center */}
-          <div className="flex-grow flex items-center justify-center w-full">
-            <button
-              type="button"
-              disabled={trailerCount === 0}
-              onClick={() => document.getElementById("my_modal_2").showModal()}
-              className="badge badge-neutral bg-black/60 w-2/3 h-7 border-none text-white roboto-regular
-                        absolute bottom-2 top-44 left-1/2 -translate-x-1/2"
-            >
-              {trailerCount > 0 ? `${trailerCount} Trailer(s)` : "No Trailers"}
-            </button>
-          </div>
-
-          {/* Release Date at bottom with black bar */}
-          <div className="w-full bg-black/70 rounded-b-xl py-2 flex justify-center items-center">
-            <div className="text-white poppins-regular text-sm sm:text-base">
-              Release Date:{" "}
-              {releaseDateObj?.toLocaleDateString("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Details (Description, Metadata, Book Tickets) for Mobile/Medium screens */}
-      <div className="lg:hidden w-[96%] max-w-7xl mx-auto p-4 sm:p-6 bg-base-200 rounded-xl shadow-lg mt-4">
-        {/* Metadata: Certification, Languages, Formats */}
-        <p className="text-white text-sm sm:text-base poppins-regular opacity-80 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4">
-          <span className="flex items-center">
-            {item.certification === "CERTIFICATION_UA"
-              ? "U/A"
-              : item.certification.substring(14)}{" "}
-            Rated
-          </span>
-          <span className="badge badge-ghost text-white text-xs sm:text-sm border-none bg-white/20">
-            {item.languages.map((lang, i) => (
-              <span key={i} className="px-1">
-                {lang}
-              </span>
-            ))}
-          </span>
-          <span className="badge badge-ghost text-white text-xs sm:text-sm border-none bg-white/20">
-            {item.formats.map((format, i) => (
-              <span key={i} className="px-1">
-                {format}
-              </span>
-            ))}
-          </span>
-        </p>
-
-        {/* Description */}
-        <p className="text-white text-sm sm:text-base poppins-extralight mb-6">
+      {/* Mobile Description */}
+      <div className="sm:hidden px-4 mt-4">
+        <p className="text-slate-300 text-sm poppins-light leading-relaxed text-center">
           {item.description}
         </p>
-
-        {/* Book Tickets Button */}
-        {isShowAvl && (
-          <button
-            onClick={handleGetTheatres}
-            className="btn w-full border border-white/20 hover:border-white text-white rounded-lg overflow-hidden
-              backdrop-blur-md bg-white/10 hover:bg-white/20
-              shadow-[0_0_10px_rgba(255,255,255,0.3)]
-              hover:shadow-[0_0_20px_rgba(255,255,255,0.6)]
-              transition-all duration-300 flex items-center justify-center"
-          >
-            <span className="text-xl poppins-bold transform transition-transform duration-100">
-              Book Tickets
-            </span>
-          </button>
-        )}
       </div>
 
-      {/* Cast Section */}
-      <div className="w-[96%] max-w-7xl mx-auto mt-8 px-4 py-6 rounded-xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-base-300">
-        <div className="poppins-semibold text-2xl sm:text-3xl md:text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
-          CAST
-        </div>
-        <div className="text-white poppins-bold text-sm sm:text-base flex flex-wrap justify-center sm:justify-start">
-          {isLoadingContent
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 xl:w-1/8 p-2 flex flex-col items-center text-center"
-                >
-                  <div className="avatar mb-2">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-md skeleton"></div>
-                  </div>
-                  <div className="skeleton h-4 w-3/4 mb-1"></div>
-                  <div className="skeleton h-3 w-1/2"></div>
-                </div>
-              ))
-            : Object.entries(item.cast).map(([member, char], i) => (
-                <div
-                  key={i}
-                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 xl:w-1/8 p-2 flex flex-col items-center text-center
-                           hover:scale-[1.03] transition-all duration-200 ease-in-out"
-                >
-                  <div className="avatar mb-2">
-                    <div className="w-20 sm:w-24 rounded-full shadow-md">
-                      <a
-                        href={`https://www.google.com/search?q=${member
-                          .trim()
-                          .split(" ")
-                          .join("+")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={
-                            Object.entries(castMembers).find(
-                              ([key, url]) =>
-                                key === member && url !== "No Image"
-                            )?.[1] || user
-                          }
-                          alt={`${member}'s profile`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="font-semibold text-sm sm:text-base line-clamp-2">
-                    {member}
-                  </div>
-                  <span className="poppins-extralight-italic text-slate-100/80 text-xs sm:text-sm line-clamp-1">
-                    {char}
-                  </span>
-                </div>
-              ))}
-        </div>
-      </div>
+      {/* --- CAST SECTION (Incremental Load) --- */}
+      <div className="w-full max-w-[90rem] mx-auto mt-12 px-4 sm:px-6 lg:px-12">
+        <h2 className="poppins-semibold text-3xl md:text-4xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+          Cast
+        </h2>
 
-      {/* Crew Section */}
-      <div className="w-[96%] max-w-7xl mx-auto mt-8 px-4 py-6 rounded-xl bg-gradient-to-tr from-slate-900/30 via-slate-700/30 to-white/10 mb-8">
-        <div className="poppins-semibold text-2xl sm:text-3xl md:text-4xl py-3 text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-400 to-slate-800/50">
-          CREW
-        </div>
-        <div className="text-white poppins-bold text-sm sm:text-base flex flex-wrap justify-center sm:justify-start">
-          {isLoadingContent
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 p-2 flex flex-col items-center text-center"
-                >
-                  <div className="avatar mb-2">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl ring-slate-800/80 ring-2 skeleton"></div>
-                  </div>
-                  <div className="skeleton h-4 w-3/4 mb-1"></div>
-                  <div className="skeleton h-3 w-1/2"></div>
-                </div>
-              ))
-            : item.crew.map((member, i) => (
-                <div
-                  key={i}
-                  className="w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6 p-2 flex flex-col items-center text-center
-                           hover:scale-[1.04] hover:translate-y-[-2px] transition-all duration-200 ease-in-out"
-                >
-                  <div className="avatar mb-2">
-                    <div className="w-24 sm:w-28 rounded-xl ring-slate-800/80 ring-2">
-                      <a
-                        href={`https://www.google.com/search?q=${member.name
-                          .trim()
-                          .split(" ")
-                          .join("+")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={
-                            Object.entries(crewMembers).find(
-                              ([key, url]) =>
-                                key === member.name && url !== "No Image"
-                            )?.[1] || user
-                          }
-                          alt={`${member.name}'s profile`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="font-semibold text-sm sm:text-base line-clamp-2">
-                    {member.name}
-                  </div>
-                  <span className="poppins-extralight-italic text-slate-100/80 text-xs sm:text-sm line-clamp-1">
-                    {member.roles.includes("Director") ? (
-                      <span className="text-transparent poppins-light-italic bg-clip-text bg-gradient-to-r from-indigo-100 via-sky-200 to-teal-100">
-                        {member.roles.join(", ")}
-                      </span>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6">
+          {Object.entries(item.cast || {}).map(([member, char], i) => {
+            const imgUrl = castImages[member];
+            const isLoaded = imgUrl !== undefined; // Undefined means it's still fetching
+
+            return (
+              <motion.div variants={fadeInUp} initial="hidden" animate="visible" key={i} className="flex flex-col items-center text-center group">
+                <a href={`https://www.google.com/search?q=${member.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-3 overflow-hidden rounded-full ring-2 ring-transparent group-hover:ring-indigo-500/50 transition-all duration-300 shadow-lg bg-slate-800">
+                  <AnimatePresence mode="wait">
+                    {!isLoaded ? (
+                      <motion.div key="skeleton" exit={{ opacity: 0 }} className="w-full h-full bg-slate-700 animate-pulse" />
                     ) : (
-                      <span>{member.roles.join(", ")}</span>
+                      <motion.img
+                        key="image"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+                        src={imgUrl === "No Image" ? userPlaceholder : imgUrl}
+                        alt={member}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                      />
                     )}
-                  </span>
-                </div>
-              ))}
+                  </AnimatePresence>
+                </a>
+                <h3 className="font-medium text-white text-sm sm:text-base line-clamp-1">{member}</h3>
+                <p className="poppins-light text-slate-400 text-xs sm:text-sm line-clamp-1 mt-0.5">{char}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* --- CREW SECTION (Incremental Load) --- */}
+      <div className="w-full max-w-[90rem] mx-auto mt-16 mb-12 px-4 sm:px-6 lg:px-12">
+        <h2 className="poppins-semibold text-3xl md:text-4xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+          Crew
+        </h2>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          {(item.crew || []).map((member, i) => {
+            const imgUrl = crewImages[member.name];
+            const isLoaded = imgUrl !== undefined;
+
+            return (
+              <motion.div variants={fadeInUp} initial="hidden" animate="visible" key={i} className="flex flex-col items-center text-center group cursor-pointer">
+                <a href={`https://www.google.com/search?q=${member.name.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-full aspect-[3/4] max-w-[180px] mb-3 overflow-hidden rounded-xl shadow-lg ring-1 ring-white/10 group-hover:ring-indigo-500/50 transition-all duration-300 bg-slate-800">
+                  <AnimatePresence mode="wait">
+                    {!isLoaded ? (
+                      <motion.div key="skeleton" exit={{ opacity: 0 }} className="w-full h-full bg-slate-700 animate-pulse" />
+                    ) : (
+                      <motion.img
+                        key="image"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+                        src={imgUrl === "No Image" ? userPlaceholder : imgUrl}
+                        alt={member.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    )}
+                  </AnimatePresence>
+                </a>
+                <h3 className="font-medium text-white text-sm sm:text-base line-clamp-1 w-full px-2">{member.name}</h3>
+                <p className="poppins-light text-indigo-300 text-xs sm:text-sm line-clamp-1 w-full mt-0.5">
+                  {member.roles.join(", ")}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
       {/* Trailer Modal */}
-      <TrailerModal 
-        item={item} 
-        selectedLanguage={selectedLanguage} 
-        setSelectedLanguage={setSelectedLanguage} 
-      />
-    </div>
+      <TrailerModal item={item} selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
+    </motion.div>
   );
 };
 
-// Extracted TrailerModal component to reduce main component complexity
+// --- MASSIVE TRAILER MODAL ---
 const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }) => {
   const filteredTrailers = React.useMemo(() => {
     if (!item.trailers) return [];
-    return item.trailers.filter(
-      (trailer) =>
-        selectedLanguage === "All" ||
-        trailer.language === selectedLanguage
-    );
+    return item.trailers.filter((trailer) => selectedLanguage === "All" || trailer.language === selectedLanguage);
   }, [item.trailers, selectedLanguage]);
 
   return (
-    <dialog id="my_modal_2" className="modal language-modal">
-      <div className="modal-box max-w-5xl">
-        <div className="sticky -top-6 bg-base-100 py-2 border-b-2 border-white/40">
-          <h3 className="roboto-bold text-lg text-white text-center">
-            VIDEOS
+    <dialog id="trailer_modal" className="modal bg-black/80 backdrop-blur-md">
+      <div className="modal-box bg-[#0a0f1a] text-white w-[95vw] max-w-7xl h-[90vh] border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-0 rounded-2xl overflow-hidden flex flex-col relative">
+
+        {/* Sticky Modal Header */}
+        <div className="shrink-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-xl px-6 py-4 sm:px-10 sm:py-6 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+          <h3 className="poppins-bold text-xl sm:text-2xl text-white tracking-wide uppercase flex items-center gap-3">
+            <span className="text-indigo-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm14.024-.983a1.125 1.125 0 0 1 0 1.966l-5.603 3.113A1.125 1.125 0 0 1 9 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113Z" clipRule="evenodd" />
+              </svg>
+            </span>
+            Trailers & Clips
           </h3>
-          <div className="flex flex-wrap gap-2 my-2 justify-center">
+
+          {/* Language Tabs */}
+          <div className="flex flex-wrap gap-2 justify-center">
             {["All", ...item.languages].map((language, i) => (
-              <div key={i}>
-                <label>
-                  <input
-                    type="radio"
-                    name="language"
-                    value={language}
-                    checked={selectedLanguage === language}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
-                  />
-                  <span className="radio-button rounded-2xl">{language}</span>
-                </label>
-              </div>
+              <label key={i} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="language"
+                  value={language}
+                  checked={selectedLanguage === language}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className="peer sr-only"
+                />
+                <span className="px-5 py-2 rounded-full text-sm poppins-medium bg-slate-800/60 text-slate-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:bg-slate-700 transition-all duration-300">
+                  {language}
+                </span>
+              </label>
             ))}
           </div>
+
+          <form method="dialog" className="absolute top-4 right-4 sm:static">
+            <button className="btn btn-sm btn-circle btn-ghost text-slate-400 hover:text-white hover:bg-slate-800 bg-slate-900/50">✕</button>
+          </form>
         </div>
-        <div className="sm:ml-32">
+
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 bg-[#06090f]">
           {filteredTrailers.length > 0 ? (
-            filteredTrailers.map((trailer, i) => (
-              <div key={i} className="my-4">
-                <h3 className="text-xl font-semibold text-white">
-                  {trailer.language} Trailers
-                </h3>
-                <div className="flex flex-wrap space-x-4 mt-2">
-                  {trailer.trailerUrl.map((link, idx) => (
-                    <div key={idx} className="flex flex-col items-center">
-                      <iframe
-                        className="rounded-md mt-2 sm:w-[700px] w-[300px] h-[160] sm:h-[365px]"
-                        src={`https://www.youtube.com/embed/${link.substring(17)}`}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerPolicy="strict-origin-when-cross-origin"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  ))}
+            <div className="flex flex-col gap-16 items-center w-full">
+              {filteredTrailers.map((trailer, i) => (
+                <div key={i} className="w-full flex flex-col items-center">
+                  <h4 className="text-xl poppins-semibold text-slate-200 mb-6 flex items-center gap-3 w-full max-w-5xl">
+                    <span className="w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_12px_#6366f1]"></span>
+                    {trailer.language}
+                    <span className="text-slate-600 font-normal ml-1">| Official Trailers</span>
+                  </h4>
+
+                  <div className="flex flex-col gap-12 w-full items-center">
+                    {trailer.trailerUrl.map((link, idx) => (
+                      <div key={idx} className="w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.6)] bg-black border border-slate-800 ring-1 ring-transparent hover:ring-indigo-500/30 transition-all duration-500">
+                        <iframe
+                          className="w-full h-full"
+                          src={`https://www.youtube.com/embed/${link.substring(17)}?autoplay=0&rel=0&modestbranding=1`}
+                          title={`${trailer.language} Trailer ${idx + 1}`}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
-            <div
-              className="flex text-white poppins-semibold text-xl rounded-lg items-center justify-center"
-              style={{ width: 700, height: 385 }}
-            >
-              <p className="align-middle">No Videos in {selectedLanguage}</p>
+            <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-slate-500">
+              <svg className="w-20 h-20 mb-6 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              <p className="poppins-medium text-xl text-slate-400">No Videos available in {selectedLanguage}</p>
             </div>
           )}
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
+
+      <form method="dialog" className="modal-backdrop bg-transparent">
+        <button className="cursor-default">close</button>
       </form>
     </dialog>
   );

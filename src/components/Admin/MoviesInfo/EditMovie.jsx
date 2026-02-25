@@ -1,34 +1,37 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
-import certifications from "../../../assets/certification.json";
-import MultiSelect from "../../Common/MultiSelect";
-import MyDropzone from "../../Common/MyDropzone";
+import { Checkbox } from "@mui/material";
+import { Controller, useForm } from "react-hook-form";
+import Select from "react-select";
+import Swal from "sweetalert2";
+
 import { RiMovieFill } from "react-icons/ri";
 import { BiImageAdd } from "react-icons/bi";
-import { Controller, useForm } from "react-hook-form";
 import { HiMiniUserGroup } from "react-icons/hi2";
-import { Checkbox } from "@mui/material";
-import Swal from "sweetalert2";
-import useAxiosSecure from "../../Hooks/AxiosSecure";
 import { SiTicktick } from "react-icons/si";
-import { useNavigate } from "react-router-dom";
+
+import certifications from "../../../assets/certification.json";
 import languages from "../../../assets/languages.json";
-import Select from "react-select";
-import { isEqual } from "lodash";
+import MultiSelect from "../../Common/MultiSelect";
+import MyDropzone from "../../Common/MyDropzone";
+import useAxiosSecure from "../../Hooks/AxiosSecure";
 
 const EditMovie = () => {
   const genres = [
-    { label: "Action", value: "action" },
-    { label: "Comedy", value: "comedy" },
-    { label: "Thriller", value: "thriller" },
-    { label: "Romance", value: "romance" },
-    { label: "Horror", value: "horror" },
-    { label: "Fantasy", value: "fantasy" },
-    { label: "Adventure", value: "adventure" },
-    { label: "Sci-Fi", value: "sci-Fi" },
+    { label: "Action", value: "Action" },
+    { label: "Comedy", value: "Comedy" },
+    { label: "Thriller", value: "Thriller" },
+    { label: "Romance", value: "Romance" },
+    { label: "Horror", value: "Horror" },
+    { label: "Fantasy", value: "Fantasy" },
+    { label: "Adventure", value: "Adventure" },
+    { label: "Sci-Fi", value: "Sci-Fi" },
+    { label: "Crime", value: "Crime" },
+    { label: "Drama", value: "Drama" },
   ];
+
   const formats = [
     { label: "2D", value: "2D" },
     { label: "3D", value: "3D" },
@@ -36,6 +39,7 @@ const EditMovie = () => {
     { label: "IMAX 3D", value: "IMAX 3D" },
     { label: "4DX", value: "4DX" },
   ];
+
   const CrewRoles = [
     { label: "Director", value: "Director" },
     { label: "Producer", value: "Producer" },
@@ -45,26 +49,32 @@ const EditMovie = () => {
     { label: "Screenplay", value: "Screenplay" },
     { label: "Dialog Writer", value: "Dialog Writer" },
   ];
-  const [movie, setMovie] = useState({});
-  const [trailers, setTrailers] = useState({});
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { selectedMovie } = location.state || {};
+  const axiosSecure = useAxiosSecure();
+
+  const posterModalRef = useRef(null);
+  const bannerModalRef = useRef(null);
+
+  // States
+  const [trailers, setTrailers] = useState(selectedMovie?.trailers || []);
+  const [crew, setCrew] = useState(selectedMovie?.crew || []);
+  const [cast, setCast] = useState(selectedMovie?.cast || {});
+  
   const [trailerLang, setTrailerLang] = useState("");
   const [trailerURL, setTrailerURL] = useState("");
-  const [crew, setCrew] = useState([]);
-  const [cast, setCast] = useState({});
   const [name, setName] = useState("");
   const [roles, setRoles] = useState([]);
   const [actor, setActor] = useState("");
   const [char, setChar] = useState("");
-  const [posterImage, setPosterImage] = useState("");
-  const [bannerImage, setBannerImage] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { selectedMovie } = location.state;
-  const axiosSecure = useAxiosSecure();
+  const [posterImage, setPosterImage] = useState(selectedMovie?.poster || "");
+  const [bannerImage, setBannerImage] = useState(selectedMovie?.banner || "");
 
   const defaultValues = {
     title: selectedMovie?.title || "",
-    runtime: selectedMovie?.runtime || null,
+    runtime: selectedMovie?.runtime || "",
     description: selectedMovie?.description || "",
     certification: selectedMovie?.certification || "",
     genre: selectedMovie?.genre || [],
@@ -77,14 +87,12 @@ const EditMovie = () => {
     crew: selectedMovie?.crew || [],
     poster: selectedMovie?.poster || "",
     banner: selectedMovie?.banner || "",
-    trailers: selectedMovie?.trailers || {},
+    trailers: selectedMovie?.trailers || [],
     releaseDate: selectedMovie?.releaseDate || "",
     bookingOpen: selectedMovie?.bookingOpen || false,
     promoted: selectedMovie?.promoted || false,
   };
-  
-  const form = useForm({ defaultValues });
-  
+
   const {
     register,
     handleSubmit,
@@ -93,835 +101,448 @@ const EditMovie = () => {
     watch,
     control,
     formState: { errors },
-  } = form;
+  } = useForm({ defaultValues });
 
   const certificationValue = watch("certification");
+  const bookingOpenValue = watch("bookingOpen");
+  const promotedValue = watch("promoted");
+  const currentGenres = watch("genre");
+  const currentFormats = watch("formats");
+  const currentLanguages = watch("languages");
+
   const isAddTrailerDisabled = !(trailerLang && trailerURL);
   const isAddCrewDisabled = !(name && roles.length > 0);
   const isAddCastDisabled = !(char && actor);
-  const bookingOpenValue = watch("bookingOpen")
-  const promotedValue = watch("promoted")
 
   const onSubmit = (data) => {
     const runtime = parseInt(data.runtime, 10);
-    // const certification = data.certificationValue;
-
-    const genre = data.genre.map(
-      (g) => g.charAt(0).toUpperCase() + g.slice(1).toLowerCase()
-    );
-    const cast = { ...data.cast };
-
-    const crew = [...data.crew];
-
-    const releaseDate = new Date(data.releaseDate).toISOString().split("T")[0];
+    const releaseDate = data.releaseDate ? new Date(data.releaseDate).toISOString().split("T")[0] : null;
 
     const movieData = {
       title: data.title,
       runtime,
       description: data.description,
-      certification: certificationValue,
-      genre,
+      certification: data.certification,
+      genre: data.genre,
       languages: data.languages,
       formats: data.formats,
       ratings: data.ratings,
       votes: data.votes,
       likes: data.likes,
-      cast,
-      crew,
-      poster: data?.poster || selectedMovie.poster,
-      banner: data?.banner || selectedMovie.banner,
-      trailers: data.trailers,
+      cast: cast,
+      crew: crew,
+      poster: posterImage,
+      banner: bannerImage,
+      trailers: trailers, // Now correctly formatted as an array
       releaseDate,
       bookingOpen: data.bookingOpen,
       promoted: data.promoted,
     };
+
     handleEditMovie(movieData);
   };
+
   const handleEditMovie = async (movieData) => {
-    console.log(movieData);
     Swal.fire({
-      title: "Delete Movie",
-      text: "You can update this later",
+      title: "Update Movie",
+      text: "Are you sure you want to save these changes?",
       icon: "info",
-      background: "rgba(43, 43, 46, 0.845)",
+      background: "#1f2937",
       color: "white",
       showCancelButton: true,
-      confirmButtonColor: "rgb(28, 188, 28, 0.941)",
-      cancelButtonColor: "#d33",
-      cancelButtonText: "Keep Updating",
-      confirmButtonText: "Save",
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Save Changes",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const res = await axiosSecure.put(
-            `/movie/edit-movie/${selectedMovie.id}`,
-            movieData
-          );
-          console.log(res.data);
-          if (res) {
+          const res = await axiosSecure.put(`/movie/edit-movie/${selectedMovie.id}`, movieData);
+          if (res.status === 200) {
             Swal.fire({
-              title: "Done!",
-              text: "Movie has been updated.",
+              title: "Updated!",
+              text: "Movie has been successfully updated.",
               icon: "success",
-              background: "rgba(43, 43, 46, 0.845)",
+              background: "#1f2937",
               color: "white",
             });
+            navigate("/admin/movie-dashboard");
           }
-          navigate("/admin/movie-dashboard");
         } catch (error) {
           console.error("Error saving movie:", error);
           Swal.fire({
             title: "Error!",
-            text: "There was an error updated the movie.",
+            text: "There was an error updating the movie.",
             icon: "error",
+            background: "#1f2937",
+            color: "white",
           });
         }
       }
     });
   };
-  useEffect(() => {
-    setValue("poster", movie.poster);
-    setValue("banner", movie.banner);
-    setTrailers(selectedMovie.trailers);
-    setCast(selectedMovie.cast);
-    setCrew(selectedMovie.crew);
-  }, [movie, setValue]);
 
-  //Trailers //
-  const handleLangChange = async (event) => {
-    setTrailerLang(event.target.value);
-  };
-
-  const handleURLChange = (event) => {
-    setTrailerURL(event.target.value);
-  };
-
+  // --- TRAILER LOGIC ---
   const handleAddTrailer = () => {
     if (trailerLang && trailerURL) {
-      const updatedTrailers = {
-        ...getValues("trailers"),
-        [trailerLang]: trailerURL,
-      };
+      const existingIndex = trailers.findIndex((t) => t.language === trailerLang);
+      let updatedTrailers = [...trailers];
+
+      if (existingIndex >= 0) {
+        updatedTrailers[existingIndex].trailerUrl.push(trailerURL);
+      } else {
+        updatedTrailers.push({ language: trailerLang, trailerUrl: [trailerURL] });
+      }
+
       setTrailers(updatedTrailers);
       setValue("trailers", updatedTrailers);
-
       setTrailerLang("");
       setTrailerURL("");
     }
   };
-  const handleDeleteTrailer = (language, urlToDelete) => {
-    // Create a deep copy of the trailers array to avoid mutating state directly
-    const updatedTrailers = trailers.map((trailer) => {
-      if (trailer.language === language) {
-        // Filter out the URL to delete
-        return {
-          ...trailer,
-          trailerUrl: trailer.trailerUrl.filter((url) => url !== urlToDelete),
-        };
-      }
-      return trailer;
-    });
-  
-    // Remove objects with empty trailerUrl arrays
-    const filteredTrailers = updatedTrailers.filter(
-      (trailer) => trailer.trailerUrl.length > 0
-    );
-  
-    // Update the state and form value
-    setTrailers(filteredTrailers);
-    setValue("trailers", filteredTrailers);
-  
-  };
-  
 
-const getYouTubeVideoId = (url) => {
-  const regex = /(?:https?:\/\/(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/))([^"&?\/\s]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : null; // Return the video ID if found, otherwise null
-};
-  // cast and crew //
-  //crew
-  const handleNameChange = (event) => {
-    setName(event.target.value);
+  const handleDeleteTrailer = (language, urlToDelete) => {
+    const updatedTrailers = trailers
+      .map((trailer) => {
+        if (trailer.language === language) {
+          return {
+            ...trailer,
+            trailerUrl: trailer.trailerUrl.filter((url) => url !== urlToDelete),
+          };
+        }
+        return trailer;
+      })
+      .filter((trailer) => trailer.trailerUrl.length > 0);
+
+    setTrailers(updatedTrailers);
+    setValue("trailers", updatedTrailers);
   };
-  const handleRolesChange = (selectedOptions) => {
-    setRoles(selectedOptions.map((option) => option.value));
+
+  const getYouTubeVideoId = (url) => {
+    const regex = /(?:https?:\/\/(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/))([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
   };
-  //cast
-  const handleActorChange = (event) => {
-    setActor(event.target.value);
-  };
-  const handleCharChange = (event) => {
-    setChar(event.target.value);
-  };
+
+  // --- CAST & CREW LOGIC ---
   const handleAddCast = () => {
     if (char && actor) {
-      const updatedCast = { ...getValues("cast"), [actor]: char };
+      const updatedCast = { ...cast, [actor]: char };
       setCast(updatedCast);
       setValue("cast", updatedCast);
       setChar("");
       setActor("");
     }
   };
+
   const handleAddCrew = () => {
     if (name && roles.length > 0) {
-      // Create a new crew member object
-      const newCrewMember = { name, roles };
-
-      // Add to the existing crew array
-      const updatedCrew = [...crew, newCrewMember];
-
-      // Update the state and form values
+      const updatedCrew = [...crew, { name, roles }];
       setCrew(updatedCrew);
       setValue("crew", updatedCrew);
-
-      // Clear input fields after adding a crew member
       setName("");
       setRoles([]);
     }
   };
-  const handleRemoveCrew = (index, team) => {
-    if (team == "crew") {
-      const updatedCrew = crew.filter((_, idx) => idx !== index);
 
-      // Update the state and form values
+  const handleRemoveItem = (index, type) => {
+    if (type === "crew") {
+      const updatedCrew = crew.filter((_, idx) => idx !== index);
       setCrew(updatedCrew);
       setValue("crew", updatedCrew);
-      setValue("crew", updatedCrew);
-    } else if (team == "cast") {
-      const updatedCast = { ...cast }; // Create a copy of the current cast object
-      const castKeyToRemove = Object.keys(cast)[index]; // Get the key of the actor to remove
-      delete updatedCast[castKeyToRemove]; // Delete the key-value pair
-      setCast(updatedCast); // Update the cast state
+    } else if (type === "cast") {
+      const updatedCast = { ...cast };
+      const actorToRemove = Object.keys(updatedCast)[index];
+      delete updatedCast[actorToRemove];
+      setCast(updatedCast);
       setValue("cast", updatedCast);
     }
   };
-  //Poster and banner
-  const saveImage = async (image, name) => {
+
+  // --- IMAGE LOGIC ---
+  const handleImageChange = (imageUrl, name) => {
     if (name === "poster") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        poster: image,
-      }));
-      console.log(image ? "Banner saved" : "Banner set to null");
-    } else if (name === "banner") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        banner: image,
-      }));
-      console.log(image ? "Banner saved" : "Banner set to null");
+      setPosterImage(imageUrl);
+      posterModalRef.current?.close();
+    } else {
+      setBannerImage(imageUrl);
+      bannerModalRef.current?.close();
     }
   };
+
   const removeImage = (name) => {
-    if (name === "poster") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        poster: "",
-      }));
-      setPosterImage("");
-    } else if (name === "banner") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        banner: "",
-      }));
-      setBannerImage("");
-    }
+    if (name === "poster") setPosterImage("");
+    if (name === "banner") setBannerImage("");
   };
-  const closeDialog1 = () => {
-    document.getElementById("my_modal_1").close();
-  };
-  const closeDialog2 = () => {
-    document.getElementById("my_modal_2").close();
-  };
- 
-  //styles
+
+  // --- STYLES ---
   const textFieldStyles = {
+    width: "100%",
     "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: "gray",
-      },
-      "&:hover fieldset": {
-        borderColor: "lightgray",
-      },
+      "& fieldset": { borderColor: "#4b5563" },
+      "&:hover fieldset": { borderColor: "#9ca3af" },
     },
-    "& .MuiInputBase-input": {
-      color: "white",
-    },
-    "& .MuiInputLabel-root": {
-      color: "gray",
-    },
+    "& .MuiInputBase-input": { color: "white" },
+    "& .MuiInputLabel-root": { color: "#9ca3af" },
   };
+
   const customStyles = {
     control: (provided) => ({
       ...provided,
-      backgroundColor: "transparent", // Dark background
+      backgroundColor: "transparent",
       color: "#fff",
-      border: "1px solid gray", // Border color
-      minHeight: "52px",
+      border: "1px solid #4b5563",
+      minHeight: "56px",
+      width: "100%",
     }),
     multiValue: (provided) => ({
       ...provided,
-      backgroundColor: "#4444448a", // Background for the tag
-      color: "#fff", // Tag text color
-      maxWidth: "500px", // Set max width for the tags here
-      overflow: "hidden", // Hide overflow if the text is too long
-      textOverflow: "ellipsis", // Add ellipsis for long text
-      whiteSpace: "nowrap", // Prevent wrapping
+      backgroundColor: "#374151",
     }),
     multiValueLabel: (provided) => ({
       ...provided,
-      color: "white", // Tag label text color
-      fontSize: "1rem", // Adjust font size if needed
-      maxWidth: "200px", // Set width for the label text
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-    }),
-    multiValueRemove: (provided) => ({
-      ...provided,
-      color: "#ddd",
-      ":hover": {
-        backgroundColor: "#555",
-        color: "#fff",
-      },
-    }),
-    placeholder: (provided) => ({
-      ...provided,
-      color: "#aaa",
+      color: "white",
     }),
     menu: (provided) => ({
       ...provided,
-      backgroundColor: "#333",
+      backgroundColor: "#1f2937",
       color: "#fff",
+      zIndex: 50,
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isFocused ? "#374151" : "transparent",
+      "&:active": { backgroundColor: "#4b5563" },
     }),
   };
 
-  const handleImageChange = (imageUrl, name) => {
-  if (name === 'poster') {
-    setPosterImage(imageUrl);
-     saveImage(imageUrl, name);
-     closeDialog1();
-  }else{
-    setBannerImage(imageUrl);
-    saveImage(imageUrl, name);
-    closeDialog2();
-  }
-};
+  if (!selectedMovie) return <div className="text-white text-center mt-20">No movie selected.</div>;
+
   return (
-    <div>
-      <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex items-center bg-gradient-to-br from-black via-gray-900 to-black mb-2 shadow-2xl text-white shadow-slate-600 p-4 text-xl poppins-semibold gap-x-8">
-        <RiMovieFill size={32} className="ml-8" /> ADD NEW MOVIE
-      </div>
-      <div className="rounded-xl w-full h-full poppins-regular">
-        {/* modal for poster */}
-        <dialog id="my_modal_1" className="modal">
-          <div className="modal-box bg-gray-900 text-white">
-            {/* Dropzone to upload image */}
-            <MyDropzone
-              onImageChange={handleImageChange} // Use the new prop
-              currentImage={posterImage} // Pass the current image state
-              name="poster"
-              onRemoveImage={removeImage} // Pass the remove function
-            />
+    <div className="min-h-screen bg-black text-white p-4 md:p-8 poppins-regular">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="bg-gradient-to-r from-gray-900 to-black border border-gray-800 rounded-xl p-4 mb-8 flex items-center shadow-2xl gap-4">
+          <RiMovieFill size={32} className="text-blue-500" />
+          <h1 className="text-2xl font-bold tracking-wider uppercase">Edit Movie: {selectedMovie.title}</h1>
+        </div>
 
-            <div className="text-center">
-              <label
-                className="block text-center poppins-light my-2 text-white text-md font-bold mb-2"
-                htmlFor="title"
-              >
-                OR
-              </label>
-
-              {/* URL input field */}
-              <TextField
-                label="URL"
-                type="text"
-                name="poster"
-                className="w-[58vh]"
-                variant="outlined"
-                value={posterImage}
-                onChange={(e) => setPosterImage(e.target.value)}
-                sx={textFieldStyles}
-              />
-
-              {/* Remove button to set image to null */}
-              <button
-                className="btn bg-gray-700 text-white mt-2"
-                onClick={() => removeImage("poster")}
-              >
-                Remove
-              </button>
-            </div>
-
-            <div className="modal-action">
-              {/* Save button - saves image and closes modal */}
-              <button
-                className="btn bg-gray-700 text-white"
-                onClick={() => {
-                  saveImage(posterImage, "poster");
-                  closeDialog1();
-                }}
-              >
-                Save
-              </button>
-
-              {/* Close button - just closes modal without saving */}
-              <button
-                className="btn bg-gray-700 text-white"
-                onClick={closeDialog1}
-              >
-                Close
-              </button>
+        {/* Modal: Poster */}
+        <dialog ref={posterModalRef} className="modal">
+          <div className="modal-box bg-gray-900 border border-gray-700 text-white">
+            <h3 className="font-bold text-lg mb-4">Update Poster</h3>
+            <MyDropzone onImageChange={handleImageChange} currentImage={posterImage} name="poster" onRemoveImage={removeImage} closeDialog={() => posterModalRef.current?.close()}/>
+            <div className="divider before:bg-gray-700 after:bg-gray-700">OR URL</div>
+            <TextField label="Image URL" value={posterImage} onChange={(e) => setPosterImage(e.target.value)} sx={textFieldStyles} />
+            <div className="modal-action mt-6">
+              <button type="button" className="btn btn-error text-white" onClick={() => removeImage("poster")}>Remove</button>
+              <button type="button" className="btn btn-primary" onClick={() => posterModalRef.current?.close()}>Done</button>
             </div>
           </div>
         </dialog>
 
-        {/* main form */}
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="max-w-[160%] pl-12  mx-auto rounded-xl bg-gradient-to-br from-black via-gray-900 to-slate-900 shadow-2xl space-y-10 shadow-slate-600 p-8"
-        >
-          {/* Poster, banner */}
-          <div className="space-x-8 text-center">
-            {posterImage ? (
-              <button
-                type="button"
-                className="btn h-[50vh] w-[32vh] hover:text-opacity-100 text-opacity-0 border-2 border-doubled border-green-600/40  hover:bg-gray-700 bg-green-800 text-white"
-                onMouseOver={() => {
-                  document
-                    .getElementById("update-poster")
-                    .classList.replace("opacity-0", "opacity-100");
-                }}
-                onMouseLeave={() => {
-                  document
-                    .getElementById("update-poster")
-                    .classList.replace("opacity-100", "opacity-0");
-                }}
-                onClick={() =>
-                  document.getElementById("my_modal_1").showModal()
-                }
-                style={{
-                  backgroundImage: `url(${posterImage})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
-              >
-                <SiTicktick size={64} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                style={{
-                  backgroundImage: `url(${selectedMovie.poster})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
-                onMouseOver={() => {
-                  document
-                    .getElementById("update-poster")
-                    .classList.replace("opacity-0", "opacity-100");
-                }}
-                onMouseLeave={() => {
-                  document
-                    .getElementById("update-poster")
-                    .classList.replace("opacity-100", "opacity-0");
-                }}
-                className=" relative btn h-[50vh] w-[32vh] text-opacity-0 hover:text-opacity-100 border-gray-600 text-white"
-                onClick={() =>
-                  document.getElementById("my_modal_1").showModal()
-                }
-              >
-                <BiImageAdd size={64} />
-                <span
-                  className="w-full rounded-b-lg absolute bottom-0 text-lg opacity-0 font-bold bg-black/80"
-                  id="update-poster"
-                >
-                  {" "}
-                  Update Movie Poster
-                </span>
-              </button>
-            )}
-
-            {bannerImage ? (
-              <button
-                type="button"
-                className="btn w-[68vh] h-[38vh] border-gray-600 text-white"
-                onClick={() => {
-                  // Open another dialog for banner
-                  document.getElementById("my_modal_2").showModal();
-                }}
-                style={{
-                  background: `url(${getValues("banner")})`,
-                  backgroundPosition: `center`,
-                  backgroundSize: `contain`,
-                  backgroundRepeat: `no-repeat`,
-                }}
-              >
-                <SiTicktick size={24} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="relative btn w-[68vh] h-[38vh] hover:bg-opacity-100 hover:text-opacity-100 text-opacity-0 border-gray-600 text-white"
-                onMouseOver={() => {
-                  document
-                    .getElementById("update-banner")
-                    .classList.replace("opacity-0", "opacity-100");
-                }}
-                onMouseLeave={() => {
-                  document
-                    .getElementById("update-banner")
-                    .classList.replace("opacity-100", "opacity-0");
-                }}
-                onClick={() => {
-                  // Open another dialog for banner
-                  document.getElementById("my_modal_2").showModal();
-                }}
-                style={{
-                  background: `url(${selectedMovie.banner})`,
-                  backgroundPosition: `center`,
-                  backgroundSize: `contain`,
-                  backgroundRepeat: `no-repeat`,
-                }}
-              >
-                <BiImageAdd size={64} />{" "}
-                <span
-                  className="absolute bottom-0 w-full text-xl opacity-0 font-bold text-white bg-black/60 "
-                  id="update-banner"
-                >
-                  Update Movie Banner
-                </span>
-              </button>
-            )}
+        {/* Modal: Banner */}
+        <dialog ref={bannerModalRef} className="modal">
+          <div className="modal-box bg-gray-900 border border-gray-700 text-white max-w-2xl">
+            <h3 className="font-bold text-lg mb-4">Update Banner</h3>
+            <MyDropzone onImageChange={handleImageChange} currentImage={bannerImage} name="banner" onRemoveImage={removeImage} closeDialog={() => bannerModalRef.current?.close()}/>
+            <div className="divider before:bg-gray-700 after:bg-gray-700">OR URL</div>
+            <TextField label="Image URL" value={bannerImage} onChange={(e) => setBannerImage(e.target.value)} sx={textFieldStyles} />
+            <div className="modal-action mt-6">
+              <button type="button" className="btn btn-error text-white" onClick={() => removeImage("banner")}>Remove</button>
+              <button type="button" className="btn btn-primary" onClick={() => bannerModalRef.current?.close()}>Done</button>
+            </div>
           </div>
-          {/* title, runtime, certification */}
-          <div className=" flex gap-x-8 text-white">
-            <div className="mb-2">
-              <label
-                htmlFor="title-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Title of the movie
-              </label>
-              <TextField
-                label="Title"
-                type="text"
-                name="title"
-                className="w-[68vh]"
-                variant="outlined"
-                {...register("title", { required: "Movie without title?" })}
-                sx={textFieldStyles}
-                error={!!errors.title}
-                helperText={errors.title ? errors.title.message : ""}
-              />
+        </dialog>
+
+        {/* Main Form */}
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-6 md:p-10 space-y-10 shadow-2xl">
+          
+          {/* Images Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="col-span-1">
+               <p className="text-gray-400 text-sm mb-2 font-semibold">Movie Poster</p>
+               <button
+                  type="button"
+                  onClick={() => posterModalRef.current?.showModal()}
+                  className="w-full aspect-[2/3] max-w-[300px] mx-auto relative group overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center transition-all hover:border-blue-500"
+                  style={posterImage ? { backgroundImage: `url(${posterImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+                >
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                    <BiImageAdd size={48} />
+                    <span className="mt-2 font-medium">Update Poster</span>
+                  </div>
+                  {!posterImage && <BiImageAdd size={48} className="text-gray-500" />}
+                </button>
             </div>
-            <div className="mb-2">
-              <label
-                htmlFor="runtime-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Runtime
-              </label>
-              <TextField
-                label="Runtime(mins)"
-                type="number"
-                className="w-[30vh]"
-                name="runtime"
-                variant="outlined"
-                {...register("runtime", {
-                  required: "Uh-oh, our movie's missing runtime",
-                })}
-                sx={textFieldStyles}
-                error={!!errors.runtime}
-                helperText={errors.runtime ? errors.runtime.message : ""}
-              />
+            
+            <div className="col-span-1 lg:col-span-2">
+               <p className="text-gray-400 text-sm mb-2 font-semibold">Movie Banner</p>
+               <button
+                  type="button"
+                  onClick={() => bannerModalRef.current?.showModal()}
+                  className="w-full aspect-video relative group overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center transition-all hover:border-blue-500"
+                  style={bannerImage ? { backgroundImage: `url(${bannerImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+                >
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                    <BiImageAdd size={48} />
+                    <span className="mt-2 font-medium">Update Banner</span>
+                  </div>
+                  {!bannerImage && <BiImageAdd size={48} className="text-gray-500" />}
+                </button>
             </div>
-            <div className="mb-2">
-              <label
-                htmlFor="languages-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Certification
-              </label>
+          </div>
+
+          {/* Basic Info Row 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <TextField
+              label="Movie Title"
+              variant="outlined"
+              {...register("title", { required: "Title is required" })}
+              error={!!errors.title}
+              helperText={errors.title?.message}
+              sx={textFieldStyles}
+            />
+            <TextField
+              label="Runtime (mins)"
+              type="number"
+              variant="outlined"
+              {...register("runtime", { required: "Runtime is required" })}
+              error={!!errors.runtime}
+              helperText={errors.runtime?.message}
+              sx={textFieldStyles}
+            />
+            <TextField
+              select
+              label="Certification"
+              variant="outlined"
+              value={certificationValue || ""}
+              {...register("certification", { required: "Certification required" })}
+              onChange={(e) => setValue("certification", e.target.value)}
+              sx={textFieldStyles}
+            >
+              {certifications.map((cert) => (
+                <MenuItem key={cert.value} value={cert.value}>{cert.label}</MenuItem>
+              ))}
+            </TextField>
+          </div>
+
+          {/* Info Row 2 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TextField
+              label="Description / Summary"
+              multiline
+              rows={3}
+              variant="outlined"
+              {...register("description", { required: "Summary required" })}
+              error={!!errors.description}
+              helperText={errors.description?.message}
+              sx={textFieldStyles}
+            />
+            <div className="space-y-2">
+               <label className="text-gray-400 text-sm pl-1">Genres</label>
+               <Select
+                  isMulti
+                  options={genres}
+                  value={genres.filter(g => currentGenres?.includes(g.value))}
+                  onChange={(opts) => setValue("genre", opts ? opts.map(o => o.value) : [])}
+                  styles={customStyles}
+                  placeholder="Select genres..."
+               />
+            </div>
+          </div>
+
+          {/* Info Row 3 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="space-y-2">
+               <label className="text-gray-400 text-sm pl-1">Languages</label>
+               <Select
+                  isMulti
+                  options={languages}
+                  value={languages.filter(l => currentLanguages?.includes(l.value))}
+                  onChange={(opts) => setValue("languages", opts ? opts.map(o => o.value) : [])}
+                  styles={customStyles}
+               />
+             </div>
+             <div className="space-y-2">
+               <label className="text-gray-400 text-sm pl-1">Formats (Experiences)</label>
+               <Select
+                  isMulti
+                  options={formats}
+                  value={formats.filter(f => currentFormats?.includes(f.value))}
+                  onChange={(opts) => setValue("formats", opts ? opts.map(o => o.value) : [])}
+                  styles={customStyles}
+               />
+             </div>
+             <div className="space-y-2 pt-1">
+                <TextField
+                  label="Release Date"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  {...register("releaseDate", { required: "Release date required" })}
+                  error={!!errors.releaseDate}
+                  helperText={errors.releaseDate?.message}
+                  sx={textFieldStyles}
+                />
+             </div>
+          </div>
+
+          {/* Trailers Section */}
+          <div className="bg-black/50 border border-gray-700 rounded-xl p-4 md:p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Trailers</h2>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
               <TextField
-                select
-                className="w-[30vh] space-x-2"
-                name="certification"
-                variant="outlined"
-                value={certificationValue || ""}
-                {...register("certification", { required: true })}
-                onChange={(e) => setValue("certification", e.target.value)} // Updates the form state
-                sx={textFieldStyles}
+                  select
+                  label="Language"
+                  value={trailerLang}
+                  onChange={(e) => setTrailerLang(e.target.value)}
+                  sx={textFieldStyles}
               >
-                {certifications.map((cert) => (
-                  <MenuItem
-                    sx={{ fontFamily: "poppins" }}
-                    key={cert.value}
-                    value={cert.value}
-                  >
-                    {cert.label}
-                  </MenuItem>
-                ))}
+                  {languages.map((l) => (
+                    <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
+                  ))}
               </TextField>
-            </div>
-          </div>
-          {/* desc, genre */}
-          <div className=" flex gap-x-7">
-            <div className="mb-2">
-              <label
-                htmlFor="description-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Summary of the movie
-              </label>
               <TextField
-                label="Description"
-                type="text"
-                name="description"
-                className="w-[85vh]"
-                value={selectedMovie.description}
-                variant="outlined"
-                {...register("description", {
-                  required: "Tell something about the story",
-                })}
-                error={!!errors.description}
-                helperText={
-                  errors.description ? errors.description.message : ""
-                }
-                sx={textFieldStyles}
+                  label="YouTube URL"
+                  value={trailerURL}
+                  onChange={(e) => setTrailerURL(e.target.value)}
+                  sx={textFieldStyles}
               />
-            </div>
-            <div className="mb-2">
-              <label
-                htmlFor="genre-multiselect"
-                className="block text-white text-sm font-bold mb-2"
+              <button
+                type="button"
+                className="btn btn-primary md:w-48 whitespace-nowrap"
+                onClick={handleAddTrailer}
+                disabled={isAddTrailerDisabled}
               >
-                Select Genres
-              </label>
-              <Select
-                isMulti
-                id="genre-multiselect"
-                options={genres}
-                name="genre"
-                labelField="label"
-                valueField="value"
-                placeholder={selectedMovie.genre.map((g) => g).join("/")}
-                onChange={(selectedOptions) =>
-                  setValue(
-                    "genre",
-                    selectedOptions
-                      ? selectedOptions.map((option) => option.value)
-                      : []
-                  )
-                }
-                styles={customStyles}
-              />
-            </div>
-          </div>
-          {/* Languages . experiences . bookings open/not open*/}
-          <div className=" flex gap-x-10">
-            <div className="mb-2">
-              <label
-                htmlFor="languages-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Languages
-              </label>
-              <Select
-                isMulti
-                options={languages}
-                name="languages"
-                labelField="label"
-                valueField="value"
-                //required
-                placeholder={selectedMovie.languages.map((l) => l).join("/")}
-                onChange={(selectedOptions) =>
-                  setValue(
-                    "languages",
-                    selectedOptions
-                      ? selectedOptions.map((option) => option.value)
-                      : []
-                  )
-                }
-                styles={customStyles}
-              />
+                + Add Trailer
+              </button>
             </div>
 
-            <div className="mb-2">
-              <label
-                htmlFor="formats-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Experiences available
-              </label>
-              <Select
-                isMulti
-                options={formats}
-                name="formats"
-                labelField="label"
-                valueField="value"
-                // required
-                styles={customStyles}
-                placeholder={selectedMovie.formats.map((f) => f).join("/")}
-                onChange={(selectedOptions) =>
-                  setValue(
-                    "formats",
-                    selectedOptions
-                      ? selectedOptions.map((option) => option.value)
-                      : []
-                  )
-                }
-              />
-            </div>
-
-            <div className="mb-2">
-              <label
-                htmlFor="formats-multiselect"
-                className="block text-white text-sm font-bold mb-2"
-              >
-                Release Date
-              </label>
-              <TextField
-                type="date"
-                name="releaseDate"
-                className="w-[30vh]"
-                variant="outlined"
-                {...register("releaseDate", {
-                  valueAsDate: true,
-                  required: {
-                    value: true,
-                    message: "Atleast provide a tentative date",
-                  },
-                })}
-                error={!!errors.releaseDate}
-                helperText={
-                  errors.releaseDate ? errors.releaseDate.message : ""
-                }
-                sx={textFieldStyles}
-              />
-            </div>
-          </div>
-
-          {/* Add trailers */}
-          <div className="rounded-lg border-gray-700 border-2 bg-black/30">
-            {" "}
-            <h2 className="poppins-semibold text-lg text-white text-center">
-              Add Trailers
-            </h2>
-            <table className="table table-zebra">
-              <thead>
-                <tr className="">
-                  <th></th>
-                  <th>
-                    <Controller
-                      name="language"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          select
-                          label="Language"
-                          className="w-[45vh] outline-none"
-                          value={trailerLang}
-                          onChange={(e) => {
-                          
-                            handleLangChange(e);
-                            field.onChange(e);
-                          }}
-                          variant="outlined"
-                          sx={textFieldStyles}
-                        >
-                          {languages.map((bs, i) => (
-                            <MenuItem
-                              sx={{ fontFamily: "poppins" }}
-                              // key={bs.value}
-                              key={i}
-                              value={bs.value}
-                            >
-                              {bs.label}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      )}
-                    />
-                  </th>
-                  <th>
-                    <Controller
-                      name="trailerURL"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          label="URL"
-                          type="text"
-                          value={trailerURL}
-                          onChange={(e) => {
-                            handleURLChange(e);
-                            field.onChange(e);
-                          }}
-                          className="w-[48vh]"
-                          variant="outlined"
-                          sx={textFieldStyles}
-                        />
-                      )}
-                    />
-                  </th>
-                  <th>
-                    {" "}
-                    <button
-                      type="button"
-                      className="btn w-[25vh] bg-slate-900 hover:bg-gray-700 border-gray-600 text-white"
-                      onClick={handleAddTrailer}
-                      disabled={isAddTrailerDisabled}
-                    >
-                      <BiImageAdd size={24} /> Add Trailer
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-            </table>
-            {/* Display added trailers */}
             {trailers.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  {/* head */}
-                  <thead>
-                    <tr className="border-2 border-gray-600 text-gray-300">
-                      <th></th>
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="table w-full">
+                  <thead className="bg-gray-800 text-gray-300">
+                    <tr>
                       <th>Language</th>
-                      <th>Trailer Link</th>
+                      <th>Thumbnail</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* row 1 */}
-                    {trailers.map((trailer, idx) =>
-                      trailer.trailerUrl.map((url, urlIdx) => (
-                        <tr key={`${idx}-${urlIdx}`}>
-                          <th>{idx + 1}</th>
+                    {trailers.map((trailer) =>
+                      trailer.trailerUrl.map((url, idx) => (
+                        <tr key={`${trailer.language}-${idx}`} className="border-t border-gray-700">
                           <td>{trailer.language}</td>
                           <td>
-                            {/* You can embed the thumbnail from the YouTube URL */}
                             <img
-                              src={`https://img.youtube.com/vi/${getYouTubeVideoId(
-                                url
-                              )}/0.jpg`} // Get the thumbnail image
-                              alt="Trailer Thumbnail"
-                              style={{
-                                width: "100px",
-                                height: "auto",
-                                marginRight: "10px",
-                              }}
+                              src={`https://img.youtube.com/vi/${getYouTubeVideoId(url)}/0.jpg`}
+                              alt="Thumbnail"
+                              className="w-24 h-auto rounded border border-gray-600"
+                              onError={(e) => e.target.style.display = 'none'}
                             />
-                           
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              onClick={() =>handleDeleteTrailer(trailer.language,trailer.trailerUrl[urlIdx])}
-                            >
-                              Delete
-                            </button>
+                            <button type="button" className="btn btn-sm btn-error text-white" onClick={() => handleDeleteTrailer(trailer.language, url)}>Delete</button>
                           </td>
                         </tr>
                       ))
@@ -931,97 +552,29 @@ const getYouTubeVideoId = (url) => {
               </div>
             )}
           </div>
-          {/* Add cast members */}
-          <div className="rounded-lg border-gray-700 border-2 bg-black/30">
-            <h2 className="poppins-semibold text-lg text-white text-center">
-              Add Cast
-            </h2>
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>
-                    <Controller
-                      name="actor"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          label="Actor"
-                          type="text"
-                          value={actor}
-                          onChange={(e) => {
-                            handleActorChange(e);
 
-                            field.onChange(e);
-                          }}
-                          className="w-[45vh]"
-                          variant="outlined"
-                          sx={textFieldStyles}
-                        />
-                      )}
-                    />
-                  </th>
-                  <th>
-                    <Controller
-                      name="char"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          label="Character"
-                          type="text"
-                          value={char}
-                          onChange={(e) => {
-                            handleCharChange(e);
-
-                            field.onChange(e);
-                          }}
-                          className="w-[45vh]"
-                          variant="outlined"
-                          sx={textFieldStyles}
-                        />
-                      )}
-                    />
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="btn w-[25vh] bg-slate-900 hover:bg-gray-700 border-gray-600 text-white"
-                      onClick={handleAddCast}
-                      disabled={isAddCastDisabled}
-                    >
-                      <HiMiniUserGroup size={24} /> Add Cast
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-            </table>
-            {/* Display added crew members */}
+          {/* Cast Section */}
+          <div className="bg-black/50 border border-gray-700 rounded-xl p-4 md:p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Cast</h2>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <TextField label="Actor Name" value={actor} onChange={(e) => setActor(e.target.value)} sx={textFieldStyles} />
+              <TextField label="Character Name" value={char} onChange={(e) => setChar(e.target.value)} sx={textFieldStyles} />
+              <button type="button" className="btn btn-primary md:w-48 whitespace-nowrap" onClick={handleAddCast} disabled={isAddCastDisabled}>
+                + Add Cast
+              </button>
+            </div>
             {Object.keys(cast).length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  {/* head */}
-                  <thead className="text-gray-300">
-                    <tr className="border-2 border-gray-600">
-                      <th></th>
-                      <th>Actor</th>
-                      <th>Roles</th>
-                      <th>Action</th>
-                    </tr>
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="table w-full">
+                  <thead className="bg-gray-800 text-gray-300">
+                    <tr><th>Actor</th><th>Character</th><th>Action</th></tr>
                   </thead>
                   <tbody>
-                    {Object.entries(cast).map(([actor, char], idx) => (
-                      <tr key={idx}>
-                        <th>{idx + 1}</th>
-                        <td>{actor}</td>
-                        <td>{char}</td>
-                        <td>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCrew(idx, "cast")}
-                          >
-                            Delete
-                          </button>
-                        </td>
+                    {Object.entries(cast).map(([act, chr], idx) => (
+                      <tr key={idx} className="border-t border-gray-700">
+                        <td>{act}</td>
+                        <td>{chr}</td>
+                        <td><button type="button" className="btn btn-sm btn-error text-white" onClick={() => handleRemoveItem(idx, "cast")}>Delete</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -1029,94 +582,31 @@ const getYouTubeVideoId = (url) => {
               </div>
             )}
           </div>
-          {/* Add crew members */}
-          <div className="rounded-lg border-gray-700 border-2 bg-black/30">
-            <h2 className="poppins-semibold text-lg text-white text-center">
-              Add Crew Member
-            </h2>
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>
-                    <Controller
-                      name="name"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          label="Name"
-                          type="text"
-                          value={name}
-                          onChange={(e) => {
-                            handleNameChange(e);
-                            field.onChange(e);
-                          }}
-                          className="w-[45vh]"
-                          variant="outlined"
-                          sx={textFieldStyles}
-                        />
-                      )}
-                    />
-                  </th>
-                  <th>
-                    <Controller
-                      name="roles"
-                      control={control}
-                      render={({ field }) => (
-                        <MultiSelect
-                          options={CrewRoles}
-                          name="roles"
-                          value={roles}
-                          onChange={(selectedOptions) => {
-                            handleRolesChange(selectedOptions);
-                          }}
-                          className="w-[30vh]"
-                          labelField="label"
-                          valueField="value"
-                        />
-                      )}
-                    />
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="btn w-[25vh] bg-slate-900 hover:bg-gray-700 border-gray-600 text-white"
-                      onClick={handleAddCrew}
-                      disabled={isAddCrewDisabled}
-                    >
-                      <HiMiniUserGroup size={24} /> Add Crew
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-            </table>
-            {/* Display added crew members */}
+
+          {/* Crew Section */}
+          <div className="bg-black/50 border border-gray-700 rounded-xl p-4 md:p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Crew</h2>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <TextField label="Crew Member Name" value={name} onChange={(e) => setName(e.target.value)} sx={textFieldStyles} />
+              <div className="w-full">
+                <MultiSelect options={CrewRoles} value={roles} onChange={(opts) => setRoles(opts.map(o => o.value))} labelField="label" valueField="value" />
+              </div>
+              <button type="button" className="btn btn-primary md:w-48 whitespace-nowrap" onClick={handleAddCrew} disabled={isAddCrewDisabled}>
+                + Add Crew
+              </button>
+            </div>
             {crew.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  {/* head */}
-                  <thead className="text-gray-300">
-                    <tr className="border-2 border-gray-600">
-                      <th></th>
-                      <th>Name</th>
-                      <th>Roles</th>
-                      <th>Action</th>
-                    </tr>
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="table w-full">
+                  <thead className="bg-gray-800 text-gray-300">
+                    <tr><th>Name</th><th>Roles</th><th>Action</th></tr>
                   </thead>
                   <tbody>
                     {crew.map((cr, idx) => (
-                      <tr key={idx}>
-                        <th>{idx + 1}</th>
+                      <tr key={idx} className="border-t border-gray-700">
                         <td>{cr.name}</td>
-                        <td>{cr.roles.join(",")}</td>
-                        <td>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCrew(idx, "crew")}
-                          >
-                            Delete
-                          </button>
-                        </td>
+                        <td>{cr.roles.join(", ")}</td>
+                        <td><button type="button" className="btn btn-sm btn-error text-white" onClick={() => handleRemoveItem(idx, "crew")}>Delete</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -1125,93 +615,25 @@ const getYouTubeVideoId = (url) => {
             )}
           </div>
 
-          <div className="flex mb-2 justify-center gap-x-10">
-            <div className={`w-[40vh] text-center rounded-lg border-2 hover:bg-gray-700 ${bookingOpenValue?`bg-green-400/60 border-green-600`:`bg-red-800/60 border-red-600/60`}  text-white`}>
-              <label htmlFor="" className="poppins-semibold">
-                Bookings Open
-              </label>{" "}
-              <Checkbox
-                name="bookingOpen"
-                {...register("bookingOpen")}
-                label="Focus on me"
-                color="info"
-              />
+          {/* Toggles & Submit */}
+          <div className="pt-6">
+            <div className="flex flex-col sm:flex-row justify-center gap-6 mb-8">
+              <div className={`flex items-center px-6 py-3 rounded-xl border-2 transition-colors ${bookingOpenValue ? 'bg-green-900/30 border-green-500 text-green-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
+                <Checkbox {...register("bookingOpen")} sx={{ color: 'inherit', '&.Mui-checked': { color: '#4ade80' } }} />
+                <span className="font-semibold text-lg ml-2">Bookings Open</span>
+              </div>
+              <div className={`flex items-center px-6 py-3 rounded-xl border-2 transition-colors ${promotedValue ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-gray-800 border-gray-600 text-gray-400'}`}>
+                <Checkbox {...register("promoted")} sx={{ color: 'inherit', '&.Mui-checked': { color: '#60a5fa' } }} />
+                <span className="font-semibold text-lg ml-2">Promoted Status</span>
+              </div>
             </div>
-            <div className={`w-[40vh] text-center rounded-lg border-2 ${promotedValue?`bg-green-400/60 border-green-600`:`bg-red-800/60 border-red-600/60`} hover:bg-gray-700 text-white`}>
-              <label htmlFor="" className="poppins-semibold">
-                Promoted
-              </label>{" "}
-              <Checkbox
-                name="promoted"
-                {...register("promoted")}
-                label="Focus on me"
-                color="info"
-              />
-            </div>
-          </div>
-          { <button type="submit" className="btn bg-blue-500 text-white w-full">
-            Save Movie
-          </button>
-          }
-        </form>
-        {/* {modal for banner} */}
-        <dialog id="my_modal_2" className="modal">
-          <div className="modal-box bg-gray-900 text-white">
-           <MyDropzone
-              onImageChange={handleImageChange} // Use the new prop
-              currentImage={bannerImage} // Pass the current image state
-              name="banner"
-              onRemoveImage={removeImage}
-              closeDialog={closeDialog1} // Pass the remove function
-            />
-            <div className="text-center">
-              <label
-                className="block text-center poppins-light my-2 text-white text-md font-bold mb-2"
-                htmlFor="title"
-              >
-                OR
-              </label>
-              <TextField
-                label="URL"
-                type="text"
-                name="banner"
-                className="w-[58vh]"
-                variant="outlined"
-                value={bannerImage}
-                onChange={(e) => {
-                  setBannerImage(e.target.value);
-                }}
-                sx={textFieldStyles}
-              />
-              <button
-                className="btn bg-gray-700 text-white mt-2"
-                onClick={() => removeImage("banner")}
-              >
-                Remove
-              </button>
-            </div>
-            <div className="modal-action">
-              {/* Save button - saves image and closes modal */}
-              <button
-                className="btn bg-gray-700 text-white"
-                onClick={() => {
-                  saveImage(bannerImage, "banner");
-                  closeDialog2();
-                }}
-              >
-                Save
-              </button>
 
-              {/* Close button - just closes modal without saving */}
-              <button
-                className="btn bg-gray-700 text-white"
-                onClick={closeDialog2}
-              >
-                Close
-              </button>
-            </div>
+            <button type="submit" className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xl shadow-lg transform transition-all hover:scale-[1.01] active:scale-[0.99]">
+              Save Movie Updates
+            </button>
           </div>
-        </dialog>
+
+        </form>
       </div>
     </div>
   );
