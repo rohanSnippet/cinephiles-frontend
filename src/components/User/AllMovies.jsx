@@ -38,6 +38,7 @@ const AllMovies = () => {
       setIsLoading(true);
       const res = await axiosSecure.get("/movie/upcoming-movies");
       setMovies(res.data);
+      console.log(res.data);
     } catch (error) {
       console.error("Error fetching movies:", error);
     } finally {

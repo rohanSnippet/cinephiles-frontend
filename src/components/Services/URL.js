@@ -1,8 +1,10 @@
 import axios from "axios";
 
-export const baseURL = import.meta.env.VITE_APP_BASE_URL || "https://cinephiles-backend.onrender.com"; // Ensure correct API base URL
-export const frontURL = import.meta.env.VITE_APP_FRONTEND_URL; // Ensure correct API base URL
+export const baseURL = import.meta.env.VITE_APP_BASE_URL;
+export const frontURL = import.meta.env.VITE_APP_FRONTEND_URL;
 
+//export const baseURL = "http://192.168.43.128:9000";
+//export const frontURL = "http://192.168.43.128:5173";
 
 // User login
 export const userLogin = async (username, password) => {
