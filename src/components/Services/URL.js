@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const baseURL = import.meta.env.VITE_APP_BASE_URL;
+export const baseURL = import.meta.env.VITE_APP_BASE_URL || "http://localhost:9000";
 export const frontURL = import.meta.env.VITE_APP_FRONTEND_URL;
 
 //export const baseURL = "http://192.168.43.128:9000";
