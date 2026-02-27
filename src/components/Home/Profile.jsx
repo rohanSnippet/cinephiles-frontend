@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
 import useAdmin from "../Hooks/useAdmin";
 import useOwner from "../Hooks/useOwner";
 import { CiUser } from "react-icons/ci";
+import { FiX } from "react-icons/fi";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../Context/AuthProvider";
-import Loading from "../Common/Loading";
 import { baseURL, frontURL } from "../Services/URL";
 
 const Profile = () => {
@@ -16,127 +17,211 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const axiosSecure = useAxiosSecure();
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  const [isAdmin] = useAdmin();
+  const [isOwner] = useOwner();
+
+  // Prevent background scrolling when sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     const getUser = async () => {
       try {
-        setLoading(true); 
+        setLoading(true);
         const res = await axiosSecure.get(`/user?username=${username}`);
-        if(res.data) setUser(res.data);
+        if (res.data) setUser(res.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching user:", error);
       }
     };
-   if (username) {
-        getUser();
+    if (username) {
+      getUser();
     }
   }, [username, axiosSecure]);
 
   const handleLogout = async () => {
-  
-      try {
-        const response = await fetch(`${baseURL}/auth/logout`, {
-          method: "POST",
-          credentials: "include",
+    try {
+      const response = await fetch(`${baseURL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        localStorage.removeItem("access-token");
+        localStorage.removeItem("username");
+        localStorage.removeItem("token-expiry");
+        setSession(null);
+
+        Swal.fire({
+          icon: "success",
+          title: "Logged Out Successfully",
+          timer: 1000,
+          showConfirmButton: false,
+          background: "#111",
+          color: "#fff",
         });
 
-        if (response.ok) {
-          localStorage.removeItem("access-token");
-          localStorage.removeItem("username");
-          localStorage.removeItem("token-expiry");
-          setSession(null);
-
-          Swal.fire({
-            icon: "success",
-            title: "Logged Out Successfully",
-            timer: 1000,
-            showConfirmButton: false,
-          });
-
-          /* setTimeout(() => {
-            window.location.href = frontURL ;
-          }, 1000); */
-        } 
-      } catch (error) {
-        console.error("An error occurred during logout", error);
+        setTimeout(() => {
+          window.location.href = frontURL;
+        }, 1000);
       }
-    
+    } catch (error) {
+      console.error("An error occurred during logout", error);
+    }
   };
 
-  const [isAdmin] = useAdmin();
-  const [isOwner] = useOwner();
+  // --- THE SIDEBAR CONTENT (Rendered via Portal) ---
+  const sidebarContent = (
+    <div className={`fixed inset-0 z-[100] ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
 
-  return (
-    <div className="drawer drawer-end z-50">
-      <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content transition-all duration-300 ">
-        {user ? (
-          <label
-            htmlFor="my-drawer-4"
-            className="drawer-button btn btn-ghost btn-circle avatar btn-md"
+      {/* Dimmed Background Overlay */}
+      <div
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500 ease-in-out ${
+          isOpen ? "opacity-100" : "opacity-0"
+        }`}
+        onClick={() => setIsOpen(false)}
+      ></div>
+
+      {/* Glassmorphism Sidebar Panel */}
+      <div
+        className={`absolute top-0 right-0 h-full w-80 sm:w-96 bg-[#050505]/85 backdrop-blur-3xl border-l border-white/10 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] transform transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <h2 className="poppins-bold text-white text-xl tracking-widest uppercase">Menu</h2>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
           >
-            <div className="rounded-3xl">
-              <img alt="User Avatar" src={user?.profile || session?.picture} />
-            </div>
-          </label>
-        ) : (
-          <label
-            htmlFor="my-drawer-4"
-            className="drawer-button btn btn-ghost btn-circle avatar"
-          >
-            <div className="w-8 rounded-full pt-[1px] text-white pl-[2px] shadow-gray-600 shadow-sm border-collapse border-white border-[1px]">
-              <CiUser size={28} />
-            </div>
-          </label>
+            <FiX size={24} />
+          </button>
+        </div>
+
+        {/* User Greeting Area */}
+        {user && (
+          <div className="p-6 bg-gradient-to-b from-white/5 to-transparent border-b border-white/5">
+            <p className="text-xs text-white/50 poppins-medium uppercase tracking-widest mb-1">
+              Welcome Back
+            </p>
+            <h3 className="text-2xl poppins-semibold text-white tracking-wide truncate">
+              👋 Hey, {user.firstName || "User"}
+            </h3>
+          </div>
         )}
-      </div>
-      <div className="drawer-side opacity-90 z-10 ">
-        <label
-          htmlFor="my-drawer-4"
-          aria-label="close sidebar"
-          className="drawer-overlay"
-        ></label>
-        <ul className="menu w-80 min-h-full text-white text-lg gap-y-1 poppins-regular rounded-2xl ring-2 ring-white/10 bg-gradient-to-tr from-black via-slate-950 to-black">
-          {user && (
+
+        {/* Navigation Links */}
+        <div className="flex flex-col py-4 flex-grow overflow-y-auto">
+
+          <Link
+            to="/update-profile"
+            onClick={() => setIsOpen(false)}
+            className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
+          >
+            Edit Profile
+          </Link>
+
+          <Link
+            to="/update-profile"
+            onClick={() => setIsOpen(false)}
+            className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
+          >
+            Your Wishlist
+          </Link>
+
+          <Link
+            to="/Orders"
+            onClick={() => setIsOpen(false)}
+            className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
+          >
+            Your Orders
+          </Link>
+
+          {!isOwner && !isAdmin && (
             <Link
-              to={`/update-profile`}
-              className="pl-5 ml-3 pt-2 text-start shadow-sm shadow-gray-600 bg-gradient-to-l from-black/20 via-gray-800/90 to-gray-800/90 poppins-regular text-2xl hidden md:block text-white ring-1 ring-white/20 w-64 rounded-2xl mb-4 h-12"
+              to="/theatre-request"
+              onClick={() => setIsOpen(false)}
+              className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
             >
-              👋 Hey, {user.firstName.toUpperCase() || "User"}
+              List Your Shows
             </Link>
           )}
-          <li>
-            <a href="/update-profile">Edit Profile</a>
-          </li>
-          <li>
-            <a href="/update-profile">Your Wishlist</a>
-          </li>
-          <li>
-            <a href="/Orders">Your Orders</a>
-          </li>
-          {!isOwner && !isAdmin && (
-            <li>
-              <a href="/theatre-request">List Your Shows</a>
-            </li>
-          )}
+
           {isOwner && (
-            <li>
-              <a href="/owner">Owner Dashboard</a>
-            </li>
+            <Link
+              to="/owner"
+              onClick={() => setIsOpen(false)}
+              className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
+            >
+              Owner Dashboard
+            </Link>
           )}
+
           {isAdmin && (
-            <li>
-              <a href="/admin">Admin Dashboard</a>
-            </li>
+            <Link
+              to="/admin"
+              onClick={() => setIsOpen(false)}
+              className="px-8 py-4 text-white/80 poppins-medium text-lg hover:text-white hover:bg-white/5 hover:pl-10 transition-all duration-300 border-l-2 border-transparent hover:border-white"
+            >
+              Admin Dashboard
+            </Link>
           )}
-          <li>
-            <a onClick={handleLogout}>Logout</a>
-          </li>
-        </ul>
+        </div>
+
+        {/* Footer / Logout */}
+        <div className="p-6 border-t border-white/10 bg-black/50">
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              handleLogout();
+            }}
+            className="w-full py-4 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/50 text-white hover:text-red-400 poppins-semibold tracking-widest uppercase transition-all duration-300"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );
-};
 
+  return (
+    <>
+      {/* Profile Button (Sits in the Header) */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2 focus:outline-none transition-transform duration-300 hover:scale-105"
+      >
+        {user || session?.picture ? (
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-white transition-colors bg-[#111] shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <img
+              alt="User Avatar"
+              src={user?.profile || session?.picture}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-full flex items-center justify-center border border-white/20 hover:border-white transition-colors bg-[#111] text-white">
+            <CiUser size={24} />
+          </div>
+        )}
+      </button>
+
+      {/* Render the Sidebar completely outside the Header using Portal */}
+      {createPortal(sidebarContent, document.body)}
+    </>
+  );
+};
 
 export default Profile;

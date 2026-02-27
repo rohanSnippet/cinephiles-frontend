@@ -5,53 +5,53 @@ import ExploreGeneres from "./ExploreGeneres.jsx";
 import Experiences from "./Experiences.jsx";
 import Footer from "../Footer.jsx";
 
-
 const Home = () => {
   const recentMoviesRef = useRef(null);
   const [showArrow, setShowArrow] = useState(true);
+
   const handleScrollAndHideArrow = () => {
     if (recentMoviesRef.current) {
       recentMoviesRef.current.scrollIntoView({ behavior: "smooth" });
-      setShowArrow(false); // Hide arrow after scrolling
+      setShowArrow(false);
     }
   };
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY === 0) {
-        setShowArrow(true); // At the top
-      } else {
-        setShowArrow(false); // Not at the top
-      }
+      setShowArrow(window.scrollY === 0);
     };
     window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <div className=" bg-gradient-to-b from-black via-gray-950 to-black w-full h-[100vh]">
-      {/* carousal */}
+    // Pure black background is the standard for premium media apps
+    <div className="min-h-screen bg-black w-full overflow-x-hidden">
+
+      {/* Hero Section */}
       <Carousal
         onDownArrowClick={handleScrollAndHideArrow}
         showArrow={showArrow}
       />
-      {/* Movie browsing */}
-      <div
-        id="browse-movies"
-        className="text-center relative mt-6 bg-gradient-to-b from-black via-gray-950 to-black "
-        ref={recentMoviesRef}
-      >
+
+      {/* Trending Movies */}
+      <div ref={recentMoviesRef} className="bg-black relative z-20">
         <RecentMovies />
       </div>
-      <div className=" rounded-xl bg-gradient-to-tl from-slate-900 via-slate-800 to-slate-700">
+
+      {/* Divider */}
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-8"></div>
+
+      {/* Genres */}
+      <div className="bg-black relative z-20">
         <ExploreGeneres />
       </div>
-      <div className=" rounded-xl bg-gradient-to-tl from-slate-900 via-slate-800 to-slate-700">
+
+      {/* Experiences */}
+      <div className="bg-black relative z-20 pb-12">
         <Experiences />
       </div>
+
       <Footer />
     </div>
   );
