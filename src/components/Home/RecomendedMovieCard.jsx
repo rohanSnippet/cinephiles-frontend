@@ -1,84 +1,78 @@
-import React, { useRef } from "react";
+import React from "react";
+import { Link } from "react-router-dom";
 import like from "../../assets/like.png";
 import star from "../../assets/star.png";
-import { Link } from "react-router-dom";
 import noPoster from "../../assets/noPoster.png";
 
 const RecomendedMovieCard = ({ item }) => {
-  const { releaseDate, likes } = item;
+  const { releaseDate, likes, title, ratings, poster, promoted } = item;
   const releaseDateObj = new Date(releaseDate);
   const now = Date.now();
-  const hoverRef = useRef();
+  const isReleased = releaseDateObj <= now;
 
-  const displayText = releaseDateObj <= now ? "votes" : "interests";
+  // Format likes cleanly
+  const formatLikes = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    return num;
+  };
+
+  // Format date cleanly (e.g., "12 Dec 2026")
+  const formatDate = (dateString) => {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
 
   return (
     <Link
       to={`/movie-details`}
       state={{ item: item, previousPath: `/` }}
-      ref={hoverRef}
-      className="carousel-item ring-2 ring-white/20 rounded-xl relative group w-[20vh] h-[33vh] md:w-[33vh] md:h-[53vh] hover:shadow-md hover:shadow-white/40"
+      className="group relative block w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#0a0a0a] cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.4)] transform transition-transform duration-500 hover:-translate-y-2"
     >
-      {item.promoted ? (
-        <p
-          className={`absolute bottom-13 group-hover:opacity-20 poppins-light text-md px-2 text-white bg-green-600 rounded-ss-xl rounded-ee-xl z-10`} // Added z-10 to promote tag
-        >
-          promoted
-        </p>
-      ) : (
-        ``
+      {/* Promoted Badge */}
+      {promoted && (
+        <div className="absolute top-2 right-2 z-20 px-2 py-0.5 bg-white/20 backdrop-blur-md border border-white/20 rounded text-[9px] text-white poppins-medium uppercase tracking-widest">
+          Promoted
+        </div>
       )}
+
+      {/* Poster Image */}
       <img
-        src={item.poster || noPoster}
-        alt="Movie Poster" // More descriptive alt text
+        src={poster || noPoster}
+        alt={title}
         loading="lazy"
-        className="object-cover w-full h-full rounded-xl" // Changed to rounded-xl to match parent
+        className="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110"
       />
-      <div className="absolute btn-ghost backdrop-blur-sm shadow-xl shadow-slate-800/20 hover:bg-slate-700/5 hover:bg-opacity-60 inset-0 opacity-0 hover:opacity-100 group-hover:text-white transition-opacity duration-300 rounded-xl">
-        {" "}
-        {/* Added rounded-xl here */}{" "}
-        {releaseDateObj <= now ? (
-          <img
-            src={star}
-            alt="Star rating"
-            className="bottom-[3vh] left-[39%] absolute h-[55px] w-[55px] opacity-80"
-          />
-        ) : (
-          <img
-            src={like}
-            alt="Like icon"
-            className=" bottom-[3vh] left-[4%] absolute h-[26px] w-[26px]"
-          />
-        )}
-        <p className="absolute bottom-5 poppins-regular text-lg left-[18%]">
-          {likes >= 1000000
-            ? (likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
-            : likes >= 1000
-            ? (likes / 1000).toFixed(1).replace(/\.0$/, "") + "k"
-            : likes}
-        </p>
-        <p className="absolute bottom-5 poppins-regular text-lg right-[2%]">
-          {releaseDateObj.toString().substring(8, 10)}{" "}
-          {releaseDateObj.toString().substring(4, 8)}
-          {releaseDate.substring(0, 4)}
-        </p>
-        {/* <Link
-          to={`/movie-details`}
-          state={{ item: item, previousPath: `/` }}
-          className="absolute top-[50%] poppins-light hover:font-bold text-2xl left-[32%] bg-black bg-opacity-60 px-4 py-1 rounded-md hover:-translate-y-3 hover:shadow-sm hover:shadow-white/60 duration-300 hover:bg-white hover:text-black hover:bg-opacity-50"
-        >
-          Book{" "}
-        </Link> */}
-        <p className=" absolute top-[0%] w-full poppins-bold text-xl text-white">
-          {item.title.toUpperCase()}
-        </p>
-        {releaseDateObj <= now ? (
-          <p className=" absolute bottom-[9%] w-full roboto-regular text-[15px] text-white">
-            {item.ratings}
-          </p>
-        ) : (
-          ""
-        )}
+
+      {/* Deep Vignette Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+      {/* Content Container (Bottom Aligned, tighter padding for smaller cards) */}
+      <div className="absolute inset-0 flex flex-col justify-end p-3 md:p-4 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-3 group-hover:translate-y-0">
+
+        <h3 className="w-full poppins-semibold text-base md:text-lg text-white tracking-wide line-clamp-2 mb-1.5 leading-tight">
+          {title}
+        </h3>
+
+        <div className="flex items-center justify-between w-full mt-1">
+          {/* Rating or Likes */}
+          <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
+            <img
+              src={isReleased ? star : like}
+              alt={isReleased ? "Rating" : "Likes"}
+              className="w-3.5 h-3.5 object-contain opacity-90"
+            />
+            <span className="text-white text-[11px] poppins-medium pt-[1px]">
+              {isReleased ? (ratings ? ratings.toFixed(1) : "N/A") : formatLikes(likes)}
+            </span>
+          </div>
+
+          {/* Release Date */}
+          <span className="text-white/70 text-[10px] sm:text-[11px] poppins-medium tracking-wide">
+            {formatDate(releaseDate)}
+          </span>
+        </div>
+
       </div>
     </Link>
   );
