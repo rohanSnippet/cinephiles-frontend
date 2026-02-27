@@ -23,20 +23,24 @@ const Cities2 = () => {
   }
 
   return (
-    <div className="text-center mt-10">
-      <h1 className="text-4xl font-bold">{region?.region}</h1>{" "}
-      {/* Display region */}
-      <ul className="mt-6">
-        {region?.cities.map((city, index) => (
-          <li key={index} className="text-2xl">
-            <button value={city} onClick={handleLocation}>
-              {" "}
-              {city}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <div className="min-h-screen bg-[#050505] text-white py-24 px-6 flex flex-col items-center">
+          <h1 className="text-4xl poppins-bold tracking-widest uppercase mb-12 text-center">
+            {region?.region}
+          </h1>
+
+          <div className="flex flex-wrap justify-center gap-4 max-w-4xl">
+            {region?.cities.map((city, index) => (
+              <button
+                key={index}
+                value={city}
+                onClick={handleLocation}
+                className="px-6 py-3 rounded-full border border-white/20 bg-white/5 hover:bg-white text-white hover:text-black poppins-medium transition-all duration-300 shadow-lg"
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        </div>
   );
 };
 

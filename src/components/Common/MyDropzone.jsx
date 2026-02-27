@@ -3,25 +3,14 @@ import { useDropzone } from "react-dropzone";
 import { uploadImageToCloud } from "../Services/cloudinaryConfig";
 
 const baseStyle = {
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  padding: '20px',
-  borderWidth: 2,
-  borderRadius: 8,
-  borderColor: '#cbd5e0',
-  borderStyle: 'dashed',
-  backgroundColor: '#1f2937',
-  color: '#cbd5e0',
-  outline: 'none',
-  transition: 'border .24s ease-in-out',
-  cursor: 'pointer',
+  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+  padding: '30px', borderWidth: 2, borderRadius: 12, borderStyle: 'dashed',
+  borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.02)',
+  color: 'rgba(255,255,255,0.6)', transition: 'all 0.3s ease-in-out', cursor: 'pointer',
 };
-
-const focusedStyle = { borderColor: '#3b82f6' };
-const acceptStyle = { borderColor: '#10b981' };
-const rejectStyle = { borderColor: '#ef4444' };
+const focusedStyle = { borderColor: '#fff', backgroundColor: 'rgba(255,255,255,0.05)' };
+const acceptStyle = { borderColor: '#4ade80' };
+const rejectStyle = { borderColor: '#f87171' };
 
 const MyDropzone = ({ onImageChange, currentImage, name, onRemoveImage, closeDialog }) => {
   // FIXED: Added missing loading state
@@ -62,49 +51,42 @@ const MyDropzone = ({ onImageChange, currentImage, name, onRemoveImage, closeDia
     disabled: loading // Disable during upload
   });
 
-  const style = useMemo(() => ({
-    ...baseStyle,
-    ...(isFocused ? focusedStyle : {}),
-    ...(isDragAccept ? acceptStyle : {}),
-    ...(isDragReject ? rejectStyle : {}),
-    ...(loading ? { opacity: 0.5, cursor: 'not-allowed' } : {})
-  }), [isFocused, isDragAccept, isDragReject, loading]);
+ const style = useMemo(() => ({
+     ...baseStyle,
+     ...(isFocused ? focusedStyle : {}),
+     ...(isDragAccept ? acceptStyle : {}),
+     ...(isDragReject ? rejectStyle : {}),
+     ...(loading ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+   }), [isFocused, isDragAccept, isDragReject, loading]);
 
-  return (
-    <div className="container p-4">
-      <div {...getRootProps({ style })}>
-        <input {...getInputProps()} />
-        {loading ? (
-          <div className="flex flex-col items-center">
-            <span className="loading loading-spinner loading-lg text-blue-500 mb-2"></span>
-            <p className="text-blue-400 font-semibold animate-pulse">Uploading to Cloudinary...</p>
-          </div>
-        ) : currentImage ? (
-          <div className="flex flex-col items-center">
-            <img src={currentImage} alt="Preview" className="max-w-xs max-h-48 object-contain mb-2 rounded-md" />
-            <p className="text-sm text-gray-400 text-center">Drag 'n' drop another image here, or click to select a new one</p>
-          </div>
-        ) : (
-          <p className="text-gray-400 text-center">Drag 'n' drop an image here, or click to select one</p>
-        )}
-      </div>
-      
-      {currentImage && onRemoveImage && !loading && (
-        <div className="text-center mt-3">
-          <button
-            type="button"
-            className="btn btn-error btn-sm text-white"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent dropzone click
-              onRemoveImage(name);
-            }}
-          >
-            Remove Current Image
-          </button>
-        </div>
-      )}
-    </div>
-  );
+   return (
+     <div className="w-full mt-2">
+       <div {...getRootProps({ style })} className="hover:bg-white/5">
+         <input {...getInputProps()} />
+         {loading ? (
+           <div className="flex flex-col items-center">
+             <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3"></div>
+             <p className="text-white/80 poppins-light text-sm">Uploading to Cloud...</p>
+           </div>
+         ) : currentImage ? (
+           <div className="flex flex-col items-center">
+             <img src={currentImage} alt="Preview" className="max-w-[200px] max-h-40 object-cover rounded-lg mb-3 shadow-lg" />
+             <p className="text-xs text-white/50 poppins-light">Click or drag to replace</p>
+           </div>
+         ) : (
+           <p className="text-white/50 poppins-light text-sm text-center">Drag & drop an image here,<br/>or click to browse</p>
+         )}
+       </div>
+
+       {currentImage && onRemoveImage && !loading && (
+         <div className="text-center mt-4">
+           <button type="button" className="text-red-400 hover:text-red-300 text-xs poppins-medium hover:underline" onClick={(e) => { e.stopPropagation(); onRemoveImage(name); }}>
+             Remove Image
+           </button>
+         </div>
+       )}
+     </div>
+   );
 };
 
 export default MyDropzone;
