@@ -9,6 +9,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   const navigate = useNavigate();
   const axiosSecure = useAxiosSecure();
 
+  // --- 1. Initialize State with expiresAt ---
   const [bookingData, setBookingData] = useState(() => {
     if (location.state?.selectedData) {
       let data = {
@@ -17,6 +18,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
         updatedScreen: location.state.updatedScreen,
         selectedDate: location.state.selectedDate,
         selectedShow: location.state.selectedShow,
+        expiresAt: location.state.expiresAt, // Extract exact deadline
       };
       sessionStorage.setItem("bookingData", JSON.stringify(data));
       return data;
@@ -26,37 +28,50 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     }
   });
 
-  const { selectedData, movie, selectedShow, selectedDate, updatedScreen } =
+  const { selectedData, movie, selectedShow, selectedDate, updatedScreen, expiresAt } =
     bookingData || {};
 
   const baseAmt = selectedData?.price || 0;
   const taxes = { cgst: baseAmt * 0.09, sgst: baseAmt * 0.09 };
 
-  const [time, setTime] = useState(null);
+  // --- 2. Deterministic Timer State ---
+  // Calculates remaining time securely based on absolute deadline
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    if (!expiresAt) return 0;
+    return Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  });
+
   const [isPaying, setIsPaying] = useState(false);
   const [isSnackbarOpen, setIsSnackbarOpen] = useState(false);
 
   const fallbackPath = location.state?.from ?? fallback;
   const handledTimeout = useRef(false);
 
+  // --- 3. Handle Page Unload / Tab Close ---
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (selectedData) {
-        // Use standard URL format for cancel
-        const url = `${import.meta.env.VITE_APP_API_BASE_URL}/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`;
-        navigator.sendBeacon(url);
+        // Use fetch with keepalive to securely pass headers before page dies
+        fetch(`${import.meta.env.VITE_APP_API_BASE_URL}/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`, {
+          method: 'DELETE',
+          keepalive: true,
+          headers: {
+             // If your backend requires auth for cancellation
+            'Authorization': `Bearer ${localStorage.getItem('access-token')}`
+          }
+        }).catch(err => console.log("Unload cancel failed:", err));
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [selectedData]);
 
-  // --- 2. Handle Timer Expiration ---
+  // --- 4. Handle Timer Expiration ---
   const handleSessionExpired = useCallback(() => {
     if (handledTimeout.current) return;
     handledTimeout.current = true;
 
-    // The backend naturally expires the lock via DB timestamp, no explicit API call needed here
+    // Redis handles actual DB expiration automatically
     Swal.fire({
       icon: "info",
       title: "Session Expired!",
@@ -70,46 +85,27 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     });
   }, [navigate, fallbackPath, movie]);
 
-  // --- 3. Manage Countdown Timer ---
+  // --- 5. Run the Local Visual Timer ---
   useEffect(() => {
-    if (!selectedData) return;
-
-    const fetchRemainingTime = async () => {
-      try {
-        const response = await axiosSecure.get(
-          `/bookings/remaining-time?showId=${selectedData.showId}&user=${selectedData.user}`,
-        );
-        const remaining = parseInt(response.data, 10);
-        if (remaining <= 0) {
-          handleSessionExpired();
-        } else {
-          setTime(remaining);
-        }
-      } catch (error) {
-        console.error("Error fetching remaining time:", error);
-      }
-    };
-
-    fetchRemainingTime();
+    if (!expiresAt) return;
 
     const interval = setInterval(() => {
-      setTime((prev) => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleSessionExpired();
-          return 0;
-        }
-        return prev - 1;
-      });
+      // Re-calculate difference every second so it survives backgrounding/refreshes perfectly
+      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        handleSessionExpired();
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [selectedData, axiosSecure, handleSessionExpired]);
+  }, [expiresAt, handleSessionExpired]);
 
-  // --- 4. Intercept Back Button / Cancel Intent ---
+  // --- 6. Intercept Back Button / Cancel Intent ---
   const handleBack = async (e) => {
-    if (e) e.preventDefault(); // For UI Back Button
+    if (e) e.preventDefault();
 
     if (!selectedData) {
       navigate(fallbackPath, { replace: true, state: { item: movie } });
@@ -149,7 +145,6 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     });
   };
 
-  // Bind browser back button to handleBack
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handleBack);
@@ -163,10 +158,10 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   }, [bookingData, navigate, fallbackPath, movie]);
 
   const formatTime = (seconds) => {
-    if (seconds === null) return { minutes: 0, secs: 0 };
+    if (seconds === null || seconds <= 0) return { minutes: 0, secs: 0 };
     return { minutes: Math.floor(seconds / 60), secs: seconds % 60 };
   };
-  const { minutes, secs } = formatTime(time);
+  const { minutes, secs } = formatTime(timeRemaining);
 
   if (
     !selectedData ||
@@ -572,7 +567,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
             <button
               className="btn w-full py-3 text-lg font-bold bg-green-600 rounded-lg text-white border-none hover:bg-green-700 transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50"
               onClick={handlePayNow}
-              disabled={isPaying || time <= 0}
+              disabled={isPaying || timeRemaining <= 0}
             >
               {isPaying ? "Processing..." : "Book Now"}
             </button>
