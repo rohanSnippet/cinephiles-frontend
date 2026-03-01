@@ -1,331 +1,113 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
-import { MdEdit, MdInfoOutline, MdOutlineDelete } from "react-icons/md";
+import { MdOutlineDelete } from "react-icons/md";
+import { PIXELS_PER_MINUTE, START_HOUR, TOTAL_HOURS, TIMELINE_WIDTH } from "../Owner/Show/ShowDetails";
 
-const Schedule = ({ screen, selectedDate, isSelected, setShowsDetails }) => {
+const Schedule = ({ screen, selectedDate }) => {
   const [shows, setShows] = useState([]);
-  const [dragging, setDragging] = useState(null);
-  const [offsetX, setOffsetX] = useState(0);
   const axiosSecure = useAxiosSecure();
-  let interval = 15;
-  // Utility functions
-  const timeToMinutes = (time) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
+  const interval = 15; // 15 mins cleaning time
+
+  // Mathematical Time Conversion (Base: 06:00 AM)
+  const getMinutesFromStart = (timeStr) => {
+    if (!timeStr) return 0;
+    let [h, m] = timeStr.split(":").map(Number);
+    if (h < START_HOUR) h += 24; // Handle post-midnight shows
+    return (h - START_HOUR) * 60 + m;
   };
-  const calculateEndTime = (startTime, runtime) => {
- 
-    const startMinutes = timeToMinutes(startTime);
-    const totalMinutes = startMinutes + runtime + interval;
-    const isNextDay = totalMinutes >= 1440; // 24*60
-
-    return {
-      endTime:
-        `${String(Math.floor(totalMinutes / 60) % 24).padStart(2, "0")}:` +
-        `${String(totalMinutes % 60).padStart(2, "0")}`,
-      isNextDay,
-      totalMinutes,
-    };
-  };
-
-  // Memoized timeline generation
-  const timeline = useMemo(() => {
-    const entries = [];
-    for (let hour = 0; hour < 27; hour++) {
-      for (let minute = 0; minute < 60; minute += 5) {
-        const adjustedHour = hour >= 24 ? hour - 24 : hour;
-        entries.push({
-          time: `${String(adjustedHour).padStart(2, "0")}:${String(
-            minute
-          ).padStart(2, "0")}`,
-          hour: hour % 24,
-          minute,
-          isNextDay: hour >= 24,
-          totalMinutes: hour * 60 + minute,
-        });
-      }
-    }
-    return entries;
-  }, []);
-
-  // Precompute blocked next day ranges
-  const blockedNextDayRanges = useMemo(() => {
-    return shows
-      .map((show) => {
-        const { isNextDay, totalMinutes } = calculateEndTime(
-          show.start,
-          show.runtime
-       
-        );
-        if (!isNextDay) return null;
-        return {
-          start: 0,
-          end: totalMinutes - 1440, // 24*60
-          startTotal: 1440,
-          endTotal: totalMinutes,
-        };
-      })
-      .filter(Boolean);
-  }, [shows]);
 
   const fetchShows = async () => {
     try {
-      const res = await axiosSecure.get(
-        `/show/byScreen?screenId=${screen.id}&showDate=${selectedDate}`
-      );
-      // Sort shows by start time
-      const sortedShows = res.data.sort(
-        (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start)
-      );
-      setShows(sortedShows);
-      setShowsDetails(sortedShows);
-    } catch (error) {
-      console.error("Error fetching shows:", error);
-      Swal.fire({ title: "Error loading shows", icon: "error", timer: 2000 });
-    }
+      const res = await axiosSecure.get(`/show/byScreen?screenId=${screen.id}&showDate=${selectedDate}`);
+      setShows(res.data);
+    } catch (err) { console.error(err); }
   };
 
   useEffect(() => {
-    fetchShows();
-  }, [screen.id, selectedDate]);
+    if (screen?.id && selectedDate) fetchShows();
+  }, [screen?.id, selectedDate]);
 
-  // Position calculations
-  const INTERVAL_WIDTH = 5.9;
-  const calculateStartPosition = (startTime) => {
-    const minutes = timeToMinutes(startTime);
-
-    //return minutes / 5 * INTERVAL_WIDTH - INTERVAL_WIDTH;
-    return (minutes / 5) * INTERVAL_WIDTH;
-  };
-
-  const calculateMovieWidth = (runtime) => (runtime / 5) * INTERVAL_WIDTH;
-
-  // Drag handling
-  const handleMouseDown = (e, index) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    setDragging(index);
-    setOffsetX(offsetX);
-  };
-
-/*   const handleMouseMove = (e) => {
-    if (dragging === null) return;
-
-    setShows((prevShows) => {
-      const newShows = [...prevShows];
-      const show = newShows[dragging];
-      const container = document.querySelector(".timeline-container");
-      const containerRect = container.getBoundingClientRect();
-
-      let newX = e.clientX - containerRect.left - offsetX;
-      newX = Math.max(
-        0,
-        Math.min(newX, containerRect.width - calculateMovieWidth(show.runtime))
-      );
-
-      // Snap to 5-minute intervals
-      const snapPosition = Math.round(newX / INTERVAL_WIDTH) * INTERVAL_WIDTH;
-      const snappedMinutes = Math.round(snapPosition / INTERVAL_WIDTH) * 5;
-
-      // Update show time
-      const newStart =
-        `${String(Math.floor(snappedMinutes / 60)).padStart(2, "0")}:` +
-        `${String(snappedMinutes % 60).padStart(2, "0")}`;
-
-      // Check for overlaps
-      const newEnd = timeToMinutes(newStart) + show.runtime;
-      const hasOverlap = newShows.some(
-        (s, i) =>
-          i !== dragging &&
-          timeToMinutes(s.start) < newEnd &&
-          timeToMinutes(s.end) > timeToMinutes(newStart)
-      );
-
-      if (!hasOverlap) {
-        show.start = newStart;
-        show.end = calculateEndTime(newStart, show.runtime).endTime;
-      }
-
-      return newShows;
-    });
-  };
-
-  const handleMouseUp = async () => {
-    if (dragging !== null) {
-      try {
-        const show = shows[dragging];
-        await axiosSecure.patch(`/show/update/${show.id}`, {
-          start: show.start,
-        });
-        fetchShows(); // Refresh to ensure consistency
-      } catch (error) {
-        console.error("Error updating show:", error);
-        Swal.fire({
-          title: "Error saving position",
-          icon: "error",
-          timer: 2000,
-        });
-      }
-      setDragging(null);
-    }
-  }; */
-
-  const deleteShow = async (show) => {
-    const confirmation = await Swal.fire({
-      title: "Delete Show?",
-      text: "This action cannot be undone",
-      icon: "warning",
-      showCancelButton: true,
-    });
-
-    if (confirmation.isConfirmed) {
-      try {
-        await axiosSecure.delete(`/show/delete-show/${show.id}`);
-        fetchShows();
-        Swal.fire({ title: "Show deleted", icon: "success", timer: 2000 });
-      } catch (error) {
-        console.error("Delete error:", error);
-        Swal.fire({ title: "Delete failed", icon: "error", timer: 2000 });
-      }
+  const deleteShow = async (showId) => {
+    try {
+      await axiosSecure.delete(`/show/delete-show/${showId}`);
+      fetchShows();
+    } catch (err) {
+      Swal.fire("Error", "Failed to delete show", "error");
     }
   };
- /*  function addMinutesToTime(timeStr, minutesToAdd) {
-    const [hours, minutes] = timeStr.split(":").map(Number); // Convert string to numbers
-    const date = new Date(); // Create a new Date object
-    date.setHours(hours, minutes, 0); // Set hours & minutes
-  
-    date.setMinutes(date.getMinutes() + minutesToAdd); // Add minutes
-  
-    // Format the new time as HH:MM
-    return date.toTimeString().slice(0, 5);
-  }
- */
-  
-  // Timeline rendering
-  return (
-    <div className="space-y-4">
-      <div className="flex mt-20 ml-2 text-white">
+
+  // Render Background Grid Lines (Every 15 mins)
+  const renderBackgroundLines = () => {
+    const lines = [];
+    for (let i = 0; i <= TOTAL_HOURS * 4; i++) { // Every 15 mins
+      const isHour = i % 4 === 0;
+      lines.push(
         <div
-          className={`relative h-20 timeline-container ${
-            isSelected ? "selected-screen" : ""
-          }`}
-        >
-          {/* Timeline markers */}
-          {timeline.map((entry, index) => {
-            const isHour = entry.minute === 0;
-            const isQuarter =
-              entry.minute === 15 || entry.minute === 30 || entry.minute === 45;
-            const isBlocked =
-              entry.isNextDay &&
-              blockedNextDayRanges.some(
-                (range) =>
-                  entry.totalMinutes >= range.startTotal &&
-                  entry.totalMinutes < range.endTotal
-              );
+          key={i}
+          className={`absolute top-0 bottom-0 border-l ${isHour ? "border-white/10" : "border-white/5 border-dashed"}`}
+          style={{ left: `${i * 15 * PIXELS_PER_MINUTE}px` }}
+        />
+      );
+    }
+    return lines;
+  };
 
-            return (
-              <div
-                key={index}
-                className="absolute h-10 timeline-marker"
-                style={{
-                  left: `${(entry.totalMinutes / 5) * INTERVAL_WIDTH}px`,
-                }}
-              >
-                <div
-                  className={`border-l ${
-                    isHour
-                      ? "border-2 h-10 border-red-500"
-                      : isQuarter
-                      ? "border-2 h-6 border-orange-400"
-                      : "border h-4 border-gray-600"
-                  } ${isBlocked ? "bg-red-500" : ""}`}
-                />
-                {isHour && (
-                  <div className="absolute -top-6 text-xs">
-                    {entry.time}
-                    {entry.isNextDay ? " (+1)" : ""}
-                  </div>
-                )}
+  return (
+    <div className="h-20 relative w-full group">
+
+      {/* Background Sub-Grid */}
+      {renderBackgroundLines()}
+
+      {/* Show Blocks */}
+      {shows.map((show) => {
+        const startMins = getMinutesFromStart(show.start);
+        const movieWidth = show.runtime * PIXELS_PER_MINUTE;
+        const cleaningWidth = interval * PIXELS_PER_MINUTE;
+        const leftPos = startMins * PIXELS_PER_MINUTE;
+
+        return (
+          <div
+            key={show.id}
+            className="absolute top-2 bottom-2 flex shadow-lg hover:z-30 hover:-translate-y-1 transition-transform"
+            style={{ left: `${leftPos}px`, width: `${movieWidth + cleaningWidth}px` }}
+          >
+            {/* The Actual Movie Block */}
+            <div
+              className="h-full bg-gradient-to-r from-red-700 to-red-900 border border-red-500 rounded-lg flex flex-col justify-center px-2 sm:px-3 overflow-hidden relative shadow-[0_0_15px_rgba(220,38,38,0.2)]"
+              style={{ width: `${movieWidth}px` }}
+              title={`${show.title} (${show.start} - ${show.end})`}
+            >
+              <span className="text-white poppins-bold text-xs sm:text-sm truncate leading-tight drop-shadow">
+                {show.title}
+              </span>
+              <span className="text-red-200 poppins-medium text-[9px] sm:text-[10px] tracking-wider truncate">
+                {show.start} - {show.end}
+              </span>
+
+              {/* Hover Delete Action */}
+              <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => deleteShow(show.id)}
+                  className="p-1.5 bg-red-600 text-white rounded hover:bg-red-500 transition-colors shadow-lg flex items-center gap-1 text-[10px] poppins-semibold uppercase"
+                >
+                  <MdOutlineDelete size={14} /> Remove
+                </button>
               </div>
-            );
-          })}
+            </div>
 
-          {/* Show blocks */}
-          {shows.map((show, index) => {
-            const startPos = calculateStartPosition(show.start);
-            const width = calculateMovieWidth(show.runtime+interval);
+            {/* The Cleaning Interval Block (Prevents Artificial Overlaps) */}
+            <div
+              className="h-full flex items-center pl-1 opacity-50"
+              style={{ width: `${cleaningWidth}px` }}
+              title="Cleaning & Transition Time"
+            >
+              <div className="w-full h-1/2 border-y border-r border-dashed border-white/40 rounded-r-md bg-white/5"></div>
+            </div>
 
-            return (
-              <div
-                key={show.id}
-                className="absolute h-full rounded-xl sm:bg-gradient-to-b sm:from-slate-900/90 sm:to-purple-800/30 bg-gradient-to-r from-black/50 via-transparent to-black/40 tooltip tooltip-top"
-              data-tip={`Actual runtime : ${show.runtime} minutes`}
-                style={{
-                  left: startPos,
-                  width,
-                  backgroundImage: `url(${show.banner})`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center center",
-                  zIndex: dragging === index ? 10 : 1,
-                }}
-                onMouseDown={(e) => handleMouseDown(e, index)}
-              >
-                <div className="relative flex flex-col justify-center h-full p-2 bg-gradient-to-b from-black/80 via-gray-600/10 to-black/80 hover:opacity-100 opacity-0 ease-in-out translate-transform duration-300 hover:border-2 hover:border-slate-400/50 rounded-sm">
-                  {/* Show Title */}
-                 
-
-                  {/* Buttons Container */}
-                  <div className="flex gap-2 items-center justify-center p-2">
-                    {/* Info Button */}
-                    <button
-                      aria-label="Show Info"
-                      className="p-1 hover:bg-blue-500/50 rounded"
-                      onClick={() => showInfo(show)}
-                    >
-                      <MdInfoOutline className="text-2xl text-blue-200 hover:text-white" />
-                    </button>
-
-                    {/* Edit Button */}
-                    <button
-                      aria-label="Edit Show"
-                      className="p-1 hover:bg-yellow-500/50 rounded"
-                      onClick={() => editShow(show)}
-                    >
-                      <MdEdit className="text-2xl text-yellow-200 hover:text-white" />
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      aria-label="Delete Show"
-                      className="p-1 hover:bg-red-500/50 rounded"
-                      onClick={() => deleteShow(show)}
-                    >
-                      <MdOutlineDelete className="text-2xl text-red-200 hover:text-white" />
-                    </button>
-                  </div>
-                  <div
-                    className="text-md poppins-semibold drop-shadow
-                  p-2 text-center break-words whitespace-normal 
-                  max-w-full max-h-16 overflow-hidden"
-                  >
-                    {show.title}
-                  </div>
-                 
-                </div>
-                <div
-                    className="text-sm poppins-regular drop-shadow
-                   text-center break-words whitespace-normal 
-                  max-w-full max-h-16 overflow-hidden"
-                  >
-                    {show.start}    -     {show.end}
-                  </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
