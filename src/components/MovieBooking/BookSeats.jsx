@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import useAxiosSecure from "../Hooks/AxiosSecure";
-import { MdOutlineEdit } from "react-icons/md";
 import { IoIosArrowBack } from "react-icons/io";
+import { MdOutlineEdit, MdZoomIn, MdZoomOut, MdOutlineFitScreen } from "react-icons/md";
 
 const BookSeats = () => {
   const location = useLocation();
@@ -11,11 +12,20 @@ const BookSeats = () => {
   const username = localStorage.getItem("username");
   const { selectedShow, movie, theatre, selectedDate } = location.state;
   const axiosSecure = useAxiosSecure();
+
   const [updatedScreen, setUpdatedScreen] = useState(null);
   const [show, setShow] = useState(selectedShow);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [tickets, setTickets] = useState(2);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // --- ZOOM & PAN STATE ---
+  const [zoom, setZoom] = useState(1);
+  const containerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
+
   const [userSeats, setUserSeats] = useState({
     seatsId: [],
     price: null,
@@ -24,51 +34,64 @@ const BookSeats = () => {
     tierName: "",
   });
 
-  const numberOfTickets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  let curIdx = 0;
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let seatIds = [];
-  const guidelines = [
-    "The seat layout page for Cinephiles cinemas is for representational purposes only, and the actual seat layout might vary.",
-    "A ticket is compulsory for children of 3 years & above.",
-    "Patrons below the age of 18 years cannot be admitted to movies certified A.",
-    "A baggage counter facility is not available at this cinema.",
-    "For 3D movies, the ticket price includes charges for 3D glasses.",
-    "Outside food and beverages are not allowed on the cinema premises.",
-    "Restricted items include laptops, cameras, knives, lighters, matchboxes, cigarettes, firearms, and inflammable objects.",
-    "Items like carry bags, eatables, helmets, and handbags are not allowed inside the theaters.",
-    "Patrons under the influence of alcohol or drugs will not be allowed inside the cinema premises.",
-    "Tickets once purchased at the cinema box office cannot be canceled, exchanged, or refunded.",
-    "Cinephiles may contact guests for feedback to improve services.",
-    "Decisions made by Cinephiles are final, and rights of admission are reserved.",
-  ];
+  const numberOfTickets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
   const fetchScreen = useCallback(async () => {
     try {
       const res = await axiosSecure.get(`/screens/${show.sid}`);
       setUpdatedScreen(res.data);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching screen data:", error);
+      setLoading(false);
     }
   }, [axiosSecure, show]);
-
-  const handleChangeShow = (data) => {
-    if (show.id != data.id) {
-      setLoading(true);
-      setShow(data);
-      setSelectedSeats([]);
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
-    }
-  };
 
   useEffect(() => {
     fetchScreen();
   }, [fetchScreen]);
 
-  const handleSeatClick = (tierIndex, seatIndex) => {
-    const rowSeats = updatedScreen.tiers[tierIndex].seats;
+  // --- DYNAMIC AUTO-ZOOM CALCULATION ---
+  useEffect(() => {
+    if (updatedScreen && containerRef.current) {
+      const maxCols = Math.max(...updatedScreen.tiers.map((t) => t.columns));
+      const estimatedWidth = maxCols * 40; // Approx 40px per seat
+      const screenWidth = window.innerWidth;
 
+      let idealZoom = (screenWidth * 0.85) / estimatedWidth;
+      idealZoom = Math.min(Math.max(idealZoom, 0.4), 1.3);
+      setZoom(idealZoom);
+    }
+  }, [updatedScreen]);
+
+  // --- CANVAS DRAG-TO-PAN LOGIC ---
+  const handleMouseDown = (e) => {
+    // Prevent panning if clicking directly on a seat or zoom controls
+    if (e.target.closest('.seat-element') || e.target.closest('.zoom-controls')) return;
+    setIsDragging(true);
+    setDragStart({ x: e.pageX, y: e.pageY });
+    setScrollStart({
+      left: containerRef.current.scrollLeft,
+      top: containerRef.current.scrollTop
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const walkX = (e.pageX - dragStart.x) * 1.5;
+    const walkY = (e.pageY - dragStart.y) * 1.5;
+    containerRef.current.scrollLeft = scrollStart.left - walkX;
+    containerRef.current.scrollTop = scrollStart.top - walkY;
+  };
+
+  const stopDragging = () => setIsDragging(false);
+
+  // --- SEAT SELECTION LOGIC ---
+  const handleSeatClick = (tierIndex, absoluteIndex) => {
+    const tier = updatedScreen.tiers[tierIndex];
+    const rowSeats = tier.seats;
     let remainingSeatsNeeded = tickets - selectedSeats.length;
 
     if (remainingSeatsNeeded <= 0) {
@@ -77,58 +100,44 @@ const BookSeats = () => {
       enableAllTiers();
     }
 
-    const isSameTier = selectedSeats.every((seatId) => {
-      const [selectedTierIndex] = seatId.split("-").map(Number);
-      return selectedTierIndex === tierIndex;
-    });
+    const isSameTier = selectedSeats.every((seatId) => parseInt(seatId.split("-")[0]) === tierIndex);
 
     if (!isSameTier && selectedSeats.length > 0) {
-      if (selectedSeats.length == tickets) {
+      if (selectedSeats.length === tickets) {
         enableAllTiers();
-      } else {
-        return;
-      }
+      } else return;
     }
-    const newSelectedSeatIds = [];
-    //console.log(seatIndex)
 
-    //if (seatIndex + remainingSeatsNeeded <= rowSeats.length) {
+    const newSelectedSeatIds = [];
     let tempSeat = null;
+
+    const rowNumber = Math.floor(absoluteIndex / tier.columns);
+    const rowEndIndex = (rowNumber + 1) * tier.columns;
+
     for (let i = 0; i < remainingSeatsNeeded; i++) {
-      //console.log(seatIndex+i)
-      if (rowSeats[seatIndex + i] == undefined) {
-        //console.log("break the statement for :"+seatIndex+i)
-        break;
-      }
-      const currentSeat = rowSeats[seatIndex + i];
-      //  console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
-      if (tempSeat == null) {
-        tempSeat = currentSeat.seatId.replace(/\D/g, "");
-      }
-      if (tempSeat > parseInt(currentSeat.seatId.replace(/\D/g, ""))) {
-        break;
-      }
+      const currentIndex = absoluteIndex + i;
+      if (currentIndex >= rowEndIndex || !rowSeats[currentIndex]) break;
+
+      const currentSeat = rowSeats[currentIndex];
+
+      if (tempSeat == null) tempSeat = currentSeat.seatId.replace(/\D/g, "");
+      if (tempSeat > parseInt(currentSeat.seatId.replace(/\D/g, ""))) break;
+
       const isBlocked = show.blocked.includes(currentSeat.seatId);
       const isBooked = show.booked.includes(currentSeat.seatId);
-      if (!isBlocked && !isBooked && currentSeat.status != "NO_SEAT") {
-        const seatId = `${tierIndex}-${seatIndex + i}`;
 
+      if (!isBlocked && !isBooked && currentSeat.status !== "NO_SEAT") {
+        const seatId = `${tierIndex}-${currentIndex}`;
         tempSeat = currentSeat.seatId.replace(/\D/g, "");
-        // console.log("current seat :", currentSeat, "temp Seat :", tempSeat);
         newSelectedSeatIds.push(seatId);
       } else {
         break;
       }
     }
-    //}
 
     setSelectedSeats((prevSelectedSeats) => {
-      const updatedSeats = [
-        ...new Set([...prevSelectedSeats, ...newSelectedSeatIds]),
-      ];
-      if (updatedSeats.length >= tickets) {
-        enableAllTiers();
-      }
+      const updatedSeats = [...new Set([...prevSelectedSeats, ...newSelectedSeatIds])];
+      if (updatedSeats.length >= tickets) enableAllTiers();
       return updatedSeats.slice(0, tickets);
     });
 
@@ -137,77 +146,44 @@ const BookSeats = () => {
 
   const disableOtherTiers = (selectedTierIndex) => {
     updatedScreen.tiers.forEach((tier, index) => {
-      if (index !== selectedTierIndex) {
-        tier.disabled = true;
-      }
+      tier.disabled = index !== selectedTierIndex;
     });
-    setUpdatedScreen((prevScreen) => ({
-      ...prevScreen,
-      tiers: [...prevScreen.tiers],
-    }));
+    setUpdatedScreen({ ...updatedScreen });
   };
 
   const enableAllTiers = () => {
-    updatedScreen.tiers.forEach((tier) => {
-      tier.disabled = false;
-    });
-    setUpdatedScreen((prevScreen) => ({
-      ...prevScreen,
-      tiers: [...prevScreen.tiers],
-    }));
+    updatedScreen.tiers.forEach((tier) => { tier.disabled = false; });
+    setUpdatedScreen({ ...updatedScreen });
   };
 
-  const layout = {
-    left: "from-left",
-    right: "from-right",
-    center: "in-center",
-  };
-
-  const getSelectedSeatIds = () => {
-    if (!updatedScreen) return [];
-
-    return selectedSeats
-      .map((seatId) => {
-        const [tierIndex, seatIndex] = seatId.split("-").map(Number);
-        const seat = updatedScreen?.tiers?.[tierIndex]?.seats?.[seatIndex];
-
-        return seat?.seatId;
-      })
-      .filter(Boolean);
-  };
-
-  const getTierIdsBySelectedSeats = (selectedSeats) => {
-    const seen = new Set(); // track tierIndex we've already added
-    const result = [];
-
-    for (const seatId of selectedSeats) {
-      const [tierIndex] = seatId.split("-").map(Number);
-      const tier = updatedScreen.tiers[tierIndex];
-      if (!tier) continue;
-
-      if (!seen.has(tierIndex)) {
-        seen.add(tierIndex);
-        result.push({ tierIndex, price: tier.price });
-      }
+  const getRowLabel = (index) => {
+    let label = "";
+    let temp = index;
+    while (temp >= 0) {
+      label = String.fromCharCode(65 + (temp % 26)) + label;
+      temp = Math.floor(temp / 26) - 1;
     }
-
-    return result;
+    return label;
   };
-
-  const tierInfo = getTierIdsBySelectedSeats(selectedSeats);
-  // e.g. [{ tierIndex: 0, price: 100 }, { tierIndex: 1, price: 150 }]
-
-  //const tierIds = getTierIdsBySelectedSeats(selectedSeats);
 
   useEffect(() => {
-    seatIds = getSelectedSeatIds();
+    if (!updatedScreen || selectedSeats.length === 0) return;
+
+    const seatIds = selectedSeats.map((seatId) => {
+      const [tIdx, sIdx] = seatId.split("-").map(Number);
+      return updatedScreen.tiers[tIdx].seats[sIdx].seatId;
+    });
+
+    const tierIndex = parseInt(selectedSeats[0].split("-")[0]);
+    const price = updatedScreen.tiers[tierIndex].price * seatIds.length;
+
     setUserSeats((prev) => ({
       ...prev,
       seatsId: seatIds,
-      price: tierInfo[0]?.price * seatIds.length,
+      price: price,
       user: username,
       showId: show.id,
-      tierName: updatedScreen?.tiers?.[tierInfo[0]?.tierIndex]?.tiername,
+      tierName: updatedScreen.tiers[tierIndex].tiername,
     }));
   }, [selectedSeats, updatedScreen]);
 
@@ -215,329 +191,268 @@ const BookSeats = () => {
     setSelectedSeats([]);
   }, [tickets]);
 
-  if (!updatedScreen) {
-    return <p>Loading screen data...</p>;
-  }
-
   const handleSeatStatus = (seat) => {
     if (show?.blocked.includes(seat.seatId)) return "BLOCKED";
     if (show?.booked.includes(seat.seatId)) return "BOOKED";
-    if (seat.status == "NO_SEAT") return "NO_SEAT";
+    if (seat.status === "NO_SEAT") return "NO_SEAT";
     return seat.status;
   };
 
-  const handleProceed = () => {
-    Swal.fire({
-      title: `Do you accept terms`,
-      html: `<div class="text-[14px] poppins-light text-white text-start flex-wrap">${guidelines
-        .map((g, i) => {
-          return `<p>${i + 1}. ${g}</p>`;
-        })
-        .join("")}</div>`,
-      width: "600px",
-      background: "rgba(43, 43, 46, 0.845)",
-      color: "white",
-      showCancelButton: true,
-      confirmButtonColor: "rgb(28, 188, 28, 0.941)",
-      cancelButtonColor: "#d33",
-      cancelButtonText: "Decline",
-      confirmButtonText: "Proceed",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const res = await axiosSecure.post(
-            `/bookings/lock-seats?showId=${show.id}`,
-            userSeats
-          );
+ // Inside BookSeats.jsx
+   const handleProceed = async () => {
+     try {
+       // 1. Call backend to lock the seats in Redis
+       const response = await axiosSecure.post("/bookings/lock-seats", userSeats);
 
-          if (res.data) {
-            console.log(res.data);
-            navigate("/bookingReview", {
-              state: {
-                selectedData: userSeats,
-                movie: movie,
-                selectedShow: selectedShow,
-                selectedDate: selectedDate,
-                updatedScreen: updatedScreen,
-              },
-            });
-          } else {
-            Swal.fire({
-              title: "Try again with different Seats",
-              text: "Something went wrong...",
-              icon: "error",
-            });
-          }
-        } catch (error) {
-          console.error("Error adding show:", error);
-          Swal.fire({
-            title: "Seat Unavailable",
-            text: "The seat you selected is currently locked by another user. Please choose a different seat.",
-            icon: "error",
-          });
-        }
-      }
-    });
-  };
+       // 2. Capture the absolute expiration timestamp sent by backend
+       const expiresAt = response.data;
 
+       // 3. Navigate and pass the timestamp
+       navigate("/bookingReview", {
+         state: {
+           selectedData: userSeats,
+           movie: movie,
+           selectedShow: show,
+           selectedDate: selectedDate,
+           updatedScreen: updatedScreen,
+           expiresAt: expiresAt // Add this!
+         },
+       });
+     } catch (error) {
+       if (error.response?.status === 409) {
+         Swal.fire("Too Slow!", "Someone just grabbed these seats. Please choose different ones.", "error");
+         // Re-fetch screen to update disabled seats
+         fetchScreen();
+       } else {
+         Swal.fire("Error", "Could not lock seats. Try again.", "error");
+       }
+     }
+   };
 
-  const navigateBack = () => {
-    navigate("/all-shows", { state: { item: movie } });
-  };
+  let globalRowIndex = 0;
+
+  if (loading || !updatedScreen) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2 justify-center">
-      {/* Open the modal using document.getElementById('ID').showModal() method */}
-      <dialog id="my_modal_2" className="modal">
-        <div className="modal-box text-center text-white bg-opacity-85">
-          <h3 className="font-bold text-lg mb-4 roboto-regular">
-            Select Tickets
-          </h3>
-          {numberOfTickets.map((ticket) => (
-            <button
-              key={ticket}
-              className={`py-1 rounded-md px-2 ml-3 bg-white text-black poppins-light text-md border-2 border-black`}
-              onClick={() => {
-                setTickets(ticket),
-                  document.getElementById("my_modal_2").close();
-              }}
-            >
-              {ticket}
-            </button>
-          ))}
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col h-screen w-full bg-[#050505] font-poppins overflow-hidden"
+    >
+      {/* --- TICKET SELECTION MODAL --- */}
+      <dialog id="my_modal_2" className="modal bg-black/60 backdrop-blur-sm">
+        <div className="modal-box text-center text-white bg-slate-800 border border-white/10 rounded-2xl shadow-2xl">
+          <h3 className="font-bold text-lg mb-6 roboto-regular">Select Tickets</h3>
+          <div className="flex flex-wrap justify-center gap-3 mb-4">
+            {numberOfTickets.map((ticket) => (
+              <button
+                key={ticket}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                  tickets === ticket ? "bg-white text-black scale-110 shadow-lg" : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                }`}
+                onClick={() => { setTickets(ticket); document.getElementById("my_modal_2").close(); }}
+              >
+                {ticket}
+              </button>
+            ))}
+          </div>
         </div>
         <form method="dialog" className="modal-backdrop">
           <button>close</button>
         </form>
       </dialog>
-      {/* nav */}
 
-      {/* filters & shows */}
-      <div className="flex flex-col md:flex-row text-white bg-gradient-to-br gap-x-2 from-black/90 via-transparent to-black/90 h-auto md:h-[18vh] w-[98%] poppins-regular rounded-lg mx-auto my-2 ring-2 ring-white/25 p-2">
-        <IoIosArrowBack
-          className="w-10 h-6 md:w-10 md:h-24 pt-2 md:pt-0 cursor-pointer self-start md:self-auto items-center"
-          onClick={navigateBack}
-        />
-        {/* theatre details */}
-        <div className="ring-2 ring-slate-600/60 w-full md:w-3/5 rounded-md bg-gradient-to-tr from-transparent via-slate-900 to-transparent shadow-md shadow-slate-700 sm:my-0  my-2">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mt-2 md:ml-6 poppins-extralight text-center md:text-left">
-              <span className="text-xl poppins-regular block md:inline">
-                {" "}
-                {theatre[0].name}
-              </span>{" "}
-              {theatre[0].address}, {theatre[0].city}
-            </div>
-            <button
-              onClick={() => document.getElementById("my_modal_2").showModal()}
-              className="btn btn-sm bg-slate-600/50 md:mr-2 border-2 border-white/80 shadow-md shadow-white/30 rounded-3xl text-white hover:bg-white/80 hover:text-black text-md mt-2 md:mt-2"
-            >
-              {" "}
-              <MdOutlineEdit size={18} />
-              {tickets} Tickets
-            </button>
-          </div>
-          <div className="flex flex-wrap justify-center md:justify-start w-full md:w-[80%] space-x-0 md:space-x-2 mt-2 md:mt-1 mx-auto md:mx-12">
-            {theatre[0].shows
-              .filter((s) => s.mid === movie.id && s.showDate === selectedDate)
-              .map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => handleChangeShow(s)}
-                  className={`text-center w-[calc(18%-8px)] sm:w-1/5 sm:text-sm md:w-1/6 rounded-md sm:py-1 py-0 poppins-regular sm:mb-2 sm:m-2 m-2 ${
-                    s.id === show.id
-                      ? `show-${s.status} curr-show shadow-md `
-                      : `show-${s.status}`
-                  }`}
-                >
-                  {s.start}
-                </button>
-              ))}
-          </div>
-        </div>
-        {/* movie details */}
-        <div className="ring-2 ring-slate-600/60 w-full md:w-2/5 rounded-md bg-gradient-to-tr from-transparent via-slate-900 to-transparent shadow-md shadow-slate-700/60 sm:my-0 my-2">
-          <div className="flex flex-col items-center md:flex-row md:gap-x-8 md:ml-5">
-            <h2
-              className={`roboto-light text-xl mt-2 text-wrap ${
-                movie.title.length > 10 ? "text-sm md:text-md" : "md:text-3xl"
-              }`}
-            >
+      {/* --- COMPACT OG GLASSMORPHIC HEADER --- */}
+      <div className="shrink-0 z-40 bg-gradient-to-br from-black/90 via-slate-900 to-black/90 border-b border-white/10 shadow-lg px-4 md:px-8 py-3 m-2 rounded-xl flex items-center justify-between ring-1 ring-white/10">
+
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors border border-white/10">
+            <IoIosArrowBack size={20} />
+          </button>
+
+          <div className="flex flex-col">
+            <h1 className="text-white poppins-bold text-lg md:text-xl leading-tight tracking-wide flex items-center gap-3">
               {movie.title}
-            </h2>
-            <div className="flex justify-center gap-x-4 md:gap-x-8 mt-2 md:mt-2 md:ml-6">
-              <p className="text-center badge badge-outline text-white/80 w-16 h-6 roboto-bold">
-                {movie.certification === "CERTIFICATION_UA"
-                  ? "U/A"
-                  : movie.certification.substring(14)}
-              </p>
-              <p className="bg-gray-500 text-white/95 badge badge-lg text-sm whitespace-nowrap">
-                {movie.runtime} Minutes
-              </p>
-            </div>
-          </div>
-          <div className="text-center flex justify-around text-sm mt-4 md:mt-2">
-            <p className="">{show.showDate}</p>
-          <p className="poppins-light ">
-            Show starts at{" "}
-            <span className="roboto-bold">
-              {show.start}&nbsp;
-              {show.start.substring(0, 2) > 11 &&
-              show.start.substring(0, 2) <= 23
-                ? `PM`
-                : `AM`}
-            </span>
-          </p>
+              <span className="hidden md:inline-block px-2 py-0.5 text-[10px] bg-white/10 border border-white/20 rounded text-white/80">{movie.certification.substring(14)}</span>
+            </h1>
+            <p className="text-white/60 poppins-light text-xs md:text-sm mt-0.5">
+              {theatre[0].name} | {selectedDate} | {show.start}
+            </p>
           </div>
         </div>
+
+        <button
+          onClick={() => document.getElementById("my_modal_2").showModal()}
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all"
+        >
+          <span className="poppins-medium text-sm">{tickets} Tickets</span>
+          <MdOutlineEdit size={16} />
+        </button>
+
       </div>
-      {/* Seats Section */}
-      {!loading ? (
-        <div className=" text-white bg-gradient-to-b from-black/90 via-slate-900 to-black/90 h-[100vh] w-[100%] poppins-regular overflow-y-scroll  overflow-x-auto ring-2 ring-white/25">
-          {updatedScreen.tiers.map((tier, index) => {
-            return (
-              <div key={index} className={`mt-4 overflow-x-auto ${layout.center} z-90`}>
-                <h2>
-                  {tier.tiername} (₹{tier.price})
-                </h2>
-                <hr className="border-gray-600 border-double w-11/12 mx-auto md:w-[90%] md:mx-auto" />
-                <div id="seatArr" className="mb-8">
-                  {tier.seats.map((seat, seatIndex) => {
-                    const isFirstInRow = seatIndex % tier.columns === 0;
-                    const isLastInRow = (seatIndex + 1) % tier.columns === 0;
-                    const seatId = `${index}-${seatIndex}`;
-                    const isSelected = selectedSeats.includes(seatId);
-                    const seatStatus = handleSeatStatus(seat);
 
-                    return (
-                      <React.Fragment key={seatId}>
-                        {isFirstInRow && (
-                          <span className="text-sm font-semibold mr-2 z-30">
-                            {alphabet[curIdx++]}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => handleSeatClick(index, seatIndex)}
-                          disabled={
-                            seatStatus == "BLOCKED" ||
-                            seatStatus == "BOOKED" ||
-                            seatStatus == "NO_SEAT" ||
-                            updatedScreen.tiers[index]?.disabled
-                          }
-                          className={`seat ${seatStatus} ${
-                            seatStatus == "BOOKED" || seatStatus == "BLOCKED"
-                              ? `tooltip-top tooltip tooltip-error`
-                              : ``
-                          } text-sm cursor-pointer z-30 relative ${
-                            isSelected ? "selected-seat" : ""
-                          }`}
-                          data-tip="Seat is booked"
-                        >
-                          {seat.seatId.replace(/\D/g, "")}
-                        </button>
-                        {isLastInRow && <br />}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+      {/* --- INFINITE CANVAS (OG THEME) --- */}
+      <div
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={stopDragging}
+        onMouseLeave={stopDragging}
+        className={`flex-1 overflow-auto custom-scrollbar relative bg-gradient-to-b from-black/90 via-slate-900 to-black/90 w-full ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      >
 
-          <div className="">
-            {" "}
-            <h1 className=" roboto-regular text-center text-lg">SCREEN HERE</h1>
-            <div className="relative bg-fuchsia-300">
-              <div className="mx-auto w-[60%] absolute left-[31%]">
-                <svg
-                  width="60%"
-                  height="100%"
-                  viewBox="0 0 200 100"
-                  xmlns="http://www.w3.org/2000/svg"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M 10 10 C 80 40, 120 40, 190 10"
-                    stroke="white"
-                    strokeWidth="1"
-                    fill="transparent"
-                  />
-                </svg>
-              </div>
-            </div>
+        {/* Floating Zoom Toolbar */}
+        <div className="zoom-controls fixed top-38 md:top-22 right-4 md:right-8 z-30 flex flex-col md:flex-row items-center gap-1 bg-black/60 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-2xl cursor-default">
+          <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
+            <MdZoomOut size={22} />
+          </button>
+          <div className="w-12 text-center poppins-medium text-white/80 text-xs">
+            {Math.round(zoom * 100)}%
           </div>
-        </div>
-      ) : (
-        <div className=" text-white bg-gradient-to-b from-black/90 via-slate-900 to-black/90 h-[100vh] w-[100%] poppins-regular overflow-y-scroll overflow-x-auto ring-2 ring-white/25">
-          {updatedScreen.tiers.map((tier, index) => {
-            return (
-              <div key={index} className={`mt-4 ${layout.center} z-90`}>
-                <h2 className="skeleton w-[16vh] h-[3vh] ml-[92vh]"></h2>
-                <hr className="border-gray-600 border-double" />
-                <div id="seatArr" className="mb-8">
-                  {tier.seats.map((seat, seatIndex) => {
-                    const isFirstInRow = seatIndex % tier.columns === 0;
-                    const isLastInRow = (seatIndex + 1) % tier.columns === 0;
-                    const seatId = `${index}-${seatIndex}`;
-                    /* const isSelected = selectedSeats.includes(seatId);
-                    const seatStatus = handleSeatStatus(seat);
- */
-                    return (
-                      <React.Fragment key={seatId}>
-                        {isFirstInRow && (
-                          <span className="text-sm font-semibold mr-2 z-30 ">
-                            {/* {alphabet[curIdx++]} */}
-                          </span>
-                        )}
-                        <button
-                          className={`seat skeleton text-sm bg-slate-600 cursor-pointer z-30 relative`}
-                        ></button>
-                        {isLastInRow && <br />}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          <div className="">
-            {" "}
-            <h1 className=" roboto-regular text-center text-lg">SCREEN HERE</h1>
-            <div className="relative bg-fuchsia-300">
-              <div className="mx-auto w-[60%] absolute left-[31%]">
-                <svg
-                  width="60%"
-                  height="100%"
-                  viewBox="0 0 200 100"
-                  xmlns="http://www.w3.org/2000/svg"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M 10 10 C 80 40, 120 40, 190 10"
-                    stroke="white"
-                    strokeWidth="1"
-                    fill="transparent"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {selectedSeats.length == tickets && (
-        <div className="w-full h-[11vh] bg-black/70 sticky bottom-0 z-50 text-center">
-          <button
-            onClick={handleProceed}
-            className=" absolute py-2 mt-2 rounded-lg px-32 -ml-36 poppins-regular text-white text-lg bg-gradient-to-tr from-green-600 via-green-600 to-green-600"
-          >
-            Pay Rs. {userSeats.price}
+          <button onClick={() => setZoom(z => Math.min(z + 0.1, 1.5))} className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
+            <MdZoomIn size={22} />
           </button>
         </div>
-      )}
-    </div>
+
+        {/* Scalable Grid Container */}
+        <div
+          className="min-w-max flex flex-col items-center px-[10vw] md:px-[20vw] pb-40 pt-16 transition-transform duration-200 ease-out origin-top"
+          style={{ transform: `scale(${zoom})` }}
+        >
+
+          {/* Render Tiers */}
+          <div className="flex flex-col gap-10 w-full items-center">
+            {updatedScreen.tiers.map((tier, tierIdx) => {
+              const tierRows = [];
+              for (let r = 0; r < tier.rows; r++) {
+                const rowSeats = [];
+                for (let c = 0; c < tier.columns; c++) {
+                  const absoluteIndex = r * tier.columns + c;
+                  rowSeats.push({ ...tier.seats[absoluteIndex], absoluteIndex });
+                }
+                tierRows.push(rowSeats);
+              }
+
+              return (
+                <div key={tierIdx} className={`flex flex-col items-center w-full transition-opacity duration-300 ${tier.disabled ? 'opacity-30' : 'opacity-100'}`}>
+
+                  {/* Tier Header */}
+                  <div className="w-[90%] md:w-[80%] flex items-center gap-4 mb-6">
+                    <div className="h-px bg-white/20 flex-1"></div>
+                    <div className="flex flex-col items-center">
+                      <span className="poppins-regular tracking-wider text-sm text-white/80">{tier.tiername}</span>
+                      <span className="text-white/50 text-xs poppins-light">₹{tier.price}</span>
+                    </div>
+                    <div className="h-px bg-white/20 flex-1"></div>
+                  </div>
+
+                  {/* Render Rows */}
+                  <div className="flex flex-col gap-2 md:gap-3">
+                    {tierRows.map((row, rIdx) => {
+                      const rowLetter = getRowLabel(globalRowIndex++);
+                      return (
+                        <div key={rIdx} className="flex items-center gap-4 md:gap-6">
+                          <div className="w-4 text-right text-white/40 poppins-medium text-xs shrink-0 select-none">
+                            {rowLetter}
+                          </div>
+
+                          <div className="flex gap-1.5 md:gap-2 flex-nowrap">
+                            {row.map((seat) => {
+                              const useatId = `${tierIdx}-${seat.absoluteIndex}`;
+                              const isSelected = selectedSeats.includes(useatId);
+                              const status = handleSeatStatus(seat);
+
+                              let seatClass = "";
+                              let seatText = seat.seatId.replace(/\D/g, "");
+
+                              if (status === "NO_SEAT") {
+                                seatClass = "opacity-0 pointer-events-none";
+                                seatText = "";
+                              } else if (status === "BLOCKED" || status === "BOOKED") {
+                                seatClass = "bg-white/10 text-white/20 cursor-not-allowed border-none";
+                              } else if (isSelected) {
+                                seatClass = "bg-green-500 border-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]";
+                              } else {
+                                seatClass = "border border-white/30 bg-transparent text-white/70 hover:bg-white/20";
+                              }
+
+                              return (
+                                // Changed from <button> to <div> to prevent Safari auto-zoom, and added touch-action-manipulation
+                                <div
+                                  key={useatId}
+                                  onClick={() => { if (status === "AVAILABLE" && !tier.disabled) handleSeatClick(tierIdx, seat.absoluteIndex); }}
+                                  className={`seat-element w-7 h-7 md:w-8 md:h-8 rounded-t-lg rounded-b shadow-sm flex items-center justify-center text-[10px] md:text-xs poppins-medium transition-colors shrink-0 select-none cursor-pointer ${seatClass}`}
+                                  style={{ touchAction: "manipulation" }}
+                                >
+                                  {seatText}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="w-4 text-left text-white/40 poppins-medium text-xs shrink-0 select-none">
+                            {rowLetter}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+        {/* 🚨 THE UPDATED SCREEN INDICATOR (Curving like a "U") 🚨 */}
+        <div className="w-[80%] min-w-[500px] mt-24 mb-10 flex justify-center relative pointer-events-none">
+          {/* The Screen Curve (U-Shape) */}
+          <div className="w-full h-12 border-b-[6px] border-white/20 rounded-b-[100%] shadow-[0_-20px_60px_rgba(255,255,255,0.03)] flex justify-center items-end relative">
+            {/* Text Pill breaking the bottom line */}
+            <span className="text-white/60 poppins-medium tracking-[0.6em] text-[10px] uppercase translate-y-[60%] px-6 py-1.5 bg-[#0a0a0a] backdrop-blur-xl border border-white/10 rounded-full h-fit shadow-lg">
+              All eyes this way
+            </span>
+          </div>
+        </div>
+
+        </div>
+      </div>
+
+      {/* --- PROCEED TO PAY BOTTOM BAR (Framer Motion) --- */}
+      <AnimatePresence>
+        {selectedSeats.length === tickets && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 px-4 py-4 md:px-8"
+          >
+            <div className="max-w-[90rem] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left flex flex-col">
+                <span className="text-white poppins-medium text-sm md:text-base">
+                  {selectedSeats.length} Ticket{selectedSeats.length > 1 ? 's' : ''} Selected
+                </span>
+                <span className="text-white/60 text-xs md:text-sm poppins-light">
+                  {userSeats.tierName} • {userSeats.seatsId.join(", ")}
+                </span>
+              </div>
+              <button
+                onClick={handleProceed}
+                className="w-full md:w-auto px-16 py-3.5 bg-green-600 hover:bg-green-500 text-white rounded-lg poppins-bold text-lg shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all"
+              >
+                Pay ₹{userSeats.price}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </motion.div>
   );
 };
 
 export default BookSeats;
-
-
-
