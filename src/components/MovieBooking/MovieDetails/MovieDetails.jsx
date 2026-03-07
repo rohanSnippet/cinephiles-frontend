@@ -36,6 +36,7 @@ const MovieDetails = () => {
   const [castImages, setCastImages] = useState({});
   const [crewImages, setCrewImages] = useState({});
   const [isShowAvl, setIsShowAvl] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState("All");
 
   // 1. Handle Navigation/Route Changes (The Search Bar Fix)
@@ -62,12 +63,15 @@ const MovieDetails = () => {
     const checkAvl = async () => {
       if (!item?.id || (!userData?.currLocation && !city)) return;
       try {
+        setIsLoading(true);
         const res = await axiosSecure.get(
           `/show/by-city?movieId=${item.id}&cities=${userData.currLocation || city}`
         );
         setIsShowAvl(res.data?.length > 0);
       } catch (err) {
         console.error("Availability error:", err);
+      }finally{
+       setIsLoading(false);
       }
     };
     checkAvl();
