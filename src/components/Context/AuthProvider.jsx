@@ -32,7 +32,7 @@ const AuthProvider = ({ children }) => {
     try {
       const data = await userLogin(username, password);
       const token = data.jwtToken || data.token;
-      
+
       handleLoginSuccess(token, data.username);
       return data;
     } catch (error) {
@@ -40,6 +40,16 @@ const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
+   const createUser = async (firstName, lastName, email, password) => {
+      try {
+        // Assuming SignUpUser is your API call from Services/URL.js
+        const response = await SignUpUser(firstName, lastName, email, password);
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    };
 
   const googleSignUp = () => {
     window.location.href = `${baseURL}/oauth2/authorization/google`;
