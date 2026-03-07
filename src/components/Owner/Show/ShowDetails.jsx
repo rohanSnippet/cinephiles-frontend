@@ -6,6 +6,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Schedule from "../Schedule";
+import Loading from "../../Common/Loading"
 
 // --- GLOBAL TIMELINE CONSTANTS ---
 export const PIXELS_PER_MINUTE = 2.5;
@@ -25,6 +26,8 @@ const ShowDetails = () => {
   const [currTheatre, setCurrTheatre] = useState(null);
   const [currScreen, setCurrScreen] = useState(null);
   const [lastShow, setLastShow] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const interval = 15; // 15 min cleaning time
 
@@ -32,6 +35,7 @@ const ShowDetails = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true)
         const username = localStorage.getItem("username");
         const [theatreRes, moviesRes] = await Promise.all([
           axiosSecure.get(`/theatre/get-theatres/${username}`),
@@ -40,7 +44,7 @@ const ShowDetails = () => {
         setTheatreData(theatreRes.data);
         if (theatreRes.data.length > 0) setCurrTheatre(theatreRes.data[0]);
         setMovies(moviesRes.data.filter(m => m.bookingOpen));
-      } catch (err) { console.error(err); }
+      } catch (err) { console.error(err); }finally{ setIsLoading(false)}
     };
     fetchData();
   }, [axiosSecure]);
@@ -248,30 +252,34 @@ const ShowDetails = () => {
                 </div>
               </div>
 
-              {/* Screen Rows */}
-              {screens.length > 0 ? screens.map(screen => {
-                const isActive = currScreen?.id === screen.id;
-                return (
-                  <div
-                    key={screen.id}
-                    className={`flex border-b border-white/5 transition-colors cursor-pointer ${isActive ? "bg-red-500/5" : "hover:bg-white/5"}`}
-                    onClick={() => setCurrScreen(screen)}
-                  >
-                    {/* Sticky Screen Tab */}
-                    <div className={`w-32 sm:w-48 shrink-0 sticky left-0 z-30 p-4 border-r border-white/10 flex flex-col justify-center items-center shadow-[5px_0_15px_rgba(0,0,0,0.5)] transition-colors ${isActive ? "bg-[#1f0f0f]" : "bg-[#1a1a1a]"}`}>
-                      <span className={`text-[10px] poppins-bold mb-1 uppercase tracking-widest ${isActive ? "text-red-400" : "text-white/40"}`}>Screen</span>
-                      <span className={`text-lg poppins-semibold text-center leading-tight ${isActive ? "text-white" : "text-white/80"}`}>{screen.sname}</span>
-                    </div>
+             {/* Screen Rows */}
+             {isLoading ? (
+               <Loading />
+             ) : screens.length > 0 ? (
+               screens.map(screen => {
+                 const isActive = currScreen?.id === screen.id;
+                 return (
+                   <div
+                     key={screen.id}
+                     className={`flex border-b border-white/5 transition-colors cursor-pointer ${isActive ? "bg-red-500/5" : "hover:bg-white/5"}`}
+                     onClick={() => setCurrScreen(screen)}
+                   >
+                     {/* Sticky Screen Tab */}
+                     <div className={`w-32 sm:w-48 shrink-0 sticky left-0 z-30 p-4 border-r border-white/10 flex flex-col justify-center items-center shadow-[5px_0_15px_rgba(0,0,0,0.5)] transition-colors ${isActive ? "bg-[#1f0f0f]" : "bg-[#1a1a1a]"}`}>
+                       <span className={`text-[10px] poppins-bold mb-1 uppercase tracking-widest ${isActive ? "text-red-400" : "text-white/40"}`}>Screen</span>
+                       <span className={`text-lg poppins-semibold text-center leading-tight ${isActive ? "text-white" : "text-white/80"}`}>{screen.sname}</span>
+                     </div>
 
-                    {/* The Individual Schedule Track */}
-                    <div className="relative py-2" style={{ width: `${TIMELINE_WIDTH}px` }}>
-                      <Schedule screen={screen} selectedDate={selectedDate} />
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div className="p-10 text-center text-white/40">No screens found for this theatre.</div>
-              )}
+                     {/* The Individual Schedule Track */}
+                     <div className="relative py-2" style={{ width: `${TIMELINE_WIDTH}px` }}>
+                       <Schedule screen={screen} selectedDate={selectedDate} />
+                     </div>
+                   </div>
+                 );
+               })
+             ) : (
+               <div className="p-10 text-center text-white/40">No screens found for this theatre.</div>
+             )}
 
             </div>
           </div>
