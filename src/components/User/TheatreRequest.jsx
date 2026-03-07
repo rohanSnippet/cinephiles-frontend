@@ -2,14 +2,28 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
-import { IoIosSend } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
+import { IoChevronBackSharp } from "react-icons/io5";
+import {baseURL} from "../Services/URL"
 
 // Configuration for Location API
 const config = {
   cUrl: import.meta.env.VITE_LOCATION_URL,
   ckey: import.meta.env.VITE_LOCATION_KEY,
 };
+
+// MOVED OUTSIDE to prevent the input focus-loss bug!
+const InputGroup = ({ label, error, children }) => (
+  <div className="space-y-2">
+    <label className="text-white/70 text-xs poppins-medium tracking-widest uppercase">{label}</label>
+    <div className="relative">
+      {children}
+    </div>
+    {error && <p className="text-red-400 text-xs mt-1 poppins-medium">{error}</p>}
+  </div>
+);
+
+const baseInputClass = "w-full px-4 py-3 bg-[#111] border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white transition-colors poppins-medium text-sm rounded-sm";
 
 const TheatreRequest = () => {
   const axiosSecure = useAxiosSecure();
@@ -18,11 +32,10 @@ const TheatreRequest = () => {
   const [selectedState, setSelectedState] = useState("");
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [selectedCity, setSelectedCity] = useState("");
 
   const email = localStorage.getItem("username");
-  
+
   const form = useForm({
     mode: "all",
     defaultValues: {
@@ -68,14 +81,13 @@ const TheatreRequest = () => {
   const handleStateChange = async (e) => {
     const stateCode = e.target.value;
     const stateName = states.find((state) => state.iso2 === stateCode)?.name || "";
-    
+
     setSelectedState(stateCode);
     setSelectedCity("");
     setCities([]);
-    
-    // Update React Hook Form values
-    setValue("tlocation", "");
-    setValue("state", stateName);
+
+    setValue("tlocation", "", { shouldValidate: true });
+    setValue("state", stateName, { shouldValidate: true });
 
     if (stateCode) {
       try {
@@ -95,7 +107,7 @@ const TheatreRequest = () => {
   const handleCityChange = (e) => {
      const cityName = e.target.value;
      setSelectedCity(cityName);
-     setValue("tlocation", cityName);
+     setValue("tlocation", cityName, { shouldValidate: true });
   };
 
   const steps = [
@@ -117,7 +129,6 @@ const TheatreRequest = () => {
   };
 
   const changeCurStep = async (idx) => {
-    // Only allow jumping back or to the immediate next if valid
     if (idx + 1 < currentStep) {
         setCurrentStep(idx + 1);
     }
@@ -125,39 +136,45 @@ const TheatreRequest = () => {
 
   const onSubmit = (data) => {
     Swal.fire({
-      title: "Confirm Theatre Details",
-      text: "Are you sure you want to submit this request?",
-      icon: "warning",
+      title: "Confirm Application",
+      text: "Are you sure you want to submit this theatre request?",
+      icon: "question",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, submit it!",
-      background: "#1a1a1a",
-      color: "#fff"
+      confirmButtonColor: "#fff",
+      cancelButtonColor: "rgba(255,255,255,0.1)",
+      confirmButtonText: "<span style='color:black'>Submit Request</span>",
+      cancelButtonText: "Review Again",
+      background: "#111",
+      color: "#fff",
+      customClass: { popup: 'border border-white/10 rounded-sm' }
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const res = await axiosSecure.post(`/make-request`, data);
+          const res = await axiosSecure.post(`${baseURL}/make-request`, data);
           if (res) {
             Swal.fire({
-              title: "Success!",
-              text: "Your request has been sent.",
+              title: "Application Sent",
+              text: "Our team will review your details shortly.",
               icon: "success",
-              background: "#1a1a1a",
-              color: "#fff"
+              background: "#111",
+              color: "#fff",
+              showConfirmButton: false,
+              timer: 2000,
+              customClass: { popup: 'border border-white/10 rounded-sm' }
             });
+            navigate("/");
           }
         } catch (error) {
           console.error("Error saving request:", error);
           Swal.fire({
-            title: "Error!",
+            title: "Transmission Failed",
             text: "There was an error sending your request.",
             icon: "error",
-            background: "#1a1a1a",
-            color: "#fff"
+            background: "#111",
+            color: "#fff",
+            customClass: { popup: 'border border-white/10 rounded-sm' }
           });
         }
-        navigate("/");
       }
     });
   };
@@ -171,66 +188,47 @@ const TheatreRequest = () => {
 
   const uniqueCities = getUniqueCities(cities);
 
-  // --- Helper Components for Styles ---
-  const InputGroup = ({ label, error, children }) => (
-    <div className="space-y-2">
-      <label className="text-gray-300 text-sm font-medium ml-1">{label}</label>
-      <div className="relative">
-        {children}
-      </div>
-      {error && <p className="text-red-400 text-xs ml-1">{error}</p>}
-    </div>
-  );
-
-  const baseInputClass = "w-full px-4 py-3 bg-transparent border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 bg-black">
+    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 relative flex justify-center items-center">
       {/* Home Button */}
       <button
         onClick={() => navigate("/")}
-        className="absolute top-4 right-4 md:top-6 md:right-6 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 z-10"
+        className="absolute top-6 left-6 md:left-12 flex items-center gap-2 text-white/70 hover:text-white transition-colors"
       >
-        <span className="hidden sm:inline">Home</span>
+        <IoChevronBackSharp size={24} />
+        <span className="poppins-medium text-sm tracking-widest uppercase hidden md:block">Back to Home</span>
       </button>
 
-      <div className="w-full max-w-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-black rounded-2xl py-8 md:py-10 px-4 md:px-8 shadow-2xl shadow-gray-800 border border-gray-800">
-        
+      <div className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+
         {/* Header */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center gap-3 mb-2 text-white">
-             <IoIosSend size={28} className="text-blue-500" />
-             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
-               Theatre Request
-             </h1>
-          </div>
-          <p className="text-gray-400 text-sm text-center">
-            Partner with us to manage your shows
+        <div className="flex flex-col items-center mb-10">
+          <h1 className="text-2xl md:text-3xl poppins-semibold tracking-wide text-center mb-2">
+             PARTNER WITH US
+          </h1>
+          <p className="text-white/50 text-xs text-center poppins-medium tracking-widest uppercase">
+            Theatre Registration Form
           </p>
         </div>
 
-        {/* Stepper */}
-        <div className="mb-8">
+        {/* Sharp Diamond Stepper */}
+        <div className="mb-12 px-4">
             <div className="flex justify-between items-center relative">
                 {/* Connecting Line */}
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-0.5 bg-gray-700 -z-10"></div>
-                
+                <div className="absolute left-0 top-[10px] transform -translate-y-1/2 w-full h-[1px] bg-white/10 -z-10"></div>
+
                 {steps.map((s, i) => {
                     const isActive = currentStep >= s.step;
-                    const isCurrent = currentStep === s.step;
                     return (
-                        <div 
-                            key={i} 
+                        <div
+                            key={i}
                             onClick={() => changeCurStep(i)}
-                            className={`flex flex-col items-center cursor-pointer group bg-gray-900 px-2`}
+                            className="flex flex-col items-center cursor-pointer bg-[#0a0a0a] px-2 md:px-4"
                         >
-                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 
-                                ${isActive ? "bg-blue-600 border-blue-600 text-white" : "bg-gray-800 border-gray-600 text-gray-400 group-hover:border-gray-400"}
-                                ${isCurrent ? "ring-4 ring-blue-500/30" : ""}
-                            `}>
-                                {s.step}
-                            </div>
-                            <span className={`text-xs mt-2 font-medium ${isActive ? "text-blue-400" : "text-gray-500"}`}>
+                            <div className={`w-4 h-4 rotate-45 border transition-all duration-500
+                                ${isActive ? "bg-white border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]" : "bg-[#111] border-white/20"}
+                            `}></div>
+                            <span className={`text-[10px] md:text-xs mt-4 poppins-medium tracking-widest uppercase transition-colors ${isActive ? "text-white" : "text-white/30"}`}>
                                 {s.name}
                             </span>
                         </div>
@@ -240,24 +238,24 @@ const TheatreRequest = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          
+
           {/* STEP 1: Basic Details */}
           {currentStep === 1 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-6 animate-fadeIn">
               <InputGroup label="Theatre Name" error={errors.tname?.message}>
                 <input
                   className={baseInputClass}
-                  placeholder="Enter Theatre Name"
+                  placeholder="Official Theatre Name"
                   {...register("tname", { required: "Theatre name is required." })}
                 />
               </InputGroup>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <InputGroup label="Contact Number" error={errors.contact?.message}>
                     <input
                       type="number"
                       className={baseInputClass}
-                      placeholder="10-digit Mobile Number"
+                      placeholder="10-digit Mobile"
                       {...register("contact", {
                         required: "Contact number is required.",
                         minLength: { value: 10, message: "Must be 10 digits." },
@@ -276,13 +274,13 @@ const TheatreRequest = () => {
                   </InputGroup>
               </div>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-8">
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                  className="bg-white text-black px-10 py-3 font-semibold poppins-medium tracking-widest uppercase hover:bg-neutral-300 transition-colors text-sm rounded-sm"
                 >
-                  Next
+                  Proceed
                 </button>
               </div>
             </div>
@@ -290,26 +288,26 @@ const TheatreRequest = () => {
 
           {/* STEP 2: Location */}
           {currentStep === 2 && (
-            <div className="space-y-4 animate-fadeIn">
-              <InputGroup label="Address" error={errors.address?.message}>
+            <div className="space-y-6 animate-fadeIn">
+              <InputGroup label="Full Address" error={errors.address?.message}>
                 <textarea
                   rows="3"
-                  className={baseInputClass}
+                  className={`${baseInputClass} resize-none`}
                   placeholder="Street Address, Area, Landmark..."
                   {...register("address", { required: "Address is required." })}
                 />
               </InputGroup>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <InputGroup label="State" error={errors.state?.message}>
                     <select
                         className={`${baseInputClass} appearance-none cursor-pointer`}
                         value={selectedState}
                         onChange={handleStateChange}
                     >
-                        <option value="" className="bg-gray-800 text-gray-400">Select State</option>
+                        <option value="" className="bg-[#111] text-white/50">Select State</option>
                         {states.map((st) => (
-                            <option key={st.iso2} value={st.iso2} className="bg-gray-800 text-white">
+                            <option key={st.iso2} value={st.iso2} className="bg-[#111] text-white">
                                 {st.name}
                             </option>
                         ))}
@@ -321,12 +319,11 @@ const TheatreRequest = () => {
                         className={`${baseInputClass} appearance-none cursor-pointer`}
                         disabled={!selectedState}
                         onChange={handleCityChange}
-                        // We rely on getValues or local state for the value logic here
-                        defaultValue="" 
+                        value={selectedCity}
                     >
-                         <option value="" className="bg-gray-800">Select City</option>
+                         <option value="" className="bg-[#111] text-white/50">Select City</option>
                          {uniqueCities.map((c, i) => (
-                             <option key={i} value={c.name} className="bg-gray-800">
+                             <option key={i} value={c.name} className="bg-[#111] text-white">
                                  {c.name}
                              </option>
                          ))}
@@ -334,20 +331,20 @@ const TheatreRequest = () => {
                  </InputGroup>
               </div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-8">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                  className="text-white border border-white/20 px-8 py-3 poppins-medium tracking-widest uppercase hover:bg-white/10 transition-colors text-sm rounded-sm"
                 >
-                  Previous
+                  Back
                 </button>
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                  className="bg-white text-black px-10 py-3 font-semibold poppins-medium tracking-widest uppercase hover:bg-neutral-300 transition-colors text-sm rounded-sm"
                 >
-                  Next
+                  Proceed
                 </button>
               </div>
             </div>
@@ -355,7 +352,7 @@ const TheatreRequest = () => {
 
           {/* STEP 3: Documents */}
           {currentStep === 3 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-6 animate-fadeIn">
                <InputGroup label="Account Number" error={errors.accountNo?.message}>
                 <input
                   type="text"
@@ -383,20 +380,20 @@ const TheatreRequest = () => {
                 />
               </InputGroup>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-8">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                  className="text-white border border-white/20 px-8 py-3 poppins-medium tracking-widest uppercase hover:bg-white/10 transition-colors text-sm rounded-sm"
                 >
-                  Previous
+                  Back
                 </button>
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="bg-white text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                  className="bg-white text-black px-10 py-3 font-semibold poppins-medium tracking-widest uppercase hover:bg-neutral-300 transition-colors text-sm rounded-sm"
                 >
-                  Next
+                  Review
                 </button>
               </div>
             </div>
@@ -404,55 +401,52 @@ const TheatreRequest = () => {
 
           {/* STEP 4: Review */}
           {currentStep === 4 && (
-            <div className="space-y-6 animate-fadeIn">
-               <div className="border-b border-gray-700 pb-2">
-                   <h2 className="text-xl text-white font-semibold">Review Details</h2>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+            <div className="space-y-8 animate-fadeIn">
+
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 bg-[#111] p-6 border border-white/5 rounded-sm">
                    <div className="space-y-1">
-                       <p className="text-gray-400">Theatre Name</p>
-                       <p className="text-white text-lg font-medium">{getValues("tname")}</p>
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">Theatre Name</p>
+                       <p className="text-white poppins-medium">{getValues("tname")}</p>
                    </div>
                    <div className="space-y-1">
-                       <p className="text-gray-400">Screens</p>
-                       <p className="text-white text-lg font-medium">{getValues("tscreens")}</p>
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">Screens</p>
+                       <p className="text-white poppins-medium">{getValues("tscreens")}</p>
                    </div>
                    <div className="space-y-1">
-                       <p className="text-gray-400">Contact</p>
-                       <p className="text-white text-lg font-medium">{getValues("contact")}</p>
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">Contact</p>
+                       <p className="text-white poppins-medium">{getValues("contact")}</p>
                    </div>
                    <div className="space-y-1">
-                       <p className="text-gray-400">Location</p>
-                       <p className="text-white text-lg font-medium">
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">Location</p>
+                       <p className="text-white poppins-medium">
                            {getValues("tlocation")}, {getValues("state")}
                        </p>
-                       <p className="text-gray-500 text-xs">{getValues("address")}</p>
+                       <p className="text-white/50 text-xs mt-1 leading-relaxed">{getValues("address")}</p>
                    </div>
                    <div className="space-y-1">
-                       <p className="text-gray-400">PAN Number</p>
-                       <p className="text-white text-lg font-medium">{getValues("pan")}</p>
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">PAN Number</p>
+                       <p className="text-white poppins-medium">{getValues("pan")}</p>
                    </div>
                    <div className="space-y-1">
-                       <p className="text-gray-400">Account Number</p>
-                       <p className="text-white text-lg font-medium">{getValues("accountNo")}</p>
+                       <p className="text-white/40 text-[10px] poppins-medium tracking-widest uppercase">Account Number</p>
+                       <p className="text-white poppins-medium">{getValues("accountNo")}</p>
                    </div>
                </div>
 
-              <div className="flex justify-between pt-6">
+              <div className="flex justify-between pt-4">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="text-white border border-gray-600 px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                  className="text-white border border-white/20 px-8 py-3 poppins-medium tracking-widest uppercase hover:bg-white/10 transition-colors text-sm rounded-sm"
                 >
-                  Previous
+                  Edit
                 </button>
                 <button
                   type="submit"
                   disabled={!isValid}
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                  className="bg-white text-black px-10 py-3 font-semibold poppins-medium tracking-widest uppercase hover:bg-neutral-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm rounded-sm"
                 >
-                  Submit Request
+                  Submit
                 </button>
               </div>
             </div>
