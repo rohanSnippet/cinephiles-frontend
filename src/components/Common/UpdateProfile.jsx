@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import MyDropzone from "./MyDropzone";
 import states from "../../assets/states.json";
@@ -7,8 +7,11 @@ import MenuItem from "@mui/material/MenuItem";
 import { styled } from "@mui/material/styles";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { cloudURL } from "../Services/cloudinaryConfig";
+import { uploadImageToCloud } from "../Services/cloudinaryConfig";
 import { IoChevronBackSharp } from "react-icons/io5";
+import {baseURL} from "../Services/URL"
+import { AuthContext } from "../Context/AuthProvider";
+
 
 const CustomTextField = styled(TextField)(() => ({
   "& .MuiInputBase-input": { color: "white", fontFamily: "poppins, sans-serif", fontWeight: 300 },
@@ -27,9 +30,29 @@ const UpdateProfile = () => {
   const [image, setImage] = useState(null);
   const [currUser, setCurrUser] = useState({});
   const [updatedUser, setUpdatedUser] = useState({});
-  const [publicId, setPublicId] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const axiosSecure = useAxiosSecure();
+  const { session } = useContext(AuthContext);
+
+  const username = session?.username;
+
+   useEffect(() => {
+      const getUser = async () => {
+        try {
+          const res = await axiosSecure.get(`/user?username=${username}`);
+          if (res.data){
+              setCurrUser(res.data);
+              setUpdatedUser(res.data);
+              setImage(res.data.profile || null);
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error);
+        }
+      };
+      if (username) {
+        getUser();
+      }
+    }, [username, axiosSecure]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,11 +72,47 @@ const UpdateProfile = () => {
       cancelButtonColor: "rgba(255,255,255,0.1)",
       confirmButtonText: "<span style='color:black'>Yes, Update</span>",
       cancelButtonText: "Cancel",
-      customClass: {
-        popup: 'border border-white/10 rounded-2xl',
-      }
+      customClass: { popup: 'border border-white/10 rounded-2xl' }
     }).then((result) => {
       if (result.isConfirmed) {
+        Swal.fire({
+          title: "Updating...",
+          text: "Please wait while we save your changes.",
+          background: "#111",
+          color: "white",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+        updateData();
+      }
+    });
+  };
+
+  const updateData = async () => {
+    try {
+      let finalProfileUrl = updatedUser.profile;
+
+      // 2. Dramatically simplified: Using your centralized upload logic
+      if (image && typeof image !== "string") {
+        // Calling your imported function and saving it to a "Profiles" folder
+        const cloudRes = await uploadImageToCloud(image, "Profiles");
+        const cloudData = await cloudRes.json();
+
+        if (cloudData.secure_url) {
+          finalProfileUrl = cloudData.secure_url;
+        } else {
+          throw new Error("Failed to upload image to Cloudinary");
+        }
+      }
+
+      const finalUserData = {
+        ...updatedUser,
+        profile: finalProfileUrl
+      };
+
+      const response = await axiosSecure.put(`${baseURL}/user/update-user/${currUser?.id}`, finalUserData);
+
+      if (response.status === 200 || response.status === 201) {
         Swal.fire({
           title: "Success",
           text: "Your profile has been updated.",
@@ -61,20 +120,26 @@ const UpdateProfile = () => {
           color: "white",
           background: "#111",
           showConfirmButton: false,
-          timer: 1000,
+          timer: 1500,
           customClass: { popup: 'border border-white/10 rounded-2xl' }
-        }).then(() => updateData(e));
+        }).then(() => navigate("/"));
       }
-    });
+    } catch (error) {
+      console.error("Update failed:", error);
+      Swal.fire({
+        title: "Error",
+        text: "There was a problem updating your profile.",
+        icon: "error",
+        color: "white",
+        background: "#111",
+        customClass: { popup: 'border border-white/10 rounded-2xl' }
+      });
+    }
   };
-
-  // ... (Keep updateData and fetchUser logic identical to your current code) ...
-  const updateData = async (e) => { /* ... existing logic ... */ };
-  const username = localStorage.getItem("username");
-  useEffect(() => { /* ... existing logic ... */ }, [username, axiosSecure]);
 
   const closeDialog = () => document.getElementById("my_modal_1").close();
   const deleteImage = () => { setImage(null); setUpdatedUser((prev) => ({ ...prev, profile: "" })); };
+
   const handleImageChange = (imageFileOrUrl, name) => {
     setImage(imageFileOrUrl);
     setUpdatedUser((prev) => ({ ...prev, [name]: imageFileOrUrl }));
@@ -83,8 +148,6 @@ const UpdateProfile = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white py-12 px-4 relative flex justify-center items-center">
-
-      {/* Home Button */}
       <button
         onClick={() => navigate("/")}
         className="absolute top-6 left-6 md:left-12 flex items-center gap-2 text-white/70 hover:text-white transition-colors"
@@ -93,12 +156,10 @@ const UpdateProfile = () => {
         <span className="poppins-medium text-sm tracking-widest uppercase hidden md:block">Back to Home</span>
       </button>
 
-      {/* Main Form Container */}
       <div className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-3xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <h2 className="text-3xl poppins-semibold tracking-wide text-center mb-10">Profile Settings</h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Profile Picture Section */}
           <div className="flex flex-col items-center mb-10">
             <div className="relative group">
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border border-white/20 bg-[#111]">
@@ -116,7 +177,6 @@ const UpdateProfile = () => {
             </div>
           </div>
 
-          {/* Form Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <CustomTextField label="First Name" name="firstName" value={updatedUser.firstName || ""} onChange={handleChange} fullWidth />
             <CustomTextField label="Last Name" name="lastName" value={updatedUser.lastName || ""} onChange={handleChange} fullWidth />
@@ -128,6 +188,7 @@ const UpdateProfile = () => {
               name="dob" value={updatedUser.dob || ""} onChange={handleChange}
               onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)}
               fullWidth
+              InputLabelProps={{ shrink: true }}
             />
             <CustomTextField select label="Gender" name="gender" value={updatedUser.gender || ""} onChange={handleChange} fullWidth>
               <MenuItem value="Male">Male</MenuItem>
@@ -151,7 +212,6 @@ const UpdateProfile = () => {
         </form>
       </div>
 
-      {/* Modal - Darkened */}
       <dialog id="my_modal_1" className="modal modal-bottom sm:modal-middle backdrop-blur-md">
         <div className="modal-box bg-[#111] border border-white/10 text-white rounded-t-3xl sm:rounded-3xl p-8">
           <h3 className="poppins-medium text-lg mb-6 text-center tracking-wide">Update Profile Picture</h3>
@@ -160,7 +220,7 @@ const UpdateProfile = () => {
           <div className="divider before:bg-white/10 after:bg-white/10 text-white/40 text-sm my-6">OR ENTER URL</div>
 
           <div className="mb-8">
-            <CustomTextField label="Image URL" fullWidth value={image || ""} onChange={(e) => { setImage(e.target.value); setUpdatedUser((prev) => ({ ...prev, profile: e.target.value })); }} />
+            <CustomTextField label="Image URL" fullWidth value={typeof image === 'string' ? image : ""} onChange={(e) => { setImage(e.target.value); setUpdatedUser((prev) => ({ ...prev, profile: e.target.value })); }} />
           </div>
 
           <div className="flex gap-4">

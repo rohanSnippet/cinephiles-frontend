@@ -189,6 +189,8 @@ const Profile = () => {
     </div>
   );
 
+  console.log(user, session)
+
   return (
     <>
       {/* Profile Button (Sits in the Header) */}
