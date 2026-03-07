@@ -4,11 +4,13 @@ import { IoIosAddCircleOutline } from "react-icons/io";
 import { GiTheater } from "react-icons/gi";
 import Modal from "../Common/Modal";
 import useAxiosSecure from "../Hooks/AxiosSecure";
+import Loading from "../Common/Loading"
 
 const ScreenDetails = () => {
   const axiosSecure = useAxiosSecure();
   const [screen, setScreen] = useState([]);
   const [theatreData, setTheatreData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const username = localStorage.getItem("username");
 
   useEffect(() => {
@@ -18,8 +20,10 @@ const ScreenDetails = () => {
 
   const fetchTheatres = async () => {
     try {
+     //setIsLoading(true)
       const res = await axiosSecure.get(`/theatre/get-theatres/${username}`);
       setTheatreData(res.data);
+     // setIsLoading(false)
     } catch (error) {
       console.error("Error fetching theatres:", error);
     }
@@ -27,10 +31,13 @@ const ScreenDetails = () => {
 
   const getAllScreens = async () => {
     try {
+      setIsLoading(true)
       const res = await axiosSecure.get(`/screens/all/${username}`);
       setScreen(res.data);
     } catch (error) {
       console.error("Error fetching screens:", error);
+    }finally{
+    setIsLoading(false)
     }
   };
 
@@ -41,6 +48,10 @@ const ScreenDetails = () => {
   let theatreId;
   if (theatreData.length > 0) {
     theatreId = theatreData[0].id;
+  }
+
+  if(isLoading){
+   return <Loading/>;
   }
 
   return (
