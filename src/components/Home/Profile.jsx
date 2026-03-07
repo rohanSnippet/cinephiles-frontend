@@ -11,7 +11,7 @@ import { AuthContext } from "../Context/AuthProvider";
 import { baseURL, frontURL } from "../Services/URL";
 
 const Profile = () => {
-  const { session, setSession } = useContext(AuthContext);
+  const { session, setSession, signOut } = useContext(AuthContext);
   const username = localStorage.getItem("username");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,36 +50,29 @@ const Profile = () => {
     }
   }, [username, axiosSecure]);
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${baseURL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+ const handleLogout = async () => {
+     try {
+       // 1. Use relative path since axiosSecure already has baseURL configured
+       const response = await axiosSecure.post(`/auth/logout`);
 
-      if (response.ok) {
-        localStorage.removeItem("access-token");
-        localStorage.removeItem("username");
-        localStorage.removeItem("token-expiry");
-        setSession(null);
-
-        Swal.fire({
-          icon: "success",
-          title: "Logged Out Successfully",
-          timer: 1000,
-          showConfirmButton: false,
-          background: "#111",
-          color: "#fff",
-        });
-
-        setTimeout(() => {
-          window.location.href = frontURL;
-        }, 1000);
-      }
-    } catch (error) {
-      console.error("An error occurred during logout", error);
-    }
-  };
+       // 2. Axios uses response.status, not response.ok
+       if (response.status === 200) {
+         signOut();
+           Swal.fire({
+                icon: "success",
+                title: "Logged Out Successfully",
+                timer: 1000,
+                showConfirmButton: false,
+                background: "#111",
+                color: "#fff",
+              });
+       }
+     } catch (error) {
+       console.error("An error occurred during logout", error);
+       // 3. Fail-safe: Force logout on the frontend even if the server throws an error (like 401 or network issue)
+       signOut();
+     }
+   };
 
   // --- THE SIDEBAR CONTENT (Rendered via Portal) ---
   const sidebarContent = (
