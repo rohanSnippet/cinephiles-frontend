@@ -8,32 +8,33 @@ import { FiLogOut } from "react-icons/fi";
 import { AuthContext } from "../Context/AuthProvider";
 import Swal from "sweetalert2";
 import { baseURL, frontURL } from "../Services/URL";
+import useAxiosSecure from "../Hooks/AxiosSecure";
 
 const OwnerDashboardLayout = () => {
-  const { session, setSession } = useContext(AuthContext);
+  const { session, setSession, signOut } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
+  const axiosSecure = useAxiosSecure();
 
   // Sidebar State: expanded (true) or collapsed into icons (false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${baseURL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (response.ok) {
-        localStorage.clear();
-        setSession(null);
-        Swal.fire({ icon: "success", title: "Logged Out", timer: 1000, showConfirmButton: false, background: '#111', color: '#fff' });
-        setTimeout(() => { window.location.href = frontURL; }, 1000);
+ const handleLogout = async () => {
+      try {
+        const response = await axiosSecure.post(`/auth/logout`);
+
+        if (response.status === 200) {
+          signOut();
+          Swal.fire({ icon: "success", title: "Logged Out", timer: 1000, showConfirmButton: false, background: '#111', color: '#fff' });
+          setTimeout(() => { window.location.href = frontURL; }, 1000);
+        }
+      } catch (error) {
+        console.error("An error occurred during logout", error);
+        // 3. Fail-safe: Force logout on the frontend even if the server throws an error (like 401 or network issue)
+        signOut();
       }
-    } catch (error) {
-      console.error("Logout error", error);
-    }
-  };
+    };
 
   const navLinks = [
     { name: "Dashboard", path: "/owner", icon: <MdDashboard size={24} /> },

@@ -189,7 +189,7 @@ const Profile = () => {
     </div>
   );
 
-  console.log(user, session)
+//   console.log(user, session)
 
   return (
     <>

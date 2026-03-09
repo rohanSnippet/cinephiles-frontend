@@ -109,7 +109,7 @@ const UpdateProfile = () => {
         ...updatedUser,
         profile: finalProfileUrl
       };
-
+      console.log(finalUserData)
       const response = await axiosSecure.put(`${baseURL}/user/update-user/${currUser?.id}`, finalUserData);
 
       if (response.status === 200 || response.status === 201) {

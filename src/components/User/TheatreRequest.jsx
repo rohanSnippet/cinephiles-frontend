@@ -120,6 +120,7 @@ const TheatreRequest = () => {
   const nextStep = async () => {
     const isStepValid = await trigger();
     if (isStepValid) {
+
       setCurrentStep((prev) => prev + 1);
     }
   };
