@@ -1,144 +1,230 @@
 import React, { useState, useEffect } from "react";
-import videobg1 from "../../assets/carousal1.mp4";
-import videobg2 from "../../assets/carousal2.mp4";
-import videobg3 from "../../assets/carousal3.mp4";
-import videobg4 from "../../assets/carousal4.mp4";
 import Header from "../Header.jsx";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaPlay } from "react-icons/fa";
 import { MdOutlineKeyboardArrowDown } from "react-icons/md";
+import useAxiosPublic from "../Hooks/AxiosPublic";
 
 const Carousal = ({ onDownArrowClick, showArrow }) => {
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [slides, setSlides] = useState([]);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const axiosPublic = useAxiosPublic();
 
-  const videos = [
-    {
-      name: `Kalki 2898 AD`,
-      clip: videobg1,
-      desc: "A modern-day avatar of Vishnu, a Hindu god, who is believed to have descended to earth to protect the world from evil forces.",
-    },
-    {
-      name: `Pushpa 2: The Rule`,
-      clip: videobg2,
-      desc: "The clash between Pushpa Raj and Bhanwar Singh Shekhawat continues in this epic action saga.",
-    },
-    {
-      name: `Devara Part-I`,
-      clip: videobg3,
-      desc: "An epic action saga set against coastal lands, chronicling a tale of courage, legacy, and vengeance.",
-    },
-    {
-      name: `Kantara Chapter 1`,
-      clip: videobg4,
-      desc: "Discover the origins of the legend in this gripping prequel exploring the deep-rooted folklore of Tulunadu.",
-    },
-  ];
+  // Helper function to extract YouTube ID from any YouTube URL
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      handleNext();
-    }, 12000); // 12 seconds per slide is smoother
+    const fetchFeaturedMovies = async () => {
+      try {
+        // Fetches from Redis cache via Spring Boot
+        const response = await axiosPublic.get("/movie/featured");
+        console.log(response.data);
+
+        const dynamicSlides = response.data.map((movie) => {
+          // Grab the first trailer link, if available
+          const trailerUrl = movie.trailers && movie.trailers.length > 0 ? movie.trailers[0].trailerUrl[0] : null;
+          const ytId = getYouTubeId(trailerUrl);
+
+          return {
+            id: movie.id,
+            name: movie.title,
+            // FIXED: Prevented "/vi/null/" broken image link by checking ytId first
+            image: movie.banner || (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : movie.poster),
+            desc: movie.description,
+            trailerUrl: trailerUrl
+          };
+        });
+
+        setSlides(dynamicSlides.slice(0, 5));
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching hero movies:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedMovies();
+  }, [axiosPublic]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const interval = setInterval(() => handleNext(), 8000);
     return () => clearInterval(interval);
-  }, [currentVideoIndex]);
+  }, [currentSlideIndex, slides.length]);
 
   const handleNext = () => {
-    if (isTransitioning) return;
+    if (isTransitioning || slides.length <= 1) return;
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videos.length);
+      setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
       setIsTransitioning(false);
-    }, 600); // Smoother fade time
+    }, 800);
   };
 
   const handlePrevious = () => {
-    if (isTransitioning) return;
+    if (isTransitioning || slides.length <= 1) return;
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentVideoIndex((prevIndex) => (prevIndex - 1 + videos.length) % videos.length);
+      setCurrentSlideIndex((prev) => (prev - 1 + slides.length) % slides.length);
       setIsTransitioning(false);
-    }, 600);
+    }, 800);
   };
 
+  const handleWatchTrailer = (trailerUrl) => {
+    if (trailerUrl) {
+      window.open(trailerUrl, "_blank");
+    }
+  };
+
+  if (loading) return <div className="w-full h-[65vh] md:h-[85vh] bg-[#050505]"></div>;
+
+  // ==========================================
+  // FALLBACK UI WHEN NO FEATURED MOVIES EXIST
+  // ==========================================
+  if (slides.length === 0) {
+    return (
+      <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden flex flex-col justify-center">
+        {/* Header Overlay */}
+        <div className="absolute top-0 left-0 w-full z-50">
+          <Header />
+        </div>
+
+        {/* Cinematic Fallback Background */}
+        <div className="absolute inset-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30"></div>
+
+        {/* Gradients for depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent z-10"></div>
+
+        {/* Fallback Content */}
+        <div className="relative z-20 text-center px-6 max-w-3xl mx-auto translate-y-8">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-6 drop-shadow-2xl">
+            Welcome to Cinephiles
+          </h1>
+          <p className="text-sm md:text-lg poppins-light text-neutral-300 leading-relaxed drop-shadow-md mb-8">
+            Experience the magic of cinema. Discover the best movies, explore top-rated blockbusters, and book your tickets today.
+          </p>
+
+          {showArrow && (
+            <button
+              onClick={onDownArrowClick}
+              className="inline-flex items-center gap-3 px-8 py-3.5 bg-white text-black rounded-full poppins-semibold text-sm uppercase tracking-widest hover:bg-neutral-200 hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+            >
+              Explore Movies <MdOutlineKeyboardArrowDown size={18} className="mt-0.5"/>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // MAIN CAROUSEL UI
+  // ==========================================
   return (
     <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden">
+      <style>{`
+        @keyframes kenburns {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.15); }
+        }
+        .animate-kenburns {
+          animation: kenburns 20s ease-out forwards;
+        }
+      `}</style>
+
       {/* Header Overlay */}
       <div className="absolute top-0 left-0 w-full z-50">
         <Header />
       </div>
 
-      {/* Video Background with Fade Transition */}
-      <div
-        className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
-          isTransitioning ? "opacity-0" : "opacity-100"
-        }`}
-      >
-        <video
-          key={videos[currentVideoIndex].clip} // Forces video reload on change
-          src={videos[currentVideoIndex].clip}
-          className="w-full h-full object-cover opacity-80"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-      </div>
+      {/* YouTube Thumbnail Backgrounds with Ken Burns */}
+      {slides.map((slide, idx) => (
+        <div
+          key={slide.id || idx}
+          className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
+            currentSlideIndex === idx ? "opacity-100 z-0" : "opacity-0 -z-10"
+          }`}
+        >
+          <img
+            src={slide.image}
+            alt={slide.name}
+            className={`w-full h-full object-cover opacity-60 ${
+              currentSlideIndex === idx ? "animate-kenburns" : ""
+            }`}
+          />
+        </div>
+      ))}
 
-      {/* Deep Cinematic Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10"></div>
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent w-full md:w-3/4 z-10"></div>
+      {/* Improved Deep Cinematic Gradients seamlessly blending to #050505 */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
 
-      {/* Content - Bottom Left Aligned */}
-      <div className="absolute bottom-12 md:bottom-24 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
+      {/* Content */}
+      <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
         <div className={`transition-all duration-1000 transform ${isTransitioning ? "translate-y-8 opacity-0" : "translate-y-0 opacity-100"}`}>
-          <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block">
-            Now Showing
+          <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
+            Featured
           </span>
-          <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-4 drop-shadow-2xl">
-            {videos[currentVideoIndex].name}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-6 drop-shadow-2xl">
+            {slides[currentSlideIndex].name}
           </h1>
-          <p className="text-sm md:text-lg poppins-light text-neutral-300 max-w-2xl leading-relaxed drop-shadow-md">
-            {videos[currentVideoIndex].desc}
+          <p className="text-sm md:text-lg poppins-light text-neutral-300 max-w-2xl leading-relaxed drop-shadow-md mb-8 line-clamp-3">
+            {slides[currentSlideIndex].desc}
           </p>
+
+          <div className="flex items-center gap-4">
+            {slides[currentSlideIndex].trailerUrl && (
+              <button
+                onClick={() => handleWatchTrailer(slides[currentSlideIndex].trailerUrl)}
+                className="flex items-center gap-3 px-8 py-3.5 bg-white text-black rounded-full poppins-semibold text-sm uppercase tracking-widest hover:bg-neutral-200 hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+              >
+                <FaPlay size={14} />
+                Watch Trailer
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Scroll Down Arrow */}
-      {showArrow && (
-        <div
-          onClick={onDownArrowClick}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40 cursor-pointer animate-bounce text-white/50 hover:text-white transition-colors"
-        >
-          <MdOutlineKeyboardArrowDown size={40} />
+      {/* Navigation Controls */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-16 right-6 md:right-16 z-30 flex items-center gap-4 hidden sm:flex">
+          <button onClick={handlePrevious} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300">
+            <FaChevronLeft size={18} />
+          </button>
+          <button onClick={handleNext} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300">
+            <FaChevronRight size={18} />
+          </button>
         </div>
       )}
 
-      {/* Navigation Controls */}
-      <div className="absolute bottom-12 right-6 md:right-16 z-30 flex items-center gap-4">
-        <button
-          onClick={handlePrevious}
-          className="p-3 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all duration-300"
-        >
-          <FaChevronLeft size={20} />
-        </button>
-        <button
-          onClick={handleNext}
-          className="p-3 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white transition-all duration-300"
-        >
-          <FaChevronRight size={20} />
-        </button>
-      </div>
-
       {/* Dash Indicators */}
-      <div className="absolute bottom-6 left-6 md:left-16 lg:left-24 z-30 flex gap-2">
-        {videos.map((_, idx) => (
-          <div
-            key={idx}
-            className={`h-1 rounded-full transition-all duration-500 ${
-              currentVideoIndex === idx ? "w-8 bg-white" : "w-4 bg-white/30" // <-- FIXED HERE
-            }`}
-          />
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div className="absolute bottom-6 left-6 md:left-16 lg:left-24 z-30 flex gap-2">
+          {slides.map((_, idx) => (
+            <div
+              key={idx}
+              className={`h-1 rounded-full transition-all duration-500 ${
+                currentSlideIndex === idx ? "w-10 bg-white" : "w-4 bg-white/30 hover:bg-white/50 cursor-pointer"
+              }`}
+              onClick={() => setCurrentSlideIndex(idx)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Scroll Down Arrow */}
+      {showArrow && (
+        <div onClick={onDownArrowClick} className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-40 cursor-pointer animate-bounce text-white/50 hover:text-white transition-colors">
+          <MdOutlineKeyboardArrowDown size={36} />
+        </div>
+      )}
     </div>
   );
 };
