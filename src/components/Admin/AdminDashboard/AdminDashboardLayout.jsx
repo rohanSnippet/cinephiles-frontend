@@ -200,6 +200,15 @@ const AdminDashboardLayout = () => {
                   All Users
                 </Link>
               </li>
+               <li>
+                  <Link
+                      to="/admin/featured"
+                      onClick={() =>
+                       (document.getElementById("my-drawer-2").checked = false)}
+                  >
+                                Featured Movies
+                              </Link>
+                            </li>
               <hr className="my-2 border-gray-300" />
               {/* shared nav links */}
               {sharedLinks}
