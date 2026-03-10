@@ -41,6 +41,7 @@ import Orders from "./components/User/Orders";
 import Confirmation from "./components/MovieBooking/Confirmation";
 import PaymentSuccess from "./components/MovieBooking/PaymentSuccess";
 import Popstate2 from "./components/User/Popstate2";
+import FeaturedMovieManager from "./components/Admin/Commercials/FeaturedMovieManager"
 
 const router = createBrowserRouter([
   {
@@ -157,6 +158,10 @@ const router = createBrowserRouter([
         path: "Edit-Movie",
         element: <EditMovie />,
       },
+      {
+        path: "featured",
+        element: <FeaturedMovieManager/>
+      }
     ],
   },
   {
