@@ -18,10 +18,10 @@ export const locationHierarchy = [
     cities: ["Pune", "Pimpri-Chinchwad", "Lonavala", "Baramati"]
   },
   {
-    region: "Bengaluru",
+    region: "Bangalore",
     state: "Karnataka",
     image: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?q=80&w=400&auto=format&fit=crop",
-    cities: ["Bengaluru", "Whitefield", "Electronic City"]
+    cities: ["Bengaluru", "Bangalore", "Whitefield", "Electronic City"]
   },
   {
     region: "Hyderabad",
