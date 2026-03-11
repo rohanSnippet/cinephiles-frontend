@@ -3,42 +3,54 @@ import { useNavigate } from "react-router-dom";
 import { IoSearchOutline, IoLocationOutline } from "react-icons/io5";
 import { FiX } from "react-icons/fi";
 import { locationHierarchy } from "../Services/Locations";
+import useAxiosSecure from "../Hooks/AxiosSecure"; // ADDED THIS
 
 const Location = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(locationHierarchy);
 
-  // Filter logic for both regions and specific cities
+  const axiosSecure = useAxiosSecure(); // ADDED THIS
+  const username = localStorage.getItem("username"); // ADDED THIS
+
   useEffect(() => {
     if (!searchQuery) {
       setFilteredData(locationHierarchy);
       return;
     }
-
     const lowerQuery = searchQuery.toLowerCase();
     const filtered = locationHierarchy.map(regionObj => {
       const regionMatch = regionObj.region.toLowerCase().includes(lowerQuery);
       const matchedCities = regionObj.cities.filter(c => c.toLowerCase().includes(lowerQuery));
-
-      if (regionMatch || matchedCities.length > 0) {
-        return { ...regionObj, cities: matchedCities };
-      }
+      if (regionMatch || matchedCities.length > 0) return { ...regionObj, cities: matchedCities };
       return null;
     }).filter(Boolean);
-
     setFilteredData(filtered);
   }, [searchQuery]);
 
-  const handleSelectLocation = (locationName) => {
-    // Save to localStorage exactly as it appears in Header (e.g., "Mumbai Region" or "Kalyan")
+  const handleSelectLocation = async (locationName) => {
+    // 1. Instantly update LocalStorage & UI for snappy feel
     localStorage.setItem("city", locationName);
+    window.dispatchEvent(new Event("locationUpdated"));
 
-    // Dispatch custom event so Header updates instantly without refresh
-    window.dispatchEvent(new Event("storage"));
+    // 2. If User is Logged In, update the Database in the background!
+    if (username) {
+      try {
+        const res = await axiosSecure.get(`/user?username=${username}`);
+        const userId = res.data?.id;
+        if (userId) {
+          await axiosSecure.put(`/user/update-location/${userId}`, {
+            currLocation: locationName,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to sync new location to DB", err);
+      }
+    }
 
-    navigate(-1); // Go back to the previous page
+    navigate(-1);
   };
+
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-10 px-4 pb-20 relative">
