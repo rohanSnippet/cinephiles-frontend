@@ -78,7 +78,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
 
   useEffect(() => {
     if (slides.length <= 1) return;
-    const interval = setInterval(() => handleNext(), 8000);
+    const interval = setInterval(() => handleNext(), 5000);
     return () => clearInterval(interval);
   }, [currentSlideIndex, slides.length]);
 
