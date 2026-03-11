@@ -3,15 +3,43 @@ import Header from "../Header.jsx";
 import { FaChevronLeft, FaChevronRight, FaPlay } from "react-icons/fa";
 import { MdOutlineKeyboardArrowDown } from "react-icons/md";
 import useAxiosPublic from "../Hooks/AxiosPublic";
+import { locationHierarchy } from "../Services/Locations"; // Import your hierarchy
 
 const Carousal = ({ onDownArrowClick, showArrow }) => {
   const [slides, setSlides] = useState([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [rawCity, setRawCity] = useState(localStorage.getItem("city") || "Mumbai");
   const axiosPublic = useAxiosPublic();
 
-  // Helper function to extract YouTube ID from any YouTube URL
+  // THE MAGIC FUNCTION: Maps sub-cities to parent regions
+  const getMacroRegion = (cityName) => {
+    if (!cityName) return "Mumbai";
+    const lowerCity = cityName.toLowerCase();
+
+    for (const regionObj of locationHierarchy) {
+      // If it's already a macro region (e.g., "Mumbai")
+      if (regionObj.region.toLowerCase() === lowerCity) return regionObj.region;
+
+      // If it's a sub-city (e.g., "Kalyan"), return its parent region
+      const match = regionObj.cities?.find(c => c.toLowerCase() === lowerCity);
+      if (match) return regionObj.region;
+    }
+    return cityName; // Fallback if city not found in hierarchy
+  };
+
+  // We use the macro region to fetch from the DB
+  const macroRegion = getMacroRegion(rawCity);
+
+  // Listen for custom location updates
+  useEffect(() => {
+    const handleLocationChange = () => setRawCity(localStorage.getItem("city") || "Mumbai");
+    window.addEventListener("locationUpdated", handleLocationChange);
+    return () => window.removeEventListener("locationUpdated", handleLocationChange);
+  }, []);
+
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -21,20 +49,16 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
 
   useEffect(() => {
     const fetchFeaturedMovies = async () => {
+      setLoading(true);
       try {
-        // Fetches from Redis cache via Spring Boot
-        const response = await axiosPublic.get("/movie/featured");
-        console.log(response.data);
-
+        // Fetch using the MACRO region (e.g. "Mumbai" even if rawCity is "Kalyan")
+        const response = await axiosPublic.get(`/movie/featured?region=${macroRegion}`);
         const dynamicSlides = response.data.map((movie) => {
-          // Grab the first trailer link, if available
           const trailerUrl = movie.trailers && movie.trailers.length > 0 ? movie.trailers[0].trailerUrl[0] : null;
           const ytId = getYouTubeId(trailerUrl);
-
           return {
             id: movie.id,
             name: movie.title,
-            // FIXED: Prevented "/vi/null/" broken image link by checking ytId first
             image: movie.banner || (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : movie.poster),
             desc: movie.description,
             trailerUrl: trailerUrl
@@ -42,15 +66,15 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
         });
 
         setSlides(dynamicSlides.slice(0, 5));
-        setLoading(false);
+        setCurrentSlideIndex(0);
       } catch (error) {
-        console.error("Error fetching hero movies:", error);
+        setSlides([]);
+      } finally {
         setLoading(false);
       }
     };
-
     fetchFeaturedMovies();
-  }, [axiosPublic]);
+  }, [axiosPublic, macroRegion]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -90,26 +114,18 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
   if (slides.length === 0) {
     return (
       <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden flex flex-col justify-center">
-        {/* Header Overlay */}
         <div className="absolute top-0 left-0 w-full z-50">
           <Header />
         </div>
-
-        {/* Cinematic Fallback Background */}
         <div className="absolute inset-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30"></div>
-
-        {/* Gradients for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent z-10"></div>
-
-        {/* Fallback Content */}
         <div className="relative z-20 text-center px-6 max-w-3xl mx-auto translate-y-8">
           <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-6 drop-shadow-2xl">
             Welcome to Cinephiles
           </h1>
           <p className="text-sm md:text-lg poppins-light text-neutral-300 leading-relaxed drop-shadow-md mb-8">
-            Experience the magic of cinema. Discover the best movies, explore top-rated blockbusters, and book your tickets today.
+            Experience the magic of cinema in <span className="font-semibold text-white">{rawCity}</span>. Discover the best movies, explore top-rated blockbusters, and book your tickets today.
           </p>
-
           {showArrow && (
             <button
               onClick={onDownArrowClick}
@@ -137,13 +153,9 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           animation: kenburns 20s ease-out forwards;
         }
       `}</style>
-
-      {/* Header Overlay */}
       <div className="absolute top-0 left-0 w-full z-50">
         <Header />
       </div>
-
-      {/* YouTube Thumbnail Backgrounds with Ken Burns */}
       {slides.map((slide, idx) => (
         <div
           key={slide.id || idx}
@@ -160,12 +172,8 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           />
         </div>
       ))}
-
-      {/* Improved Deep Cinematic Gradients seamlessly blending to #050505 */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10"></div>
       <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
-
-      {/* Content */}
       <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
         <div className={`transition-all duration-1000 transform ${isTransitioning ? "translate-y-8 opacity-0" : "translate-y-0 opacity-100"}`}>
           <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
@@ -177,7 +185,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           <p className="text-sm md:text-lg poppins-light text-neutral-300 max-w-2xl leading-relaxed drop-shadow-md mb-8 line-clamp-3">
             {slides[currentSlideIndex].desc}
           </p>
-
           <div className="flex items-center gap-4">
             {slides[currentSlideIndex].trailerUrl && (
               <button
@@ -191,8 +198,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           </div>
         </div>
       </div>
-
-      {/* Navigation Controls */}
       {slides.length > 1 && (
         <div className="absolute bottom-16 right-6 md:right-16 z-30 flex items-center gap-4 hidden sm:flex">
           <button onClick={handlePrevious} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300">
@@ -203,8 +208,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           </button>
         </div>
       )}
-
-      {/* Dash Indicators */}
       {slides.length > 1 && (
         <div className="absolute bottom-6 left-6 md:left-16 lg:left-24 z-30 flex gap-2">
           {slides.map((_, idx) => (
@@ -218,8 +221,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           ))}
         </div>
       )}
-
-      {/* Scroll Down Arrow */}
       {showArrow && (
         <div onClick={onDownArrowClick} className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-40 cursor-pointer animate-bounce text-white/50 hover:text-white transition-colors">
           <MdOutlineKeyboardArrowDown size={36} />
