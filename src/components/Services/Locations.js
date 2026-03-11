@@ -1,10 +1,25 @@
 export const locationHierarchy = [
   {
-    region: "Mumbai",
-    state: "Maharashtra",
-    image: "https://images.unsplash.com/photo-1522256662024-e168853b006c?q=80&w=400&auto=format&fit=crop",
-    cities: ["Mumbai", "Navi Mumbai", "Thane", "Kalyan", "Dombivli", "Badlapur", "Vasai", "Virar"]
-  },
+      region: "Mumbai",
+      state: "Maharashtra",
+      image: "https://images.unsplash.com/photo-1522256662024-e168853b006c?q=80&w=400&auto=format&fit=crop",
+      cities: [
+        // Main Hubs
+        "Mumbai", "Navi Mumbai", "Thane",
+
+        // Individual Suburbs/Towns
+        "Kalyan", "Dombivli", "Dombivali", "Badlapur", "Ambernath", "Ulhasnagar",
+        "Vasai", "Virar", "Nalasopara", "Palghar", "Boisar",
+        "Mira Road", "Bhayandar", "Bhiwandi",
+        "Panvel", "Kharghar", "Vashi", "Belapur",
+
+        // Combined Municipal Corporation Names (Returned by Live API)
+        "Kalyan-Dombivli", "Kalyan-Dombivali",
+        "Vasai-Virar",
+        "Mira-Bhayandar",
+        "Bhiwandi-Nizampur"
+      ]
+    },
   {
     region: "Delhi NCR",
     state: "Delhi NCR",
