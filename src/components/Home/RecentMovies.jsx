@@ -50,9 +50,6 @@ const RecentMovies = () => {
     [movies]
   );
 
-  // 🚨 FIXED SETTINGS:
-  // Hardcoded slidesToShow. No Math.min().
-  // This locks the grid size so cards NEVER stretch, leaving empty space if there are fewer movies.
   const settings = useMemo(() => ({
     dots: false,
     infinite: false, // Ensures empty space is left on the right if there are few movies
@@ -76,7 +73,7 @@ const RecentMovies = () => {
       <div className="max-w-[95rem] mx-auto px-6 lg:px-12 mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="text-left">
           <h2 className="text-white text-2xl md:text-3xl lg:text-4xl poppins-semibold tracking-wide mb-1">
-            Trending in {city || "Your Area"}
+            Now showing in {city || "Your Area"}
           </h2>
           <p className="text-neutral-400 roboto-light text-xs md:text-sm max-w-xl">
             Secure your tickets today and be among the first to experience the excitement.
