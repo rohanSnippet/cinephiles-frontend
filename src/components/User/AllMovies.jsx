@@ -32,7 +32,7 @@ const AllMovies = () => {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0); // 0-indexed for Spring Boot
-  const itemsPerPage = 8;
+  const itemsPerPage = 12;
 
   const observer = useRef();
 
