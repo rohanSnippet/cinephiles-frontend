@@ -1,8 +1,14 @@
+import delhi from "../../assets/Cities/Delhi.png";
+import mumbai from "../../assets/Cities/Mumbai.png";
+import bangalore from "../../assets/Cities/Bangalore.png";
+import pune from "../../assets/Cities/Pune.png";
+import hyderabad from "../../assets/Cities/Hyderabad.png";
+
 export const locationHierarchy = [
   {
       region: "Mumbai",
       state: "Maharashtra",
-      image: "https://images.unsplash.com/photo-1522256662024-e168853b006c?q=80&w=400&auto=format&fit=crop",
+      image: mumbai || "https://cdn-icons-png.flaticon.com/128/510/510020.png",
       cities: [
         // Main Hubs
         "Mumbai", "Navi Mumbai", "Thane",
@@ -23,25 +29,25 @@ export const locationHierarchy = [
   {
     region: "Delhi NCR",
     state: "Delhi NCR",
-    image: "https://images.unsplash.com/photo-1587474260580-58955f9a65bd?q=80&w=400&auto=format&fit=crop",
+    image: delhi || "https://cdn-icons-png.flaticon.com/128/3174/3174792.png",
     cities: ["New Delhi", "Gurugram", "Noida", "Faridabad", "Ghaziabad"]
   },
   {
     region: "Pune",
     state: "Maharashtra",
-    image: "https://images.unsplash.com/photo-1598444983050-705626af0e39?q=80&w=400&auto=format&fit=crop",
+    image: pune || "https://images.unsplash.com/photo-1598444983050-705626af0e39?q=80&w=400&auto=format&fit=crop",
     cities: ["Pune", "Pimpri-Chinchwad", "Lonavala", "Baramati"]
   },
   {
     region: "Bangalore",
     state: "Karnataka",
-    image: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?q=80&w=400&auto=format&fit=crop",
+    image: bangalore || "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?q=80&w=400&auto=format&fit=crop",
     cities: ["Bengaluru", "Bangalore", "Whitefield", "Electronic City"]
   },
   {
     region: "Hyderabad",
     state: "Telangana",
-    image: "https://images.unsplash.com/photo-1601058269707-1647ceb44040?q=80&w=400&auto=format&fit=crop",
+    image: hyderabad || "https://images.unsplash.com/photo-1601058269707-1647ceb44040?q=80&w=400&auto=format&fit=crop",
     cities: ["Hyderabad", "Secunderabad", "Cyberabad"]
   }
 ];
