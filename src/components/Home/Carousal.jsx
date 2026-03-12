@@ -3,7 +3,19 @@ import Header from "../Header.jsx";
 import { FaChevronLeft, FaChevronRight, FaPlay } from "react-icons/fa";
 import { MdOutlineKeyboardArrowDown } from "react-icons/md";
 import useAxiosPublic from "../Hooks/AxiosPublic";
-import { locationHierarchy } from "../Services/Locations"; // Import your hierarchy
+import { locationHierarchy } from "../Services/Locations";
+
+// Curated 4K cinematic placeholder images for the dreamish infinite scroll
+const FALLBACK_POSTERS = [
+  "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=800&auto=format&fit=crop",
+  "https://stat4.bollywoodhungama.in/wp-content/uploads/2016/03/Dangal-1.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://wallpaperaccess.com/full/16701612.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://posterspy.com/wp-content/uploads/2023/11/Dune-Part-II.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://tse2.mm.bing.net/th/id/OIP.pzHzXKTcOWnvKPz1Tfyp0QHaLH?rs=1&pid=ImgDetMain&o=7&rm=3?q=80&w=800&auto=format&fit=crop",
+  "https://s3.amazonaws.com/nightjarprod/content/uploads/sites/130/2021/08/19085635/gEU2QniE6E77NI6lCU6MxlNBvIx-scaled.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://wallpapercave.com/wp/wp4027523.jpg?q=80&w=800&auto=format&fit=crop",
+];
 
 const Carousal = ({ onDownArrowClick, showArrow }) => {
   const [slides, setSlides] = useState([]);
@@ -14,26 +26,20 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
   const [rawCity, setRawCity] = useState(localStorage.getItem("city") || "Mumbai");
   const axiosPublic = useAxiosPublic();
 
-  // THE MAGIC FUNCTION: Maps sub-cities to parent regions
   const getMacroRegion = (cityName) => {
     if (!cityName) return "Mumbai";
     const lowerCity = cityName.toLowerCase();
 
     for (const regionObj of locationHierarchy) {
-      // If it's already a macro region (e.g., "Mumbai")
       if (regionObj.region.toLowerCase() === lowerCity) return regionObj.region;
-
-      // If it's a sub-city (e.g., "Kalyan"), return its parent region
       const match = regionObj.cities?.find(c => c.toLowerCase() === lowerCity);
       if (match) return regionObj.region;
     }
-    return cityName; // Fallback if city not found in hierarchy
+    return cityName;
   };
 
-  // We use the macro region to fetch from the DB
   const macroRegion = getMacroRegion(rawCity);
 
-  // Listen for custom location updates
   useEffect(() => {
     const handleLocationChange = () => setRawCity(localStorage.getItem("city") || "Mumbai");
     window.addEventListener("locationUpdated", handleLocationChange);
@@ -51,7 +57,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
     const fetchFeaturedMovies = async () => {
       setLoading(true);
       try {
-        // Fetch using the MACRO region (e.g. "Mumbai" even if rawCity is "Kalyan")
         const response = await axiosPublic.get(`/movie/featured?region=${macroRegion}`);
         const dynamicSlides = response.data.map((movie) => {
           const trailerUrl = movie.trailers && movie.trailers.length > 0 ? movie.trailers[0].trailerUrl[0] : null;
@@ -109,34 +114,95 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
   if (loading) return <div className="w-full h-[65vh] md:h-[85vh] bg-[#050505]"></div>;
 
   // ==========================================
-  // FALLBACK UI WHEN NO FEATURED MOVIES EXIST
+  // PREMIUM DREAMISH FALLBACK UI
   // ==========================================
   if (slides.length === 0) {
+    const doubledPosters = [...FALLBACK_POSTERS, ...FALLBACK_POSTERS];
+
     return (
-      <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden flex flex-col justify-center">
+      <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden">
+
+        {/* Hardware-accelerated CSS animations */}
+        <style>{`
+          @keyframes scrollLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          @keyframes scrollRight {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+          }
+          @keyframes fadeInUpFade {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .animate-scroll-left { animation: scrollLeft 45s linear infinite; will-change: transform; }
+          .animate-scroll-right { animation: scrollRight 45s linear infinite; will-change: transform; }
+          .animate-fade-in-up { animation: fadeInUpFade 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        `}</style>
+
         <div className="absolute top-0 left-0 w-full z-50">
           <Header />
         </div>
-        <div
-          className="absolute inset-0 w-full h-full bg-cover bg-center z-0"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070')" }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent z-10"></div>
-        <div className="relative z-20 text-center px-6 max-w-3xl mx-auto translate-y-8">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-6 drop-shadow-2xl">
-            Welcome to Cinephiles
-          </h1>
-          <p className="text-sm md:text-lg poppins-light text-neutral-300 leading-relaxed drop-shadow-md mb-8">
-            Experience the magic of cinema in <span className="font-semibold text-white">{rawCity}</span>. Discover the best movies, explore top-rated blockbusters, and book your tickets today.
-          </p>
-          {showArrow && (
-            <button
-              onClick={onDownArrowClick}
-              className="inline-flex items-center gap-3 px-8 py-3.5 bg-white text-black rounded-full poppins-semibold text-sm uppercase tracking-widest hover:bg-neutral-200 hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-            >
-              Explore Movies <MdOutlineKeyboardArrowDown size={18} className="mt-0.5"/>
-            </button>
-          )}
+
+        {/* --- 3D INFINITE SCROLL LAYER --- */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vh] flex flex-col gap-6 transform -rotate-12 scale-110 justify-center">
+
+            <div className="flex w-max animate-scroll-left gap-6">
+              {doubledPosters.map((img, i) => (
+                <img key={`r1-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
+              ))}
+            </div>
+
+            <div className="flex w-max animate-scroll-right gap-6 ml-[-20%]">
+              {doubledPosters.reverse().map((img, i) => (
+                <img key={`r2-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
+              ))}
+            </div>
+
+            <div className="flex w-max animate-scroll-left gap-6 ml-[-10%]">
+              {doubledPosters.reverse().map((img, i) => (
+                <img key={`r3-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
+              ))}
+            </div>
+
+          </div>
+        </div>
+
+        {/* --- DEEP CINEMATIC OVERLAYS (No Box) --- */}
+        {/* 1. Heavy bottom gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent z-10 shadow-3xl shadow-black"></div>
+        {/* 2. Heavy left-side gradient to ground the text horizontally */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
+
+        {/* --- FLOATING CINEMATIC TEXT (Matched to active slide layout) --- */}
+        <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
+          <div className="animate-fade-in-up">
+
+            <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
+              Welcome to Cinephiles
+            </span>
+
+            {/* Massive Typography Treatment */}
+            <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] poppins-bold text-white tracking-tighter leading-none mb-4 drop-shadow-2xl uppercase">
+              {rawCity}
+            </h1>
+
+            <p className="text-sm md:text-lg poppins-light text-neutral-300 max-w-2xl leading-relaxed drop-shadow-md mb-8">
+              Experience the magic of cinema. Discover the best movies, explore top-rated blockbusters, and secure your tickets today.
+            </p>
+
+            {showArrow && (
+              <button
+                onClick={onDownArrowClick}
+                className="inline-flex items-center gap-3 px-8 py-3.5 bg-white text-black rounded-full poppins-semibold text-sm uppercase tracking-widest hover:bg-neutral-200 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+              >
+                Explore Movies <MdOutlineKeyboardArrowDown size={18} className="mt-0.5"/>
+              </button>
+            )}
+
+          </div>
         </div>
       </div>
     );
@@ -175,8 +241,8 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           />
         </div>
       ))}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10"></div>
-      <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
       <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
         <div className={`transition-all duration-1000 transform ${isTransitioning ? "translate-y-8 opacity-0" : "translate-y-0 opacity-100"}`}>
           <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
@@ -201,16 +267,16 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           </div>
         </div>
       </div>
-      {slides.length > 1 && (
-        <div className="absolute bottom-16 right-6 md:right-16 z-30 flex items-center gap-4 hidden sm:flex">
-          <button onClick={handlePrevious} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300">
-            <FaChevronLeft size={18} />
-          </button>
-          <button onClick={handleNext} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300">
-            <FaChevronRight size={18} />
-          </button>
-        </div>
-      )}
+{/*       {slides.length > 1 && ( */}
+{/*         <div className="absolute bottom-16 right-6 md:right-16 z-30 flex items-center gap-4 hidden sm:flex"> */}
+{/*           <button onClick={handlePrevious} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300"> */}
+{/*             <FaChevronLeft size={18} /> */}
+{/*           </button> */}
+{/*           <button onClick={handleNext} className="p-4 rounded-full bg-white/5 hover:bg-white/20 backdrop-blur-xl border border-white/10 text-white transition-all duration-300"> */}
+{/*             <FaChevronRight size={18} /> */}
+{/*           </button> */}
+{/*         </div> */}
+{/*       )} */}
       {slides.length > 1 && (
         <div className="absolute bottom-6 left-6 md:left-16 lg:left-24 z-30 flex gap-2">
           {slides.map((_, idx) => (
