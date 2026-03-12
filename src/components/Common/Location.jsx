@@ -48,7 +48,7 @@ const Location = () => {
           if(resp?.status == 200){
           Swal.fire({
            icon: "success",
-           title: `Location Updated to ${resp?.currLocation}`,
+           title: `Location Updated to ${locationName}`,
            timer: 1000,
            showConfirmButton: false,
            background: "#111",
