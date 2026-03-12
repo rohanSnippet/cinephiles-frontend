@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { IoSearchOutline, IoLocationOutline } from "react-icons/io5";
 import { FiX } from "react-icons/fi";
 import { locationHierarchy } from "../Services/Locations";
-import useAxiosSecure from "../Hooks/AxiosSecure"; // ADDED THIS
+import useAxiosSecure from "../Hooks/AxiosSecure";
+import Swal from "sweetalert2";
 
 const Location = () => {
   const navigate = useNavigate();
@@ -37,11 +38,32 @@ const Location = () => {
     if (username) {
       try {
         const res = await axiosSecure.get(`/user?username=${username}`);
+        console.log(res.data)
         const userId = res.data?.id;
         if (userId) {
-          await axiosSecure.put(`/user/update-location/${userId}`, {
+         const resp = await axiosSecure.put(`/user/update-location/${userId}`, {
             currLocation: locationName,
           });
+
+          if(resp?.status == 200){
+          Swal.fire({
+           icon: "success",
+           title: `Location Updated to ${resp?.currLocation}`,
+           timer: 1000,
+           showConfirmButton: false,
+           background: "#111",
+           color: "#fff",
+           });
+          }else{
+              Swal.fire({
+                       icon: "error",
+                       title: "Cannot update location",
+                       timer: 1000,
+                       showConfirmButton: false,
+                       background: "#111",
+                       color: "#fff",
+                       });
+          }
         }
       } catch (err) {
         console.error("Failed to sync new location to DB", err);
