@@ -260,7 +260,7 @@ const MovieDetails = () => {
 
             return (
               <motion.div variants={fadeInUp} initial="hidden" animate="visible" key={i} className="flex flex-col items-center text-center group">
-                <a href={`https://www.google.com/search?q=${member.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-3 overflow-hidden rounded-full ring-2 ring-transparent group-hover:ring-indigo-500/50 transition-all duration-300 shadow-lg bg-slate-800">
+                <a href={`https://www.google.com/search?q=${member.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-3 overflow-hidden rounded-full ring-2 ring-transparent group-hover:ring-slate-300 transition-all duration-300 shadow-lg bg-slate-800">
                   <AnimatePresence mode="wait">
                     {!isLoaded ? (
                       <motion.div key="skeleton" exit={{ opacity: 0 }} className="w-full h-full bg-slate-700 animate-pulse" />
@@ -290,14 +290,14 @@ const MovieDetails = () => {
           Crew
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6">
           {(item.crew || []).map((member, i) => {
             const imgUrl = crewImages[member.name];
             const isLoaded = imgUrl !== undefined;
 
             return (
               <motion.div variants={fadeInUp} initial="hidden" animate="visible" key={i} className="flex flex-col items-center text-center group cursor-pointer">
-                <a href={`https://www.google.com/search?q=${member.name.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-full aspect-[3/4] max-w-[180px] mb-3 overflow-hidden rounded-xl shadow-lg ring-1 ring-white/10 group-hover:ring-indigo-500/50 transition-all duration-300 bg-slate-800">
+                <a href={`https://www.google.com/search?q=${member.name.trim().split(" ").join("+")}`} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-3 overflow-hidden rounded-full ring-2 ring-transparent group-hover:ring-slate-300 transition-all duration-300 shadow-lg bg-slate-800">
                   <AnimatePresence mode="wait">
                     {!isLoaded ? (
                       <motion.div key="skeleton" exit={{ opacity: 0 }} className="w-full h-full bg-slate-700 animate-pulse" />
@@ -314,7 +314,7 @@ const MovieDetails = () => {
                   </AnimatePresence>
                 </a>
                 <h3 className="font-medium text-white text-sm sm:text-base line-clamp-1 w-full px-2">{member.name}</h3>
-                <p className="poppins-light text-indigo-300 text-xs sm:text-sm line-clamp-1 w-full mt-0.5">
+                <p className="poppins-light text-slate-400 text-xs sm:text-sm line-clamp-1 mt-0.5">
                   {member.roles.join(", ")}
                 </p>
               </motion.div>
@@ -343,7 +343,7 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
         {/* Sticky Modal Header */}
         <div className="shrink-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-xl px-6 py-4 sm:px-10 sm:py-6 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
           <h3 className="poppins-bold text-xl sm:text-2xl text-white tracking-wide uppercase flex items-center gap-3">
-            <span className="text-indigo-500">
+            <span className="text-slate-300">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
                 <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm14.024-.983a1.125 1.125 0 0 1 0 1.966l-5.603 3.113A1.125 1.125 0 0 1 9 15.113V8.887c0-.857.921-1.4 1.671-.983l5.603 3.113Z" clipRule="evenodd" />
               </svg>
@@ -363,7 +363,7 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
                   onChange={(e) => setSelectedLanguage(e.target.value)}
                   className="peer sr-only"
                 />
-                <span className="px-5 py-2 rounded-full text-sm poppins-medium bg-slate-800/60 text-slate-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:bg-slate-700 transition-all duration-300">
+                <span className="px-5 py-2 rounded-full text-sm poppins-medium bg-slate-800/60 text-slate-300 peer-checked:bg-slate-300 peer-checked:text-base-300 peer-checked:shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:bg-slate-700 transition-all duration-300">
                   {language}
                 </span>
               </label>

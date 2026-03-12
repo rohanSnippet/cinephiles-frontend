@@ -78,7 +78,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
 
   useEffect(() => {
     if (slides.length <= 1) return;
-    const interval = setInterval(() => handleNext(), 5000);
+    const interval = setInterval(() => handleNext(), 6000);
     return () => clearInterval(interval);
   }, [currentSlideIndex, slides.length]);
 
@@ -117,8 +117,11 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
         <div className="absolute top-0 left-0 w-full z-50">
           <Header />
         </div>
-        <div className="absolute inset-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent z-10"></div>
+        <div
+          className="absolute inset-0 w-full h-full bg-cover bg-center z-0"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070')" }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent z-10"></div>
         <div className="relative z-20 text-center px-6 max-w-3xl mx-auto translate-y-8">
           <h1 className="text-4xl sm:text-6xl md:text-7xl poppins-bold text-white tracking-tight leading-none mb-6 drop-shadow-2xl">
             Welcome to Cinephiles
