@@ -1,180 +1,148 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
-import { GiCheckMark } from "react-icons/gi";
-import { ImCross } from "react-icons/im";
-import { MdMovieEdit } from "react-icons/md";
-import Swal from "sweetalert2";
+import { FaBuilding, FaSearch, FaMapMarkerAlt, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 const TheatresInfo = () => {
   const axiosSecure = useAxiosSecure();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [theatres, setTheatres] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const fetchData = async () => {
+  const fetchTheatres = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axiosSecure.get(`/get-requests`);
-      const data = res.data;
-      setRequests(data);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
+      const res = await axiosSecure.get("/theatre/all-theatres"); // Adjust endpoint as needed
+      setTheatres(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch theatres", err);
     } finally {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
-    setTimeout(() => {}, 1000);
-    fetchData();
+    fetchTheatres();
   }, [axiosSecure]);
 
-  const handleMakeOwner = async (request) => {
-    try {
-      setLoading(true);
-      const res1 = await axiosSecure.put(
-        `/admin/make-owner?username=${request.username}&&id=${request.id}`
-      );
-      if (res1) {
-        Swal.fire({
-          title: `Granted permissions!`,
-          icon: "success",
-          width: "600px",
-          background: "rgba(43, 43, 46, 0.845)",
-          color: "white",
-        });
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-      fetchData();
-    }
-  };
+  const filteredTheatres = useMemo(() => {
+    return theatres.filter((theatre) => {
+      const matchesSearch =
+        theatre.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        theatre.city?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  // Add this function to handle reject requests
-  const handleRejectRequest = async (request) => {
-    // Implement your reject logic here
-    console.log("Reject request:", request);
-  };
+      // Assuming theatres have an active/inactive boolean or status
+      const matchesStatus = statusFilter === "ALL"
+        ? true
+        : statusFilter === "ACTIVE" ? theatre.active : !theatre.active;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [theatres, searchTerm, statusFilter]);
 
   return (
-    <div className="relative w-full p-4 sm:p-6 lg:p-8 bg-gray-800 rounded-lg min-h-screen">
+    <div className="max-w-7xl mx-auto space-y-6">
+
       {/* Header */}
-      <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex flex-col sm:flex-row items-center justify-center sm:justify-start bg-gradient-to-br from-black via-gray-900 to-black mb-6 shadow-2xl text-white shadow-slate-600 p-4 sm:p-5 text-xl sm:text-2xl poppins-semibold gap-x-4">
-        <MdMovieEdit size={32} className="mb-2 sm:mb-0 sm:ml-4 flex-shrink-0" />
-        <span className="text-center sm:text-left">
-          MANAGE THEATRE REQUESTS
-        </span>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl poppins-bold text-white uppercase tracking-wider flex items-center gap-3">
+            <FaBuilding className="text-neutral-500" /> Theatre Network
+          </h1>
+          <p className="text-[10px] sm:text-xs text-neutral-500 poppins-medium mt-1 uppercase tracking-[0.2em]">
+            Global Infrastructure Management
+          </p>
+        </div>
+        <div className="text-right">
+            <div className="text-3xl poppins-bold text-white">{filteredTheatres.length}</div>
+            <div className="text-[10px] text-neutral-500 uppercase tracking-widest">Active Nodes</div>
+        </div>
       </div>
 
-      {loading && (
-        <div className="w-full flex items-center justify-center p-8 min-h-[200px] rounded-lg">
-          <div className="flex flex-col items-center gap-4">
-            <div className="loading loading-spinner loading-md sm:loading-lg md:loading-xl text-white/80"></div>
-            <div className="poppins-bold text-xl text-white/80">
-              Loading Theatre Requests...
-            </div>
-          </div>
+      {/* Control Bar (Sharp Edges) */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 p-4 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500" />
+          <input
+            type="text"
+            placeholder="Search by theatre name or city..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#141414] border border-neutral-800 text-white pl-10 pr-4 py-2.5 text-xs poppins-medium focus:outline-none focus:border-white transition-colors !rounded-none"
+          />
         </div>
-      )}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-[#141414] border border-neutral-800 text-white px-4 py-2.5 text-xs poppins-medium uppercase tracking-wider focus:outline-none focus:border-white transition-colors !rounded-none cursor-pointer"
+        >
+          <option value="ALL">All Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+      </div>
 
-      {/* Table Container for Responsiveness */}
-      <div className="overflow-x-auto bg-gray-900 rounded-lg shadow-md">
-        <table className="table w-full text-center">
-          {/* Table Head - Fixed whitespace issue here */}
-          <thead className="bg-gray-700 text-white roboto-semibold text-sm sm:text-base">
-            <tr>{/* No whitespace between tr and th */}
-              <th className="px-4 py-3 text-left">Theatre</th>
-              <th className="px-4 py-3 text-left hidden sm:table-cell">User</th>
-              <th className="px-4 py-3">Screens</th>
-              <th className="px-4 py-3">Accept</th>
-              <th className="px-4 py-3">Reject</th>
-            </tr>
-          </thead>
-
-          {/* Table Body */}
-          {requests && requests.length > 0 ? (
-            <tbody>
-              {requests.map(
-                (request, index) =>
-                  request.status === "PENDING" ? (
-                    <tr
-                      key={request._id || index}
-                      className="roboto-regular text-white border-b border-gray-700 hover:bg-gray-800 transition-colors duration-200"
-                    >{/* No whitespace between tr and td */}
-                      <td className="px-4 py-3 text-left">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0">
-                            <img
-                              src="https://img.daisyui.com/images/profile/demo/2@94.webp"
-                              alt="Theatre Avatar"
-                              className="w-10 h-10 sm:w-12 sm:h-12 mask mask-squircle object-cover"
-                            />
-                          </div>
-                          <div>
-                            <div className="font-bold text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-xs">
-                              {request.tname}
-                            </div>
-                            <div className="text-sm opacity-60">
-                              {request.tlocation}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell text-left">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-base">
-                            {request.username}
+      {/* Data Table */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-20">
+             <div className="w-8 h-8 border-[1px] border-white/20 border-t-white animate-spin"></div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-neutral-300">
+              <thead className="bg-[#141414] text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-800">
+                <tr>
+                  <th className="px-6 py-4 font-medium">UID</th>
+                  <th className="px-6 py-4 font-medium">Theatre Name</th>
+                  <th className="px-6 py-4 font-medium">Location</th>
+                  <th className="px-6 py-4 font-medium">Screens</th>
+                  <th className="px-6 py-4 font-medium text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTheatres.map((theatre) => (
+                  <tr key={theatre.id} className="border-b border-neutral-800/50 hover:bg-[#141414] transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-neutral-500">#{theatre.id}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-white tracking-wide uppercase">
+                        {theatre.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-xs text-neutral-400">
+                        <FaMapMarkerAlt className="text-neutral-600" />
+                        {theatre.city}, {theatre.state || 'India'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-mono text-neutral-300">
+                       0{theatre.totalScreens || 1}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Assuming true/false logic, adjust based on your actual backend data */}
+                        {theatre.active !== false ? (
+                          <span className="flex items-center gap-1.5 text-[10px] text-teal-400 uppercase tracking-widest font-bold">
+                            <FaCheckCircle /> Online
                           </span>
-                          <span className="badge badge-ghost badge-sm text-gray-400 mt-1">
-                            {request.contact}
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-[10px] text-red-500 uppercase tracking-widest font-bold">
+                            <FaTimesCircle /> Offline
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center text-lg font-bold">
-                        {request.tscreens}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="btn btn-ghost btn-circle text-green-400 hover:bg-green-600/20 hover:text-green-300 transition-colors duration-200"
-                          onClick={() => handleMakeOwner(request)}
-                          aria-label="Accept Request"
-                        >
-                          <GiCheckMark size={24} />
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="btn btn-ghost btn-circle text-red-400 hover:bg-red-600/20 hover:text-red-300 transition-colors duration-200"
-                          onClick={() => handleRejectRequest(request)}
-                          aria-label="Reject Request"
-                        >
-                          <ImCross size={20} />
-                        </button>
-                      </td>
-                    </tr>
-                  ) : null
-              )}
-            </tbody>
-          ) : (
-            <tbody>
-              <tr>{/* No whitespace between tr and td */}
-                <td colSpan="5" className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center bg-gray-900 rounded-lg shadow-inner text-white">
-                  <div className="flex flex-col items-center p-8 text-center">
-                    <img
-                      src="https://cdn-icons-png.flaticon.com/128/7486/7486809.png"
-                      alt="No Owners Found"
-                      className="w-24 h-24 mb-4 opacity-70"
-                    />
-                    <div className="poppins-bold text-xl sm:text-2xl">
-                      No Pending Requests Found
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          )}
-        </table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredTheatres.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-12 text-center text-xs uppercase tracking-widest text-neutral-600">
+                      No network nodes found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

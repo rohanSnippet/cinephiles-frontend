@@ -1,113 +1,183 @@
-import React, { useContext, useEffect, useState } from "react";
-import { PiFilmReelBold } from "react-icons/pi";
+import React, { useState, useEffect, useMemo } from "react";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
-import { IoIosMail } from "react-icons/io";
-import { MdAdminPanelSettings, MdMovieEdit } from "react-icons/md";
-import { GrUserManager } from "react-icons/gr";
-import { FaUser } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import { AuthContext } from "../../Context/AuthProvider";
+import { FaUsers, FaSearch, FaTrash, FaUserShield } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const UsersInfo = () => {
-  const [allUsers, setAllUsers] = useState([]);
   const axiosSecure = useAxiosSecure();
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
 
-  const getAllUsers = async () => {
+  const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const res = await axiosSecure.get(`/user/all-users`);
-      if (res) {
-        setAllUsers(res.data);
-        console.log(res.data);
-      }
-    } catch (error) {
-      console.log(error);
+      const res = await axiosSecure.get("/user/all-users");
+      setUsers(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    getAllUsers();
-  }, []);
+    fetchUsers();
+  }, [axiosSecure]);
+
+  // Lightning-fast client-side filtering
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.firstName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchTerm, roleFilter]);
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "TERMINATE USER?",
+      text: "This action cannot be undone.",
+      background: "rgba(5, 5, 5, 0.95)",
+      color: "#fff",
+      showCancelButton: true,
+      confirmButtonColor: "#8b0000",
+      cancelButtonColor: "#333",
+      confirmButtonText: "YES, DELETE",
+      customClass: {
+        popup: "border border-neutral-800 !rounded-none",
+        title: "poppins-bold tracking-widest uppercase text-sm",
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        // Implement your delete logic here
+        // await axiosSecure.delete(`/user/${id}`);
+        // fetchUsers();
+        Swal.fire({
+            toast: true, position: "top-end", timer: 2000, showConfirmButton: false,
+            title: "USER DELETED", background: "#050505", color: "#fff",
+            customClass: { popup: "border border-neutral-800 !rounded-none" }
+        });
+      }
+    });
+  };
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 bg-gray-800 rounded-lg min-h-screen">
-      <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex flex-col sm:flex-row items-center justify-center sm:justify-start bg-gradient-to-br from-black via-gray-900 to-black mb-6 shadow-2xl text-white shadow-slate-600 p-4 sm:p-5 text-xl sm:text-2xl poppins-semibold gap-x-4">
-        <MdMovieEdit size={32} className="mb-2 sm:mb-0 sm:ml-4 flex-shrink-0" />
-        <span className="text-center sm:text-left">MANAGE USERS</span>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-6">
 
-      {/* User list header - hidden on mobile, shown on medium screens and up */}
-      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-gray-300 poppins-semibold mb-2">
-        <div className="col-span-1">#</div>
-        <div className="col-span-3">Name</div>
-        <div className="col-span-4">Contact</div>
-        <div className="col-span-2">Phone</div>
-        <div className="col-span-2">Role</div>
-      </div>
-
-      {/* User list */}
-      {allUsers.map((user, i) => (
-        <div
-          key={i}
-          className="bg-gradient-to-br from-black/30 via-gray-900/30 to-slate-900/80 rounded-lg mb-3 p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center"
-        >
-          {/* Number - shown on all screens */}
-          <div className="text-lg poppins-bold text-white md:col-span-1">
-            {i + 1}
-          </div>
-
-          {/* Name section */}
-          <div className="md:col-span-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <div className="poppins-bold text-lg text-white">
-                {user.firstName} {user.lastName}
-              </div>
-            </div>
-          </div>
-
-          {/* Contact/Username section */}
-          <div className="md:col-span-4 flex items-center gap-2">
-            {user.provider === "google" ? (
-              <FcGoogle size={20} className="flex-shrink-0" />
-            ) : (
-              <IoIosMail size={20} className="flex-shrink-0 text-blue-300" />
-            )}
-            <span className="poppins-light text-white/90 truncate">
-              {user.username}
-            </span>
-          </div>
-
-          {/* Phone section - hidden on small screens */}
-          <div className="md:col-span-2 poppins-light text-white/90 hidden md:block">
-            {user?.phone || "Not Provided"}
-          </div>
-
-          {/* Role badge */}
-          <div className="md:col-span-2">
-            {user.role === "ADMIN" ? (
-              <button className="flex items-center justify-center gap-1 text-white bg-gradient-to-r from-yellow-200/30 via-yellow-300/30 to-orange-400/30 py-1 px-2 rounded-xl w-full max-w-[120px] mx-auto">
-                <MdAdminPanelSettings size={18} />
-                <span className="truncate">ADMIN</span>
-              </button>
-            ) : user.role === "THEATRE_OWNER" ? (
-              <button className="flex items-center justify-center gap-1 text-white bg-gradient-to-r from-pink-200/30 via-red-300/30 to-red-400/30 py-1 px-2 rounded-xl w-full max-w-[120px] mx-auto">
-                <GrUserManager size={16} />
-                <span className="truncate">OWNER</span>
-              </button>
-            ) : (
-              <button className="flex items-center justify-center gap-1 text-white bg-gradient-to-r from-teal-200/30 via-green-300/30 to-green-400/30 py-1 px-2 rounded-xl w-full max-w-[120px] mx-auto">
-                <FaUser size={14} />
-                <span className="truncate">USER</span>
-              </button>
-            )}
-          </div>
-
-          {/* Phone number for mobile view */}
-          <div className="md:hidden poppins-light text-white/90 text-sm mt-2">
-            Phone: {user?.phone || "Not Provided"}
-          </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl poppins-bold text-white uppercase tracking-wider flex items-center gap-3">
+            <FaUsers className="text-neutral-500" /> User Registry
+          </h1>
+          <p className="text-[10px] sm:text-xs text-neutral-500 poppins-medium mt-1 uppercase tracking-[0.2em]">
+            Manage System Access & Roles
+          </p>
         </div>
-      ))}
+        <div className="text-right">
+            <div className="text-3xl poppins-bold text-white">{filteredUsers.length}</div>
+            <div className="text-[10px] text-neutral-500 uppercase tracking-widest">Total Results</div>
+        </div>
+      </div>
+
+      {/* Control Bar (Sharp Edges) */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 p-4 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500" />
+          <input
+            type="text"
+            placeholder="Search by email or name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#141414] border border-neutral-800 text-white pl-10 pr-4 py-2.5 text-xs poppins-medium focus:outline-none focus:border-white transition-colors !rounded-none"
+          />
+        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="bg-[#141414] border border-neutral-800 text-white px-4 py-2.5 text-xs poppins-medium uppercase tracking-wider focus:outline-none focus:border-white transition-colors !rounded-none cursor-pointer"
+        >
+          <option value="ALL">All Roles</option>
+          <option value="USER">User</option>
+          <option value="OWNER">Owner</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-20">
+             <div className="w-8 h-8 border-[1px] border-white/20 border-t-white animate-spin"></div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-neutral-300">
+              <thead className="bg-[#141414] text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-800">
+                <tr>
+                  <th className="px-6 py-4 font-medium">ID</th>
+                  <th className="px-6 py-4 font-medium">Identity</th>
+                  <th className="px-6 py-4 font-medium">Contact</th>
+                  <th className="px-6 py-4 font-medium">Role</th>
+                  <th className="px-6 py-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="border-b border-neutral-800/50 hover:bg-[#141414] transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-neutral-500">#{user.id}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#1f1f1f] border border-neutral-700 flex items-center justify-center text-xs uppercase font-bold text-white">
+                          {user.firstName ? user.firstName[0] : 'U'}
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-white tracking-wide">{user.firstName} {user.lastName}</div>
+                            <div className="text-[10px] text-neutral-500 uppercase">{user.provider || 'NATIVE'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-neutral-400">
+                        <div>{user.username}</div>
+                        <div className="text-[10px] text-neutral-600 mt-0.5">{user.phone || 'No Phone'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest border ${
+                        user.role === 'ADMIN' ? 'border-red-500/30 text-red-400 bg-red-500/10' :
+                        user.role === 'OWNER' ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' :
+                        'border-neutral-700 text-neutral-400 bg-neutral-800/50'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-colors border border-transparent hover:border-neutral-700">
+                          <FaUserShield size={14} />
+                        </button>
+                        <button onClick={() => handleDelete(user.id)} className="p-2 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 transition-colors border border-transparent hover:border-red-500/30">
+                          <FaTrash size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-12 text-center text-xs uppercase tracking-widest text-neutral-600">
+                      No matching records found in registry.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

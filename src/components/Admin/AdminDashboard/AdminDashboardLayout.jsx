@@ -1,223 +1,92 @@
-import React, { useContext } from "react";
-import { Outlet, Link } from "react-router-dom";
-import {
-  MdDashboard,
-  MdManageSearch,
-  MdDashboardCustomize,
-} from "react-icons/md";
-import {
-  FaQuestionCircle,
-  FaUsers,
-  FaBookmark,
-  FaPlusCircle,
-  FaRegUser,
-} from "react-icons/fa";
-import { BiCategory } from "react-icons/bi";
-import useAdmin from "../../Hooks/useAdmin";
-import Login from "../../Authentication/Login";
-import { AuthContext } from "../../Context/AuthProvider";
-// import { AuthContext } from "../../Context/AuthProvider";
-
-const sharedLinks = (
-  <>
-    <li className="mt-3">
-      <Link
-        to="/"
-        onClick={() => (document.getElementById("my-drawer-2").checked = false)}
-      >
-        <MdDashboard />
-        Home
-      </Link>
-    </li>
-    <li>
-      <Link
-        to="/owner-revenue"
-        onClick={() => (document.getElementById("my-drawer-2").checked = false)}
-      >
-        <BiCategory />
-        Revenue
-      </Link>
-    </li>
-    <li>
-      <Link
-        to="/owner-support"
-        onClick={() => (document.getElementById("my-drawer-2").checked = false)}
-      >
-        <FaQuestionCircle />
-        Customer support
-      </Link>
-    </li>
-  </>
-);
+import React, { useState } from "react";
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { FaBars, FaTimes, FaUsers, FaFilm, FaStore, FaBuilding, FaStar, FaHome } from "react-icons/fa";
 
 const AdminDashboardLayout = () => {
-   const { session } = useContext(AuthContext);
-  
-  const [isAdmin, isAdminLoading] = useAdmin();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  // Handle loading state if useAdmin is asynchronous
-  if (isAdminLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
-  }
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const navItems = [
+    { name: "Dashboard", path: "/admin", icon: <FaHome /> },
+    { name: "Movies", path: "/admin/movie-dashboard", icon: <FaFilm /> },
+    { name: "Users", path: "/admin/UsersInfo", icon: <FaUsers /> },
+    { name: "Theatres", path: "/admin/theatres-info", icon: <FaBuilding /> },
+    { name: "Owners", path: "/admin/OwnerInfo", icon: <FaStore /> },
+    { name: "Commercials", path: "/admin/featured", icon: <FaStar /> },
+  ];
 
   return (
-    <div>
-      {isAdmin ? (
-        <div className="drawer sm:drawer-open">
-          <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-          <div className="drawer-content flex flex-col sm:items-start sm:justify-start my-2 shadow-xl shadow-slate-300/50 rounded-lg bg-gradient-to-tl mx-2 from-base-200 to-slate-700">
-            {/* Page content here */}
-            <div className="flex items-center justify-between mx-4 py-2">
-              {" "}
-              {/* Added py-2 for vertical padding */}
-              <label
-                htmlFor="my-drawer-2"
-                className="btn btn-primary drawer-button md:hidden lg:hidden"
-              >
-                <MdDashboardCustomize className="text-xl" /> {/* Larger icon */}
-              </label>
-              <button className="btn rounded-full px-6 bg-green-600/80 hover:bg-red-500/80 hover:shadow-md hover:shadow-red-500/40 hover:border-none flex items-center gap-2 text-white sm:hidden">
-                {" "}
-                {/* Adjusted green color, added hover */}
-                <FaRegUser />
-                Logout
-              </button>
-            </div>
-            <div className=" md:mt-2 mx-2 flex-grow w-full overflow-y-auto">
-              {" "}
-              {/* Added flex-grow and overflow-y-auto for content scrolling */}
-              <Outlet />
-            </div>
-          </div>
-          <div className="drawer-side">
-            <label
-              htmlFor="my-drawer-2"
-              aria-label="close sidebar"
-              className="drawer-overlay"
-            ></label>
-            <ul className="menu p-4 w-80 min-h-full bg-base-100 text-base-content transform transition-transform duration-300 ease-in-out">
-              {" "}
-              {/* Added transition for smoother movement */}
-              {/* Sidebar content here */}
-              <li>
-                <Link
-                  to="/admin"
-                  className="flex justify-start mb-3"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  {/* Assuming you have a logo image, uncomment and add src */}
-                  {/* <img src="/path/to/your/logo.png" alt="Admin Logo" className="w-26 h-10" /> */}
-                  <span className="inline-flex items-center justify-center px-4 py-2 rounded-xl font-bold text-white text-lg bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-700 border-2 border-yellow-300/30 shadow-lg shadow-yellow-500/30 transform transition-all duration-200 hover:scale-105 hover:shadow-yellow-500/40 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-shine"></div>
-                    <svg
-                      className="w-6 h-6 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z"
-                        clipRule="evenodd"
-                      ></path>
-                    </svg>
-
-                    <span className="relative z-10 drop-shadow-md">
-                      ADMIN PANEL
-                    </span>
-
-                    <div className="absolute top-1 left-4 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    <div className="absolute bottom-2 right-6 w-1.5 h-1.5 bg-white/80 rounded-full animate-pulse delay-300"></div>
-                    <div className="absolute top-3 right-3 w-1 h-1 bg-white/70 rounded-full animate-pulse delay-700"></div>
-                  </span>
-
-                 {session && <img
-                    src={session?.picture}
-                    alt=""
-                    className="rounded-full w-10"
-                  />}
-                </Link>
-              </li>
-              <hr className="my-2 border-gray-300" /> {/* Better separator */}
-              <li className="mt-3">
-                <Link
-                  to="/admin"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  <MdDashboard />
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin/OwnerInfo"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  <FaBookmark />
-                  Manage Owners
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin/theatres-info"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  <MdManageSearch />
-                  Manage Theatre Requests
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin/movie-dashboard"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  <FaPlusCircle />
-                  Manage Movie
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/admin/UsersInfo"
-                  onClick={() =>
-                    (document.getElementById("my-drawer-2").checked = false)
-                  }
-                >
-                  <FaUsers />
-                  All Users
-                </Link>
-              </li>
-               <li>
-                  <Link
-                      to="/admin/featured"
-                      onClick={() =>
-                       (document.getElementById("my-drawer-2").checked = false)}
-                  >
-                                Featured Movies
-                              </Link>
-                            </li>
-              <hr className="my-2 border-gray-300" />
-              {/* shared nav links */}
-              {sharedLinks}
-            </ul>
-          </div>
-        </div>
-      ) : (
-        <Login />
+    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm"
+          onClick={toggleSidebar}
+        ></div>
       )}
+
+      {/* Sidebar - Sharp Borders, No Curves */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-neutral-800 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between h-16 px-6 border-b border-neutral-800 bg-[#0a0a0a]">
+          <span className="text-xl poppins-bold tracking-widest uppercase text-white">System</span>
+          <button onClick={toggleSidebar} className="lg:hidden text-neutral-400 hover:text-white transition-colors">
+            <FaTimes size={20} />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)] custom-scrollbar">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 text-sm poppins-medium transition-colors border-l-2 ${
+                  isActive
+                    ? "border-white bg-white/5 text-white"
+                    : "border-transparent text-neutral-500 hover:bg-white/5 hover:border-neutral-600 hover:text-white"
+                }`}
+              >
+                {item.icon}
+                <span className="uppercase tracking-wider text-xs">{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Navbar */}
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-[#0a0a0a] border-b border-neutral-800 z-30">
+          <div className="flex items-center gap-4">
+            <button onClick={toggleSidebar} className="lg:hidden text-neutral-400 hover:text-white transition-colors">
+              <FaBars size={20} />
+            </button>
+            <h2 className="text-xs sm:text-sm poppins-semibold text-neutral-300 uppercase tracking-widest">
+               Admin Control Center
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+             {/* Sharp Admin Avatar Placeholder */}
+             <div className="w-8 h-8 bg-[#141414] border border-neutral-700 flex items-center justify-center text-[10px] poppins-bold uppercase text-neutral-300">
+                AD
+             </div>
+          </div>
+        </header>
+
+        {/* Dynamic Page Content */}
+        <main className="flex-1 overflow-y-auto bg-[#050505] p-4 sm:p-6 lg:p-8 custom-scrollbar relative">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };

@@ -48,14 +48,23 @@ const Location = () => {
             currLocation: locationName,
           });
           if(resp?.status == 200){
-          Swal.fire({
+         Swal.fire({
+           toast: true,
+           position: "top-end",
            icon: "success",
-           title: `Location Updated to ${locationName}`,
-           timer: 1000,
+           title: `LOCATION : ${locationName.toUpperCase()}`,
+           timer: 2500,
            showConfirmButton: false,
-           background: "#111",
-           color: "#fff",
-           });
+           background: "rgba(5, 5, 5, 0.95)", // Almost solid deep black
+           color: "#e5e5e5", // Off-white (neutral-200) for less eye strain
+           iconColor: "rgba(255, 255, 255, 0.4)", // Muted, sophisticated white icon
+           customClass: {
+             // Sharp, professional box. Removed the glow. Added a deep structural black drop-shadow.
+             popup: "backdrop-blur-2xl border border-white/5 rounded-md shadow-[0_15px_40px_rgba(0,0,0,0.8)] px-4 py-3",
+             // Matches your loader's exact "CINEPHILES" text: uppercase, heavily tracked out, crisp, small
+             title: "poppins-medium text-[10px] sm:text-xs tracking-[0.2em] uppercase opacity-70 m-0 mt-1",
+           }
+         });
           }else{
               Swal.fire({
                        icon: "error",

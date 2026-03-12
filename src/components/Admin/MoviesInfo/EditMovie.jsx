@@ -322,21 +322,21 @@ const EditMovie = () => {
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-900 to-black border border-gray-800 rounded-xl p-4 mb-8 flex items-center shadow-2xl gap-4">
-          <RiMovieFill size={32} className="text-blue-500" />
-          <h1 className="text-2xl font-bold tracking-wider uppercase">Edit Movie: {selectedMovie.title}</h1>
+        <div className="bg-gradient-to-r from-gray-900 to-black border border-gray-800 rounded-none p-4 mb-8 flex items-center shadow-2xl gap-4">
+          <RiMovieFill size={32} className="text-indigo-200" />
+          <h1 className="text-2xl font-bold tracking-wider uppercase">Edit Movie &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {selectedMovie.title}</h1>
         </div>
 
         {/* Modal: Poster */}
         <dialog ref={posterModalRef} className="modal">
-          <div className="modal-box bg-gray-900 border border-gray-700 text-white">
+          <div className="modal-box bg-gray-900 border border-gray-700 text-white rounded-none">
             <h3 className="font-bold text-lg mb-4">Update Poster</h3>
             <MyDropzone onImageChange={handleImageChange} currentImage={posterImage} name="poster" onRemoveImage={removeImage} closeDialog={() => posterModalRef.current?.close()}/>
             <div className="divider before:bg-gray-700 after:bg-gray-700">OR URL</div>
             <TextField label="Image URL" value={posterImage} onChange={(e) => setPosterImage(e.target.value)} sx={textFieldStyles} />
             <div className="modal-action mt-6">
-              <button type="button" className="btn btn-error text-white" onClick={() => removeImage("poster")}>Remove</button>
-              <button type="button" className="btn btn-primary" onClick={() => posterModalRef.current?.close()}>Done</button>
+              <button type="button" className="btn btn-error text-white rounded-none" onClick={() => removeImage("poster")}>Remove</button>
+              <button type="button" className="btn bg-slate-100 text-base-300 hover:text-white rounded-none" onClick={() => posterModalRef.current?.close()}>Done</button>
             </div>
           </div>
         </dialog>
@@ -628,7 +628,7 @@ const EditMovie = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xl shadow-lg transform transition-all hover:scale-[1.01] active:scale-[0.99]">
+            <button type="submit" className="w-full py-4 bg-gradient-to-r from-slate-100 to-indigo-100 hover:from-slate-200 hover:to-indigo-200 text-base-300 rounded-none font-bold text-xl shadow-lg transform transition-all hover:scale-[1.01] active:scale-[0.99]">
               Save Movie Updates
             </button>
           </div>

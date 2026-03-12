@@ -1,18 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { PiFilmReelBold } from "react-icons/pi";
+import React, { useEffect, useState, useMemo } from "react";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
+import { FaStore, FaSearch, FaChevronDown, FaChevronUp, FaBuilding, FaMapMarkerAlt, FaPhoneAlt } from "react-icons/fa";
 import { IoIosMail } from "react-icons/io";
 
 const OwnersInfo = () => {
-  const [allOwners, setAllOwners] = useState([]);
   const axiosSecure = useAxiosSecure();
-  const [loading, setLoading] = useState(false);
+  const [allOwners, setAllOwners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Track which accordion is open
+  const [expandedOwnerId, setExpandedOwnerId] = useState(null);
 
   const getAllOwners = async () => {
     setLoading(true);
     try {
       const res = await axiosSecure.get(`/owner/get-owners`);
-      if (res) {
+      if (res && res.data) {
         setAllOwners(res.data);
       }
     } catch (error) {
@@ -23,138 +27,163 @@ const OwnersInfo = () => {
   };
 
   useEffect(() => {
-    setTimeout(() => {}, 3000);
     getAllOwners();
-  }, []);
+  }, [axiosSecure]);
+
+  // Lightning-fast client-side filtering
+  const filteredOwners = useMemo(() => {
+    if (!searchTerm) return allOwners;
+    return allOwners.filter((owner) => {
+      const searchLower = searchTerm.toLowerCase();
+      const fullName = `${owner.user.firstName || ""} ${owner.user.lastName || ""}`.toLowerCase();
+      const email = (owner.user.username || "").toLowerCase();
+      return fullName.includes(searchLower) || email.includes(searchLower);
+    });
+  }, [allOwners, searchTerm]);
+
+  const toggleExpand = (id) => {
+    setExpandedOwnerId(expandedOwnerId === id ? null : id);
+  };
 
   return (
-    // Outer container: Ensure it takes full available width and adds consistent horizontal padding
-    <div className="relative w-full p-4 sm:p-6 lg:p-8 bg-gray-800 rounded-lg min-h-screen">
+    <div className="max-w-7xl mx-auto space-y-6">
+
       {/* Header */}
-      <div className="ring-2 ring-gray-900 ring-offset-2 rounded-xl flex flex-col sm:flex-row items-center justify-center sm:justify-start bg-gradient-to-br from-black via-gray-900 to-black mb-6 shadow-2xl text-white shadow-slate-600 p-4 sm:p-5 text-xl sm:text-2xl poppins-semibold gap-x-4">
-        <PiFilmReelBold size={32} /> MANAGE OWNERS & THEATRES{" "}
-      </div>
-      {loading && (
-        <div className="w-full flex items-center justify-center p-8 min-h-[200px] rounded-lg">
-          <div className="flex flex-col items-center gap-4">
-            {" "}
-            {/* Added flex-col and gap for stacking */}
-            <div className="loading loading-spinner loading-md sm:loading-lg md:loading-xl text-white/80"></div>
-            <div className="poppins-bold text-xl text-white/80">
-              Loading owners...
-            </div>{" "}
-            {/* Added text-white for visibility */}
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl poppins-bold text-white uppercase tracking-wider flex items-center gap-3">
+            <FaStore className="text-neutral-500" /> Owner Directory
+          </h1>
+          <p className="text-[10px] sm:text-xs text-neutral-500 poppins-medium mt-1 uppercase tracking-[0.2em]">
+            Partner & Franchise Management
+          </p>
         </div>
-      )}
+        <div className="text-right">
+            <div className="text-3xl poppins-bold text-white">{filteredOwners.length}</div>
+            <div className="text-[10px] text-neutral-500 uppercase tracking-widest">Registered Partners</div>
+        </div>
+      </div>
 
-      {allOwners === null ||
-        (allOwners.length === 0 && (
-          <div className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center bg-gray-900 rounded-lg shadow-inner text-white">
-            <div className="flex flex-col items-center p-8 text-center">
-              <img
-                src="https://cdn-icons-png.flaticon.com/128/7486/7486809.png"
-                alt="No Owners Found"
-                className="w-24 h-24 mb-4 opacity-70"
-              />
-              <div className="poppins-bold text-xl sm:text-2xl">
-                No Owners Found
-              </div>
-            </div>
+      {/* Control Bar (Sharp Edges) */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 p-4 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500" />
+          <input
+            type="text"
+            placeholder="Search partners by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#141414] border border-neutral-800 text-white pl-10 pr-4 py-2.5 text-xs poppins-medium focus:outline-none focus:border-white transition-colors !rounded-none"
+          />
+        </div>
+      </div>
+
+      {/* Data Accordion/List */}
+      <div className="bg-[#0a0a0a] border border-neutral-800 overflow-hidden flex flex-col min-h-[500px]">
+        {loading ? (
+          <div className="flex-1 flex justify-center items-center">
+             <div className="w-8 h-8 border-[1px] border-white/20 border-t-white animate-spin"></div>
           </div>
-        ))}
+        ) : filteredOwners.length === 0 ? (
+          <div className="flex-1 flex flex-col justify-center items-center py-20 text-center">
+             <FaStore className="text-neutral-800 mb-4" size={48} />
+             <div className="text-xs uppercase tracking-widest text-neutral-600">No partners found.</div>
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {filteredOwners.map((owner, index) => {
+              const isExpanded = expandedOwnerId === (owner.user.id || index);
 
-      {/* All Theatres with Owners */}
-      {/* Ensure this container and its children take full width */}
-      <div className="grid grid-cols-1">
-        {allOwners.map((owner, i) => (
-          <div
-            key={owner.user._id || i}
-            className="collapse collapse-arrow mt-4 bg-gradient-to-br from-black/50 via-gray-900/40 to-slate-900 rounded-lg w-full overflow-hidden"
-          >
-            <input type="checkbox" className="min-h-12" />
-            <div className="collapse-title relative flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-y-2 ring-white/30 ring-1 w-full px-10 py-3 sm:py-4">
-              {/* Owner Name Section */}
-              <div className="flex items-center gap-3 flex-wrap min-w-0">
-                <div className="text-lg poppins-bold text-white flex-shrink-0">
-                  {i + 1}.
-                </div>
-                <div className="flex flex-wrap items-center gap-x-1 sm:gap-x-2 min-w-0">
-                  <span className="poppins-bold text-lg sm:text-xl text-white truncate max-w-full">
-                    {owner.user.firstName}
-                  </span>
-                  <span className="poppins-bold text-lg sm:text-xl text-white truncate max-w-full">
-                    {owner.user.lastName}
-                  </span>
-                </div>
-              </div>
+              return (
+                <div key={owner.user.id || index} className="border-b border-neutral-800/50 last:border-b-0">
 
-              {/* Contact Info (Mail & Phone) - Grouped for better responsiveness */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 py-1 flex-grow sm:flex-grow-0 sm:ml-auto">
-                {/* Username (Email) */}
-                <div className="flex items-center gap-1 poppins-light text-sm sm:text-md text-white/90 truncate max-w-[200px] sm:max-w-none">
-                  <IoIosMail size={20} className="flex-shrink-0" />
-                  {owner.user.username}
-                </div>
+                  {/* Accordion Header (Clickable) */}
+                  <div
+                    onClick={() => toggleExpand(owner.user.id || index)}
+                    className="p-4 sm:px-6 hover:bg-[#141414] cursor-pointer transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Avatar Square */}
+                      <div className="w-10 h-10 bg-[#1f1f1f] border border-neutral-700 flex items-center justify-center text-sm uppercase font-bold text-white flex-shrink-0">
+                        {owner.user.firstName ? owner.user.firstName[0] : 'O'}
+                      </div>
 
-                {/* Phone */}
-                <div className="poppins-light text-sm sm:text-md text-white/90 truncate max-w-[200px] sm:max-w-none">
-                  {owner.user.phone || "Contact Not Provided"}
-                </div>
-              </div>
-
-              {/* Theatre Count Section */}
-              <div className="flex items-center justify-end py-1 mt-2 sm:mt-0 sm:ml-4 flex-shrink-0">
-                <div className="poppins-semibold text-base sm:text-lg text-white whitespace-nowrap">
-                  {owner.theatres.length} Theatre(s)
-                </div>
-              </div>
-            </div>
-
-            {/* Collapse Content: Theatre List */}
-            <div className="collapse-content px-4 py-2  sm:px-6 w-full border-t border-white/10 pt-4">
-              {owner.theatres.length > 0 ? (
-                <div className="space-y-4">
-                  {" "}
-                  {/* Added space-y for consistent spacing */}
-                  {owner.theatres.map((theatre, index) => (
-                    <div
-                      key={theatre._id || index}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-md roboto-bold text-white/70 bg-gray-800/50 p-3 rounded-md border border-gray-700/50"
-                    >
-                      <div className="flex items-center gap-3 mb-1 sm:mb-0">
-                        <span className="flex-shrink-0 text-base">
-                          {index + 1}.
-                        </span>
-                        <div>
-                          <div className="text-white text-base sm:text-lg">
-                            {theatre.name}
-                          </div>
-                          <div className="roboto-light text-sm text-white/60">
-                            {theatre.city}
-                          </div>
+                      {/* Owner Info */}
+                      <div>
+                        <div className="text-sm font-bold text-white tracking-wide uppercase">
+                          {owner.user.firstName} {owner.user.lastName}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 mt-1 text-[10px] text-neutral-500 uppercase tracking-wider font-mono">
+                          <span className="flex items-center gap-1.5"><IoIosMail size={12}/> {owner.user.username}</span>
+                          <span className="hidden sm:inline">|</span>
+                          <span className="flex items-center gap-1.5"><FaPhoneAlt size={10}/> {owner.user.phone || "NO CONTACT"}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:ml-4">
-                        <span className="flex-shrink-0 roboto-regular text-sm text-white/80">
-                          Screens:
-                        </span>
-                        <span className="text-white">{theatre.tscreens}</span>
+                    </div>
+
+                    {/* Stats & Toggle */}
+                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto mt-2 sm:mt-0 border-t border-neutral-800 sm:border-0 pt-3 sm:pt-0">
+                      <div className="text-right">
+                        <div className="text-lg poppins-bold text-white leading-none">{owner.theatres?.length || 0}</div>
+                        <div className="text-[9px] text-neutral-500 uppercase tracking-widest mt-1">Theatres</div>
                       </div>
-                      <div className="roboto-regular text-sm mt-2 sm:mt-0 sm:ml-4">
-                        {theatre.contact || "No Contact Provided"}
+                      <div className="text-neutral-500">
+                        {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Accordion Content (Theatres List) */}
+                  {isExpanded && (
+                    <div className="bg-[#050505] border-t border-neutral-800 p-4 sm:p-6">
+                      <h3 className="text-[10px] text-neutral-500 poppins-semibold uppercase tracking-[0.2em] mb-4">
+                        Registered Infrastructure
+                      </h3>
+
+                      {owner.theatres && owner.theatres.length > 0 ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {owner.theatres.map((theatre, tIndex) => (
+                            <div key={theatre._id || tIndex} className="bg-[#0a0a0a] border border-neutral-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-neutral-600 transition-colors">
+
+                              <div className="flex items-start gap-3">
+                                <FaBuilding className="text-neutral-600 mt-1 flex-shrink-0" />
+                                <div>
+                                  <div className="text-xs font-bold text-white tracking-wide uppercase">{theatre.name}</div>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">
+                                    <FaMapMarkerAlt /> {theatre.city || "Unknown City"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-6 border-t border-neutral-800 sm:border-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
+                                <div className="text-center">
+                                  <div className="text-xs font-mono text-white">{String(theatre.tscreens || 0).padStart(2, '0')}</div>
+                                  <div className="text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5">Screens</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-xs font-mono text-white">{theatre.contact || "N/A"}</div>
+                                  <div className="text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5">Contact</div>
+                                </div>
+                              </div>
+
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-[#0a0a0a] border border-neutral-800 border-dashed p-6 text-center">
+                          <div className="text-[10px] text-neutral-500 uppercase tracking-widest">
+                            No theatres mapped to this partner.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
-              ) : (
-                <div className="text-white/70 text-center py-4 roboto-light">
-                  No theatres registered for this owner.
-                </div>
-              )}
-            </div>
+              );
+            })}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
