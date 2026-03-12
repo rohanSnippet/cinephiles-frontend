@@ -5,11 +5,13 @@ import { FiX } from "react-icons/fi";
 import { locationHierarchy } from "../Services/Locations";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import Swal from "sweetalert2";
+import Loading from "./Loading"
 
 const Location = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(locationHierarchy);
+  const [isLoading, setIsLoading] = useState(false);
 
   const axiosSecure = useAxiosSecure(); // ADDED THIS
   const username = localStorage.getItem("username"); // ADDED THIS
@@ -37,6 +39,7 @@ const Location = () => {
     // 2. If User is Logged In, update the Database in the background!
     if (username) {
       try {
+        setIsLoading(true)
         const res = await axiosSecure.get(`/user?username=${username}`);
         console.log(res.data)
         const userId = res.data?.id;
@@ -44,7 +47,6 @@ const Location = () => {
          const resp = await axiosSecure.put(`/user/update-location/${userId}`, {
             currLocation: locationName,
           });
-
           if(resp?.status == 200){
           Swal.fire({
            icon: "success",
@@ -67,12 +69,15 @@ const Location = () => {
         }
       } catch (err) {
         console.error("Failed to sync new location to DB", err);
+      }finally{
+      setIsLoading(false)
       }
     }
 
     navigate(-1);
   };
 
+ if(isLoading) return <Loading/>;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-10 px-4 pb-20 relative">
