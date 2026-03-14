@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { MdDashboard, MdOutlineMovieFilter, MdMenu, MdClose } from "react-icons/md";
 import { BiHomeAlt } from "react-icons/bi";
@@ -11,10 +11,30 @@ import { baseURL, frontURL } from "../Services/URL";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 
 const OwnerDashboardLayout = () => {
-  const { session, setSession, signOut } = useContext(AuthContext);
+  const { session, signOut, userData } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
   const axiosSecure = useAxiosSecure();
+  const[user, setUser] = useState(null);
+  const[image, setImage] = useState(null);
+
+   useEffect(() => {
+        const getUser = async () => {
+          try {
+            const res = await axiosSecure.get(`/user?username=${userData?.username}`);
+            console.log(res.data)
+            if (res.data){
+                setUser(res.data);
+                setImage(res.data.profile || null);
+            }
+          } catch (error) {
+            console.error("Error fetching user:", error);
+          }
+        };
+        if (userData.username) {
+          getUser();
+        }
+      }, [userData.username, axiosSecure]);
 
   // Sidebar State: expanded (true) or collapsed into icons (false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -139,8 +159,8 @@ const OwnerDashboardLayout = () => {
 
           {/* User Avatar */}
           <div className="flex items-center gap-3">
-            {session && (
-              <img src={session?.picture} alt="User" className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg object-cover" />
+            {(session || image )&& (
+              <img src={image || session?.picture} alt="User" className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg object-cover" />
             )}
           </div>
         </header>
