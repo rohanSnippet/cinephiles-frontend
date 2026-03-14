@@ -169,22 +169,14 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
 
           </div>
         </div>
-
-        {/* --- DEEP CINEMATIC OVERLAYS (No Box) --- */}
-        {/* 1. Heavy bottom gradient for text readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent z-10 shadow-3xl shadow-black"></div>
-        {/* 2. Heavy left-side gradient to ground the text horizontally */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
-
-        {/* --- FLOATING CINEMATIC TEXT (Matched to active slide layout) --- */}
         <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
           <div className="animate-fade-in-up">
 
             <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
               Welcome to Cinephiles
             </span>
-
-            {/* Massive Typography Treatment */}
             <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] poppins-bold text-white tracking-tighter leading-none mb-4 drop-shadow-2xl uppercase">
               {rawCity}
             </h1>
@@ -208,8 +200,8 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
     );
   }
 
-  // ==========================================
-  // MAIN CAROUSEL UI
+  // ============================
+  //MAIN CAROUSEL ui
   // ==========================================
   return (
     <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden">
