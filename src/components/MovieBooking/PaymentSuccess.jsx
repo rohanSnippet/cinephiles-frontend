@@ -1,79 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import useAxiosSecure from "../Hooks/AxiosSecure";
+import React, { useEffect, useState, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import useAxiosSecure from '../Hooks/AxiosSecure';
+import Swal from 'sweetalert2'; // FIX: Imported Swal
+import { FaCheckCircle, FaTimesCircle, FaTicketAlt, FaHome } from 'react-icons/fa';
 
-const PaymentSuccess = ({ fallbackPath = "/" }) => {
+const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
-  const orderId = searchParams.get("orderId");
-  const [status, setStatus] = useState("loading"); // 'loading', 'success', 'failed'
-  const [message, setMessage] = useState("");
-  const axiosSecure = useAxiosSecure();
   const navigate = useNavigate();
-  const [selectedData, setSelectedData] = useState(null);
-  const [unlockAttempted, setUnlockAttempted] = useState(false); // To prevent multiple unlock attempts
+  const axiosSecure = useAxiosSecure();
 
-  // Load booking data from sessionStorage on component mount
-  useEffect(() => {
-    if (sessionStorage.getItem("bookingData") != null) {
-      setSelectedData(JSON.parse(sessionStorage.getItem("bookingData")));
-      console.log(JSON.parse(sessionStorage.getItem("bookingData")))
-    }
-  }, []); // Empty dependency array means this runs once on mount
+  // Extract order_id from the URL (handles both casing variations)
+  const orderId = searchParams.get("order_id") || searchParams.get("orderId");
 
-  // Function to unlock seats
-  const unlockSeats = useCallback(async () => {
-    if (!selectedData || unlockAttempted) {
-      return;
-    }
-    setUnlockAttempted(true); // Mark that an unlock attempt has been made
+  const [status, setStatus] = useState("verifying"); // 'verifying', 'success', 'failed'
+  const [bookingDetails, setBookingDetails] = useState(null);
+  const [message, setMessage] = useState("");
+  const verifyAttempted = useRef(false);
 
-    console.log("Attempting to unlock seats:", selectedData);
-    try {
-      const response = await axiosSecure.delete(
-        `/bookings/unlock-seats?showId=${selectedData?.selectedData?.showId}&user=${selectedData?.selectedData?.user}`
-      );
-      const ok = response.data === "Seats unlocked using unlock seats....";
-
-      if (ok) {
-        Swal.fire({
-          icon: "warning",
-          title: "Booking Failed!",
-          text: "Your transaction is failed. The selected seats have been released.",
-          timer: 2000,
-          showConfirmButton: false,
-        }).then(() => {
-          sessionStorage.removeItem("bookingData"); // Corrected typo
-          navigate(fallbackPath, { replace: true, state:{item:movie} }); // Removed undefined 'movie'
-        });
-      } else {
-        console.warn("Unlock seats response not 'ok':", response.data);
-        Swal.fire({
-          icon: "warning",
-          title: "Booking Interrupted!",
-          text: "Your booking could not be completed. Please try again.",
-          timer: 2000,
-          showConfirmButton: false,
-        }).then(() => {
-          sessionStorage.removeItem("bookingData"); // Corrected typo
-          navigate(fallbackPath, { replace: true, state:{item:movie} }); // Removed undefined 'movie'
-        });
-      }
-    } catch (error) {
-      console.error("Unlock seats failed:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error!",
-        text: "Could not release seats. Please check your network.",
-        timer: 2000,
-        showConfirmButton: false,
-      }).then(() => {
-        sessionStorage.removeItem("bookingData"); // Corrected typo
-        navigate(fallbackPath, { replace: true, state:{item:movie} }); // Removed undefined 'movie'
-      });
-    }
-  }, [selectedData, axiosSecure, navigate, fallbackPath, unlockAttempted]);
-
-  // Effect for verifying payment
   useEffect(() => {
     if (!orderId) {
       setStatus("failed");
@@ -81,65 +24,133 @@ const PaymentSuccess = ({ fallbackPath = "/" }) => {
       return;
     }
 
+    const handleFailure = async (errMsg) => {
+        setStatus("failed");
+        setMessage(errMsg);
+
+        // FIX: Securely cancel seats using the correct endpoint in the background
+        try {
+          const bookingDataStr = sessionStorage.getItem("bookingData");
+          if (bookingDataStr) {
+            const bData = JSON.parse(bookingDataStr);
+            const sData = bData.selectedData;
+
+            if (sData) {
+              await axiosSecure.delete(`/bookings/cancel-seats?showId=${sData.showId}&user=${sData.user}`);
+            }
+            sessionStorage.removeItem("bookingData");
+          }
+        } catch (e) {
+          console.error("Failed to release seats:", e);
+        }
+    };
+
     const verifyPayment = async () => {
+      // Prevent double API calls in React Strict Mode
+      if (verifyAttempted.current) return;
+      verifyAttempted.current = true;
+
       try {
         const response = await axiosSecure.get(`/api/payment/verify/${orderId}`);
-        console.log("Payment verification response:", response.data);
-        const res = response.data;
-        if (res.success) {
-          setStatus("success");
-          setMessage(res.message);
-          // Clear booking data on successful payment
-          sessionStorage.removeItem("bookingData");
-          navigate('/booking-confirmation', { state: { res } });
+
+        if (response.data && response.data.success) {
+           setStatus("success");
+           setBookingDetails(response.data);
+           sessionStorage.removeItem("bookingData");
         } else {
-          setStatus("failed");
-          setMessage(res.message); // Corrected 'data.message' to 'res.message'
+           handleFailure(response.data.message || "Payment verification failed.");
         }
-      } catch (err) {
-        console.error("Payment verification failed:", err);
-        setStatus("failed");
-        setMessage("Error verifying payment. Please contact support.");
+      } catch (error) {
+        console.error("Verification error:", error);
+        handleFailure("Error verifying payment. Please contact support.");
       }
     };
 
     verifyPayment();
-  }, [orderId, axiosSecure, navigate]); // Added axiosSecure and navigate to dependencies
-
-  // Effect to trigger unlockSeats only when status becomes 'failed'
-  useEffect(() => {
-    if (status === "failed" && !unlockAttempted) {
-      unlockSeats();
-    }
-  }, [status, unlockSeats, unlockAttempted]);
-
-
-  if (status === "loading")
-    return (
-      <div className="h-screen w-screen flex flex-col justify-center items-center bg-gray-900 text-white">
-        <span className="loading loading-ring loading-xl text-center text-blue-500 mb-4"></span>
-        <p className="poppins-bold text-lg text-center">Booking Your Show ...</p>
-      </div>
-    );
+  }, [orderId, axiosSecure]);
 
   return (
-    <div className="payment-result flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      {status === "success" ? (
-        <div className="bg-gray-800 p-8 rounded-lg shadow-xl text-center">
-          <h2 className="text-4xl font-bold mb-4 text-green-500">✅ Payment Successful</h2>
-          <p className="text-lg mb-6">{message}</p>
-          {/* Removed redundant Link as navigate handles redirection */}
-          <p className="text-md text-gray-400">Redirecting to booking confirmation...</p>
-        </div>
-      ) : status == "failed" ? unlockSeats().then(()=>navigate("/")):(
-        <div className="bg-gray-800 p-8 rounded-lg shadow-xl text-center">
-          <h2 className="text-4xl font-bold mb-4 text-red-500">❌ Payment Failed</h2>
-          <p className="text-lg mb-6">{message}</p>
-          <Link to={fallbackPath} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition duration-300">
-            Go to Home Page
-          </Link>
-        </div>
-      )}
+    <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-6 relative overflow-hidden selection:bg-white/20 font-poppins">
+
+      {/* Background Cinematic Glows */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vh] bg-white/[0.02] rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="w-full max-w-md bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 sm:p-12 text-center shadow-[0_30px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] relative z-10">
+
+        {/* --- STATE 1: VERIFYING --- */}
+        {status === "verifying" && (
+          <div className="flex flex-col items-center">
+             <div className="relative flex justify-center items-center mb-8">
+                <div className="w-20 h-20 border-2 border-white/10 border-t-white rounded-full animate-spin"></div>
+                <FaTicketAlt size={24} className="absolute text-white/50" />
+             </div>
+             <h2 className="text-2xl poppins-bold text-white mb-2">Verifying Payment</h2>
+             <p className="text-sm text-neutral-400 poppins-light">Please do not refresh or close this page.</p>
+          </div>
+        )}
+
+        {/* --- STATE 2: SUCCESS --- */}
+        {status === "success" && (
+          <div className="flex flex-col items-center animate-fade-in-up">
+             <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/30 mb-8 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                <FaCheckCircle size={36} className="text-emerald-400" />
+             </div>
+             <h2 className="text-3xl poppins-bold text-white mb-2">Booking Confirmed!</h2>
+             <p className="text-sm text-neutral-400 poppins-light mb-8">Your tickets have been securely booked. A confirmation email has been sent.</p>
+
+             {bookingDetails && (
+               <div className="w-full bg-black/40 rounded-2xl p-5 border border-white/5 mb-8 text-left">
+                  <div className="text-[10px] uppercase tracking-widest text-neutral-500 mb-1 poppins-medium">Booking ID</div>
+                  <div className="text-sm font-mono text-neutral-300 mb-4">{bookingDetails.bookingId}</div>
+
+                  <div className="text-[10px] uppercase tracking-widest text-neutral-500 mb-1 poppins-medium">Movie</div>
+                  <div className="text-sm poppins-semibold text-white mb-4">{bookingDetails.movieTitle}</div>
+
+                  <div className="flex justify-between">
+                     <div>
+                        <div className="text-[10px] uppercase tracking-widest text-neutral-500 mb-1 poppins-medium">Seats</div>
+                        <div className="text-sm poppins-semibold text-white">
+                            {bookingDetails.seats?.replace(/\[|\]/g, '')}
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <div className="text-[10px] uppercase tracking-widest text-neutral-500 mb-1 poppins-medium">Amount</div>
+                        <div className="text-sm font-mono text-white">&#x20B9;{bookingDetails.price?.toFixed(2)}</div>
+                     </div>
+                  </div>
+               </div>
+             )}
+
+             <button
+                onClick={() => navigate("/")}
+                className="w-full py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-neutral-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] poppins-semibold flex justify-center items-center gap-2"
+             >
+                <FaHome size={16} /> Return to Home
+             </button>
+          </div>
+        )}
+
+        {/* --- STATE 3: FAILED --- */}
+        {status === "failed" && (
+          <div className="flex flex-col items-center animate-fade-in-up">
+             <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/30 mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                <FaTimesCircle size={36} className="text-red-400" />
+             </div>
+             <h2 className="text-3xl poppins-bold text-white mb-2">Payment Failed</h2>
+             <p className="text-sm text-neutral-400 poppins-light mb-8">{message}</p>
+
+             <div className="flex w-full gap-4">
+                <button
+                  onClick={() => navigate("/")}
+                  className="flex-1 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-neutral-200 transition-all poppins-semibold"
+                >
+                   Home
+                </button>
+             </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

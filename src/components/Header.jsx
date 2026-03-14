@@ -22,11 +22,11 @@ const Header = () => {
   const axiosSecure = useAxiosSecure();
   const city = useCity();
   const scrollDirection = useScrollDirection();
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
+
   const username = localStorage.getItem("username");
   const [user, setUser] = useState(null);
 
@@ -63,12 +63,9 @@ const Header = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${baseURL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (response.ok) {
+      const response = await axiosSecure.post(`/auth/logout`);
+      console.log(response)
+      if (response.status == 200) {
         localStorage.removeItem("access-token");
         localStorage.removeItem("username");
         setSession(null);
@@ -83,7 +80,8 @@ const Header = () => {
         });
 
         setIsMobileMenuOpen(false);
-        setTimeout(() => { window.location.href = frontURL; }, 1000);
+        navigate(-1);
+        //setTimeout(() => { window.location.href = frontURL; }, 1000);
       }
     } catch (error) {
       console.error("An error occurred during logout", error);
@@ -121,8 +119,8 @@ const Header = () => {
 
         {/* Mobile Search Toggle */}
         <div className="md:hidden flex items-center justify-end flex-1 pr-4 relative z-10">
-          <button 
-            onClick={toggleSearch} 
+          <button
+            onClick={toggleSearch}
             className="p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all"
           >
             <IoSearchOutline size={22} />
@@ -138,7 +136,7 @@ const Header = () => {
 
         {/* Right Section: Location and User Actions (flex-1 ensures perfect center alignment for the search bar) */}
         <div className="hidden md:flex items-center justify-end gap-4 lg:gap-6 flex-1 relative z-10">
-          
+
           {/* Location Selector */}
           {city ? (
             <Link
@@ -151,8 +149,8 @@ const Header = () => {
               <MdKeyboardArrowDown className="text-white/60 group-hover:text-white transition-colors" size={18} />
             </Link>
           ) : (
-            <Link 
-              to="/location" 
+            <Link
+              to="/location"
               className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all text-white/80 hover:text-white"
             >
               <MdOutlineAddLocationAlt size={16} />
@@ -220,7 +218,7 @@ const Header = () => {
                 <Link to="/update-profile" className="p-3 text-white poppins-light hover:bg-white/10 rounded-lg transition-colors">Edit Profile</Link>
                 <Link to="/update-profile" className="p-3 text-white poppins-light hover:bg-white/10 rounded-lg transition-colors">Your Wishlist</Link>
                 <Link to="/Orders" className="p-3 text-white poppins-light hover:bg-white/10 rounded-lg transition-colors">Your Orders</Link>
-                
+
                 {(!isOwner && !isAdmin) && (
                   <Link to="/theatre-request" className="p-3 text-white poppins-light hover:bg-white/10 rounded-lg transition-colors">List Your Shows</Link>
                 )}
@@ -230,8 +228,8 @@ const Header = () => {
                 {isAdmin && (
                   <Link to="/admin" className="p-3 text-white poppins-light hover:bg-white/10 rounded-lg transition-colors">Admin Dashboard</Link>
                 )}
-                
-                <button 
+
+                <button
                   onClick={handleLogout}
                   className="mt-4 p-3 w-full text-left text-red-400 poppins-medium hover:bg-red-500/10 rounded-lg transition-colors"
                 >
