@@ -12,18 +12,11 @@ export const locationHierarchy = [
       cities: [
         // Main Hubs
         "Mumbai", "Navi Mumbai", "Thane",
-
         // Individual Suburbs/Towns
         "Kalyan", "Dombivli", "Dombivali", "Badlapur", "Ambernath", "Ulhasnagar",
         "Vasai", "Virar", "Nalasopara", "Palghar", "Boisar",
         "Mira Road", "Bhayandar", "Bhiwandi",
-        "Panvel", "Kharghar", "Vashi", "Belapur",
-
-        // Combined Municipal Corporation Names (Returned by Live API)
-        "Kalyan-Dombivli", "Kalyan-Dombivali",
-        "Vasai-Virar",
-        "Mira-Bhayandar",
-        "Bhiwandi-Nizampur"
+        "Panvel", "Kharghar", "Vashi", "Belapur"
       ]
     },
   {
@@ -54,24 +47,37 @@ export const locationHierarchy = [
 
 /**
  * Returns an array of cities to send to your Spring Boot Backend.
- * If user selects "Mumbai Region", it returns ["Mumbai", "Thane", "Kalyan"...]
- * If user selects "Kalyan", it just returns ["Kalyan"]
+ * Handles "All Mumbai" by stripping "All " and returning the full array.
  */
 export const getApiCities = (selectedName) => {
   if (!selectedName) return [];
-  const regionMatch = locationHierarchy.find(loc => loc.region === selectedName);
+
+  // Clean the "All " prefix if the user selected the macro region button
+  const cleanName = selectedName.startsWith("All ")
+    ? selectedName.replace("All ", "")
+    : selectedName;
+
+  const regionMatch = locationHierarchy.find(loc => loc.region === cleanName);
+
+  // If a region is found, return all its sub-cities
   if (regionMatch) return regionMatch.cities;
-  return [selectedName];
+
+  // Otherwise, it's just a single city
+  return [cleanName];
 };
 
 /**
  * Finds the Mega-Region/State to fetch the correct Featured/Hero Movies.
- * If user is in "Kalyan", it returns "Maharashtra"
  */
 export const getStateForHero = (selectedName) => {
   if (!selectedName) return "GLOBAL";
+
+  const cleanName = selectedName.startsWith("All ")
+    ? selectedName.replace("All ", "")
+    : selectedName;
+
   const match = locationHierarchy.find(loc =>
-    loc.region === selectedName || loc.cities.includes(selectedName)
+    loc.region === cleanName || loc.cities.includes(cleanName)
   );
   return match ? match.state : "GLOBAL";
 };

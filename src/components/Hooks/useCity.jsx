@@ -6,6 +6,52 @@ const useCity = () => {
   const axiosSecure = useAxiosSecure();
   const username = localStorage.getItem("username");
 
+ const normalizeLocation = (geoApiResponse) => {
+   if (!geoApiResponse || !geoApiResponse.address) return "Unknown Location";
+
+   const address = geoApiResponse.address;
+
+   // 1. Get the base city name provided by the API
+   let baseCity = address?.city || address?.town || address?.village || "";
+
+   // 2. SMART HYPHEN MATCHER (Case-Insensitive)
+   if (baseCity.includes("-")) {
+     const cityParts = baseCity.split("-").map(part => part.trim());
+
+     // Check against 'county'
+     if (address.county) {
+       const countyLower = address.county.toLowerCase();
+       const matchedCity = cityParts.find(part =>
+         countyLower.includes(part.toLowerCase())
+       );
+       // We return the original capitalized 'part' so your UI still looks nice
+       if (matchedCity) return matchedCity;
+     }
+
+     // Check against 'borough'
+     if (address.borough) {
+       const boroughLower = address.borough.toLowerCase();
+       const matchedCity = cityParts.find(part =>
+         boroughLower.includes(part.toLowerCase())
+       );
+       if (matchedCity) return matchedCity;
+     }
+   }
+
+   // 3. FALLBACK: Extract from Indian "Subdistrict" format
+   if (address.county && address.county.toLowerCase().includes("subdistrict")) {
+     // We use a case-insensitive regex replace here to be extra safe
+     const extractedFromCounty = address.county.replace(/ subdistrict/i, "").trim();
+
+     if (!baseCity || baseCity.includes("-")) {
+       return extractedFromCounty;
+     }
+   }
+
+   // 4. Return the cleaned base city
+   return baseCity || "Unknown Location";
+ };
+
   const updateBackendLocation = async (id, newCity) => {
     if (!id || !newCity) return;
     try {
@@ -24,7 +70,13 @@ const useCity = () => {
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
-          const detectedCity = data?.address?.city || data?.address?.town || data?.address?.village;
+          console.log(data)
+
+          const detectedCity = normalizeLocation(data);
+
+          console.log("Normalized City:", detectedCity);
+
+         // const detectedCity = data?.address?.city || data?.address?.town || data?.address?.village;
 
           if (detectedCity) {
             setCity(detectedCity);
