@@ -146,10 +146,10 @@ const Orders = () => {
           <div>
             <h1 className="text-3xl sm:text-4xl poppins-bold tracking-widest uppercase text-white mb-2 flex items-center gap-3">
                <FaTicketAlt className="text-neutral-600" />
-               ADMISSION TICKETS
+               YOUR ORDERS
             </h1>
             <p className="text-xs text-neutral-500 poppins-medium uppercase tracking-[0.2em]">
-              Passenger: <span className="text-white">{username?.split('@')[0]}</span>
+              USER: <span className="text-white">{username?.split('@')[0]}</span>
             </p>
           </div>
 
