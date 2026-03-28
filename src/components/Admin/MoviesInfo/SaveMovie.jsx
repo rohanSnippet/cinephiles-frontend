@@ -285,21 +285,6 @@ const SaveMovie = () => {
       setValue("cast", updatedCast);
     }
   };
-  /* const removeImage = (name) => {
-    if (name === "poster") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        poster: "",
-      }));
-      setPosterImage("");
-    } else if (name === "banner") {
-      setMovie((prevMovie) => ({
-        ...prevMovie,
-        banner: "",
-      }));
-      setBannerImage("");
-    }
-  }; */
 
   const removeImage = (name) => {
   if (name === 'poster') {

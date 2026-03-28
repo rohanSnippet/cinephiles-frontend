@@ -25,9 +25,9 @@ const MyDropzone = ({ onImageChange, currentImage, name, onRemoveImage, closeDia
           const res = await uploadImageToCloud(file, "cinephiles-movie-poster");
           const cloudinaryData = await res.json();
           
-          if (cloudinaryData.url) {
-            onImageChange(cloudinaryData.url, name);
-            console.log("Uploaded URL:", cloudinaryData.url);
+          if (cloudinaryData.secure_url) {
+            onImageChange(cloudinaryData.secure_url, name);
+            console.log("Uploaded secure_url:", cloudinaryData.secure_url);
             
             // FIXED: Optional chaining to prevent crash if prop is missing
             closeDialog?.(); 
