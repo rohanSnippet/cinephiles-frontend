@@ -8,6 +8,8 @@ import userPlaceholder from "../../../assets/user_2.png";
 import { AuthContext } from "../../Context/AuthProvider";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import useCity from "../../Hooks/useCity";
+// IMPORT THE LOCATION MAPPER
+import { getApiCities } from "../../Services/Locations";
 
 // Framer Motion Variants
 const fadeInUp = {
@@ -28,7 +30,7 @@ const MovieDetails = () => {
   const axiosSecure = useAxiosSecure();
   const city = useCity();
 
-  // Extract state passed from router (e.g., from SearchBar click)
+  // Extract state passed from router
   const { item: locationItem, previousPath } = location.state || {};
 
   // Component State
@@ -39,44 +41,47 @@ const MovieDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState("All");
 
-  // 1. Handle Navigation/Route Changes (The Search Bar Fix)
   useEffect(() => {
     if (locationItem) {
       setItem(locationItem);
-      // Reset images when a new movie is loaded
       setCastImages({});
       setCrewImages({});
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [locationItem]);
 
-  // Memoize release date
   const releaseDateObj = useMemo(() => {
     return item ? new Date(item.releaseDate) : null;
   }, [item?.releaseDate]);
 
-  // 2. Data Fetching (Incremental/Streaming Logic)
   useEffect(() => {
     if (!item) return;
 
-    // Check Ticket Availability
+    // Check Ticket Availability across the MACRO-REGION
     const checkAvl = async () => {
-      if (!item?.id || (!userData?.currLocation && !city)) return;
+      const currentLocation = userData?.currLocation || city;
+
+      if (!item?.id || !currentLocation) return;
+
       try {
         setIsLoading(true);
+
+        // Transform "Mumbai" into "Mumbai,Navi Mumbai,Thane,Kalyan..."
+        const mappedCities = getApiCities(currentLocation).join(",");
+
         const res = await axiosSecure.get(
-          `/show/by-city?movieId=${item.id}&cities=${userData.currLocation || city}`
+          `/show/by-city?movieId=${item.id}&cities=${mappedCities}`
         );
         setIsShowAvl(res.data?.length > 0);
       } catch (err) {
         console.error("Availability error:", err);
-      }finally{
-       setIsLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     };
     checkAvl();
 
-    // Fetch Cast Incrementally (Fire & Forget)
+    // Fetch Cast Incrementally
     if (item.cast) {
       Object.keys(item.cast).forEach(async (actorName) => {
         try {
@@ -90,7 +95,7 @@ const MovieDetails = () => {
       });
     }
 
-    // Fetch Crew Incrementally (Fire & Forget)
+    // Fetch Crew Incrementally
     if (item.crew) {
       item.crew.forEach(async (crewMember) => {
         try {
@@ -109,7 +114,6 @@ const MovieDetails = () => {
     navigate("/all-shows", { state: { item } });
   };
 
-  // Fallback for missing movie data
   if (!item) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0f1a]">
@@ -145,7 +149,6 @@ const MovieDetails = () => {
 
       {/* Hero Banner Section */}
       <div className="relative w-full min-h-[55vh] sm:min-h-[60vh] lg:min-h-[75vh] flex flex-col justify-end">
-        {/* Background Layer */}
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <motion.div
             initial={{ scale: 1.05 }}
@@ -156,15 +159,11 @@ const MovieDetails = () => {
               backgroundImage: item.banner ? `url('${item.banner}')` : item.poster ? `url('${item.poster}')` : "gray",
             }}
           />
-          {/* Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-[#0a0f1a]/80 lg:via-[#0a0f1a]/60 to-transparent"></div>
           <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#0a0f1a] via-[#0a0f1a]/80 to-transparent w-3/4"></div>
         </div>
 
-        {/* Content Container */}
         <div className="relative z-10 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-12 pb-8 lg:pb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-8 lg:gap-12">
-
-          {/* Left/Top Content: Details */}
           <motion.div
             variants={fadeInUp}
             initial="hidden"
@@ -178,29 +177,26 @@ const MovieDetails = () => {
               {item.title.toUpperCase()}
             </h1>
 
-            {/* Metadata Badges */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6 poppins-medium">
               <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm">
-                {item.certification === "CERTIFICATION_UA" ? "U/A" : item.certification.substring(14)} Rated
+                {item.certification === "CERTIFICATION_UA" ? "U/A" : item.certification?.substring(14) || "U"} Rated
               </span>
               <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
-                {item.languages.map((lang, i) => <span key={i}>{lang}</span>)}
+                {item.languages?.map((lang, i) => <span key={i}>{lang}</span>)}
               </span>
               <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
-                {item.formats.map((format, i) => <span key={i}>{format}</span>)}
+                {item.formats?.map((format, i) => <span key={i}>{format}</span>)}
               </span>
               <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex items-center gap-1">
                 <img src={like} className="h-4 w-4" alt="Like" loading="lazy" />
-                {item.likes >= 1000000 ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : item.likes >= 1000 ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k" : item.likes}
+                {item.likes >= 1000000 ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : item.likes >= 1000 ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k" : item.likes || 0}
               </span>
             </div>
 
-            {/* Description */}
             <p className="hidden sm:block text-slate-300 text-base md:text-lg poppins-light leading-relaxed mb-8 text-center lg:text-left drop-shadow-md">
               {item.description}
             </p>
 
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               {isShowAvl && (
                 <button
@@ -220,7 +216,6 @@ const MovieDetails = () => {
             </div>
           </motion.div>
 
-          {/* Right Content: Floating Poster */}
           <motion.div
             variants={scaleIn}
             initial="hidden"
@@ -240,14 +235,13 @@ const MovieDetails = () => {
         </div>
       </div>
 
-      {/* Mobile Description */}
       <div className="sm:hidden px-4 mt-4">
         <p className="text-slate-300 text-sm poppins-light leading-relaxed text-center">
           {item.description}
         </p>
       </div>
 
-      {/* --- CAST SECTION (Incremental Load) --- */}
+      {/* Cast Section */}
       <div className="w-full max-w-[90rem] mx-auto mt-12 px-4 sm:px-6 lg:px-12">
         <h2 className="poppins-semibold text-3xl md:text-4xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
           Cast
@@ -256,7 +250,7 @@ const MovieDetails = () => {
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6">
           {Object.entries(item.cast || {}).map(([member, char], i) => {
             const imgUrl = castImages[member];
-            const isLoaded = imgUrl !== undefined; // Undefined means it's still fetching
+            const isLoaded = imgUrl !== undefined;
 
             return (
               <motion.div variants={fadeInUp} initial="hidden" animate="visible" key={i} className="flex flex-col items-center text-center group">
@@ -284,7 +278,7 @@ const MovieDetails = () => {
         </div>
       </div>
 
-      {/* --- CREW SECTION (Incremental Load) --- */}
+      {/* Crew Section */}
       <div className="w-full max-w-[90rem] mx-auto mt-16 mb-12 px-4 sm:px-6 lg:px-12">
         <h2 className="poppins-semibold text-3xl md:text-4xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
           Crew
@@ -323,13 +317,12 @@ const MovieDetails = () => {
         </div>
       </div>
 
-      {/* Trailer Modal */}
       <TrailerModal item={item} selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
     </motion.div>
   );
 };
 
-// --- MASSIVE TRAILER MODAL ---
+// Trailer Modal (Unchanged)
 const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }) => {
   const filteredTrailers = React.useMemo(() => {
     if (!item.trailers) return [];
@@ -339,8 +332,6 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
   return (
     <dialog id="trailer_modal" className="modal bg-black/80 backdrop-blur-md">
       <div className="modal-box bg-[#0a0f1a] text-white w-[95vw] max-w-7xl h-[90vh] border border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-0 rounded-2xl overflow-hidden flex flex-col relative">
-
-        {/* Sticky Modal Header */}
         <div className="shrink-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-xl px-6 py-4 sm:px-10 sm:py-6 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
           <h3 className="poppins-bold text-xl sm:text-2xl text-white tracking-wide uppercase flex items-center gap-3">
             <span className="text-slate-300">
@@ -350,10 +341,8 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
             </span>
             Trailers & Clips
           </h3>
-
-          {/* Language Tabs */}
           <div className="flex flex-wrap gap-2 justify-center">
-            {["All", ...item.languages].map((language, i) => (
+            {["All", ...(item.languages || [])].map((language, i) => (
               <label key={i} className="cursor-pointer">
                 <input
                   type="radio"
@@ -369,13 +358,11 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
               </label>
             ))}
           </div>
-
           <form method="dialog" className="absolute top-4 right-4 sm:static">
             <button className="btn btn-sm btn-circle btn-ghost text-slate-400 hover:text-white hover:bg-slate-800 bg-slate-900/50">✕</button>
           </form>
         </div>
 
-        {/* Modal Body */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 bg-[#06090f]">
           {filteredTrailers.length > 0 ? (
             <div className="flex flex-col gap-16 items-center w-full">
@@ -386,7 +373,6 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
                     {trailer.language}
                     <span className="text-slate-600 font-normal ml-1">| Official Trailers</span>
                   </h4>
-
                   <div className="flex flex-col gap-12 w-full items-center">
                     {trailer.trailerUrl.map((link, idx) => (
                       <div key={idx} className="w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.6)] bg-black border border-slate-800 ring-1 ring-transparent hover:ring-indigo-500/30 transition-all duration-500">
@@ -412,7 +398,6 @@ const TrailerModal = React.memo(({ item, selectedLanguage, setSelectedLanguage }
           )}
         </div>
       </div>
-
       <form method="dialog" className="modal-backdrop bg-transparent">
         <button className="cursor-default">close</button>
       </form>
