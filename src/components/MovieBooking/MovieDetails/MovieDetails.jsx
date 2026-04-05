@@ -8,8 +8,8 @@ import userPlaceholder from "../../../assets/user_2.png";
 import { AuthContext } from "../../Context/AuthProvider";
 import useAxiosSecure from "../../Hooks/AxiosSecure";
 import useCity from "../../Hooks/useCity";
-// IMPORT THE LOCATION MAPPER
 import { getApiCities } from "../../Services/Locations";
+import MovieComments from "./MovieComments"
 
 // Framer Motion Variants
 const fadeInUp = {
@@ -178,19 +178,20 @@ const MovieDetails = () => {
             </h1>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6 poppins-medium">
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm">
-                {item.certification === "CERTIFICATION_UA" ? "U/A" : item.certification?.substring(14) || "U"} Rated
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/5 rounded-full text-white text-sm">
+                {item.certification === "CERTIFICATION_UA" ? "U/A" : item.certification?.substring(14) || "U"}
               </span>
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/5 rounded-full text-white text-sm flex gap-2">
                 {item.languages?.map((lang, i) => <span key={i}>{lang}</span>)}
               </span>
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex gap-2">
+              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/5 rounded-full text-white text-sm flex gap-2">
                 {item.formats?.map((format, i) => <span key={i}>{format}</span>)}
               </span>
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-md text-white text-sm flex items-center gap-1">
-                <img src={like} className="h-4 w-4" alt="Like" loading="lazy" />
+              <button className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 cursor-pointer rounded-full text-white text-sm flex items-center gap-1">
+{/*                 <img src={like} className="h-4 w-4" alt="Like" loading="lazy" /> */}
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514"></path></svg>
                 {item.likes >= 1000000 ? (item.likes / 1000000).toFixed(1).replace(/\.0$/, "") + "M" : item.likes >= 1000 ? (item.likes / 1000).toFixed(1).replace(/\.0$/, "") + "k" : item.likes || 0}
-              </span>
+              </button>
             </div>
 
             <p className="hidden sm:block text-slate-300 text-base md:text-lg poppins-light leading-relaxed mb-8 text-center lg:text-left drop-shadow-md">
@@ -316,6 +317,9 @@ const MovieDetails = () => {
           })}
         </div>
       </div>
+
+      {/* --- NEW COMMENT SECTION ADDED HERE --- */}
+            <MovieComments movieId={item.id} />
 
       <TrailerModal item={item} selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
     </motion.div>
