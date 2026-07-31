@@ -57,7 +57,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
     const fetchFeaturedMovies = async () => {
       setLoading(true);
       try {
-        const response = await axiosPublic.get(`/movie/featured?region=${macroRegion}`);
+        const response = await axiosPublic.get(`/movie/featured?region=${macroRegion}`, {timeout:2000});
         const dynamicSlides = response.data.map((movie) => {
           const trailerUrl = movie.trailers && movie.trailers.length > 0 ? movie.trailers[0].trailerUrl[0] : null;
           const ytId = getYouTubeId(trailerUrl);
