@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import useAxiosSecure from '../Hooks/AxiosSecure';
 import Swal from 'sweetalert2'; // FIX: Imported Swal
-import { FaCheckCircle, FaTimesCircle, FaTicketAlt, FaHome } from 'react-icons/fa';
+import {FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaTicketAlt, FaHome } from 'react-icons/fa';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -131,22 +131,62 @@ const PaymentSuccess = () => {
         )}
 
         {/* --- STATE 3: FAILED --- */}
+{/*         {status === "failed" && ( */}
+{/*           <div className="flex flex-col items-center animate-fade-in-up"> */}
+{/*              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/30 mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]"> */}
+{/*                 <FaTimesCircle size={36} className="text-red-400" /> */}
+{/*              </div> */}
+{/*              <h2 className="text-3xl poppins-bold text-white mb-2">Payment Failed</h2> */}
+{/*              <p className="text-sm text-neutral-400 poppins-light mb-8">{message}</p> */}
+
+{/*              <div className="flex w-full gap-4"> */}
+{/*                 <button */}
+{/*                   onClick={() => navigate("/")} */}
+{/*                   className="flex-1 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-neutral-200 transition-all poppins-semibold" */}
+{/*                 > */}
+{/*                    Home */}
+{/*                 </button> */}
+{/*              </div> */}
+{/*           </div> */}
+{/*         )} */}
+
         {status === "failed" && (
           <div className="flex flex-col items-center animate-fade-in-up">
-             <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/30 mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                <FaTimesCircle size={36} className="text-red-400" />
-             </div>
-             <h2 className="text-3xl poppins-bold text-white mb-2">Payment Failed</h2>
-             <p className="text-sm text-neutral-400 poppins-light mb-8">{message}</p>
-
-             <div className="flex w-full gap-4">
+            {/* If message indicates timeout/refund, show an Amber warning state */}
+            {message.includes("expired") || message.includes("refund") ? (
+              <>
+                <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/30 mb-8 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                  <FaExclamationTriangle size={36} className="text-amber-400" />
+                </div>
+                <h2 className="text-3xl poppins-bold text-white mb-2">Payment Timeout</h2>
+                <p className="text-sm text-neutral-300 poppins-light mb-6 text-center max-w-md">
+                  Your payment was processed, but your 7-minute seat reservation expired before completion. A full refund has been initiated.
+                </p>
+{/*                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8 text-left w-full text-xs text-neutral-400 space-y-2"> */}
+{/*                   <p><strong className="text-white">Amount Deducted:</strong> ₹{bookingDetails?.amount || orderAmount}</p> */}
+{/*                   <p><strong className="text-white">Refund Status:</strong> Initiated (3-5 working days)</p> */}
+{/*                   <p><strong className="text-white">Reason:</strong> Payment completed after the 7-minute seat lock expired.</p> */}
+{/*                 </div> */}
                 <button
                   onClick={() => navigate("/")}
-                  className="flex-1 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-neutral-200 transition-all poppins-semibold"
+                  className="w-full py-4 rounded-full text-sm font-bold bg-amber-500 text-black hover:bg-amber-400 transition-all poppins-semibold"
                 >
-                   Home
+                  Select Seats Again
                 </button>
-             </div>
+              </>
+            ) : (
+              /* Standard Payment Failure (Card Declined, OTP Failed, etc.) */
+              <>
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/30 mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                  <FaTimesCircle size={36} className="text-red-400" />
+                </div>
+                <h2 className="text-3xl poppins-bold text-white mb-2">Payment Failed</h2>
+                <p className="text-sm text-neutral-400 poppins-light mb-8">{message}</p>
+                <button onClick={() => navigate("/")} className="w-full py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-neutral-200">
+                  Home
+                </button>
+              </>
+            )}
           </div>
         )}
 
