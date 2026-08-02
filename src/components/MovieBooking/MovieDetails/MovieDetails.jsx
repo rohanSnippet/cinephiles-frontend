@@ -33,6 +33,13 @@ const MovieDetails = () => {
   // Extract state passed from router
   const { item: locationItem, previousPath } = location.state || {};
 
+
+//   useEffect(() => {
+//      console.log("Movie Details Page : ",  location.pathname);
+//      localStorage.setItem("oauth_redirect_state", JSON.stringify(location.state));
+//      localStorage.setItem("oauth_redirect_path", location.pathname);
+//   }, [])
+
   // Component State
   const [item, setItem] = useState(locationItem);
   const [castImages, setCastImages] = useState({});
@@ -111,6 +118,7 @@ const MovieDetails = () => {
   }, [item, axiosPublic, axiosSecure, city, userData?.currLocation]);
 
   const handleGetTheatres = () => {
+    localStorage.removeItem("")
     navigate("/all-shows", { state: { item } });
   };
 
