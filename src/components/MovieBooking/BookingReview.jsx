@@ -3,7 +3,40 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import { cashfree } from "../Services/cashfree";
 import Swal from "sweetalert2";
-import { FaChevronLeft, FaPlus, FaMinus, FaClock, FaTimes, FaShieldAlt,FaHamburger  } from "react-icons/fa";
+import { FaChevronLeft, FaPlus, FaMinus, FaClock, FaTimes, FaShieldAlt, FaHamburger } from "react-icons/fa";
+
+// Dummy Data with Categories and Realistic Images
+const CONCESSIONS_DATA = [
+  {
+    category: "Combos",
+    items: [
+      { id: 'c1', name: "Couples Combo", desc: "2 Large Popcorn + 2 Drinks", price: 650, image: "https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=400&auto=format&fit=crop" },
+      { id: 'c2', name: "Family Fiesta", desc: "2 Large Popcorn + 4 Drinks + Nachos", price: 1100, image: "https://images.unsplash.com/photo-1572177812156-58036aae439c?q=80&w=400&auto=format&fit=crop" },
+    ]
+  },
+  {
+    category: "Popcorn",
+    items: [
+      { id: 'p1', name: "Classic Salted", desc: "Freshly popped, lightly salted.", price: 250, image: "https://images.unsplash.com/photo-1578849278619-e73505e9610f?q=80&w=400&auto=format&fit=crop" },
+      { id: 'p2', name: "Caramel Crunch", desc: "Glazed premium kernels.", price: 290, image: "https://images.unsplash.com/photo-1570146316719-74e2d3df2438?q=80&w=400&auto=format&fit=crop" },
+      { id: 'p3', name: "Cheese Bomb", desc: "Loaded with cheddar dust.", price: 310, image: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=400&auto=format&fit=crop" },
+    ]
+  },
+  {
+    category: "Beverages",
+    items: [
+      { id: 'b1', name: "Fountain Coke", desc: "Chilled 750ml.", price: 180, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=400&auto=format&fit=crop" },
+      { id: 'b2', name: "Cold Coffee", desc: "Creamy frappe with ice.", price: 220, image: "https://images.unsplash.com/photo-1461023058943-0708e5223e74?q=80&w=400&auto=format&fit=crop" },
+    ]
+  },
+  {
+    category: "Snacks",
+    items: [
+      { id: 's1', name: "Spicy Nachos", desc: "Served with jalapeño salsa.", price: 210, image: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=400&auto=format&fit=crop" },
+      { id: 's2', name: "French Fries", desc: "Crispy golden salted fries.", price: 150, image: "https://images.unsplash.com/photo-1576107232684-1279f390859f?q=80&w=400&auto=format&fit=crop" },
+    ]
+  }
+];
 
 const BookingReview = ({ fallback = "/all-shows" }) => {
   const location = useLocation();
@@ -40,6 +73,7 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   const [isPaying, setIsPaying] = useState(false);
   const [selectedSnacks, setSelectedSnacks] = useState({});
   const [isSnackModalOpen, setIsSnackModalOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(CONCESSIONS_DATA[0].category);
 
   const fallbackPath = location.state?.from ?? fallback;
   const handledTimeout = useRef(false);
@@ -62,15 +96,14 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
   const handleSessionExpired = useCallback(() => {
     if (handledTimeout.current || isRedirectingToPayment.current) return;
     handledTimeout.current = true;
-
     Swal.fire({
       title: "SESSION EXPIRED",
       text: "Your booking window has closed.",
-      background: "#020617",
-      color: "#f1f5f9",
+      background: "#050505",
+      color: "#fff",
       timer: 3500,
       showConfirmButton: false,
-      customClass: { popup: "border border-slate-800 rounded-none", title: "poppins-bold uppercase tracking-widest text-slate-100" }
+      customClass: { popup: "border border-white/10 rounded-2xl", title: "poppins-bold uppercase tracking-widest text-white" }
     }).then(() => {
       sessionStorage.removeItem("bookingData");
       navigate(fallbackPath, { replace: true, state: { item: movie } });
@@ -96,12 +129,12 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     Swal.fire({
       title: "CANCEL ORDER?",
       text: "Your reserved seats will be released.",
-      background: "#020617",
-      color: "#f1f5f9",
+      background: "#050505",
+      color: "#fff",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#1e293b",
-      customClass: { popup: "border border-slate-800 rounded-none" }
+      cancelButtonColor: "#111",
+      customClass: { popup: "border border-white/10 rounded-2xl" }
     }).then(async (result) => {
       if (result.isConfirmed) {
         try { await axiosSecure.delete(`/bookings/cancel-seats?showId=${selectedData.showId}&user=${selectedData.user}`); } catch (err) {}
@@ -127,14 +160,8 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
 
   if (!selectedData || !movie || !selectedShow || !selectedDate || !updatedScreen) return null;
 
-  const snacksList = [
-    { id: 's1', name: "CLASSIC POPCORN", desc: "Butter-infused large tub.", price: 250, emoji: "🍿" },
-    { id: 's2', name: "CARAMEL CRUNCH", desc: "Glazed premium kernels.", price: 290, emoji: "🍯" },
-    { id: 's3', name: "SPICY NACHOS", desc: "Served with jalapeño salsa.", price: 180, emoji: "🌮" },
-    { id: 's4', name: "Fountain Drink", desc: "Chilled 750ml beverage.", price: 120, emoji: "🥤" },
-  ];
-
-  const snacksTotal = snacksList.reduce((acc, snack) => acc + (selectedSnacks[snack.id] || 0) * snack.price, 0);
+  // Calculate Snack Totals dynamically
+  const snacksTotal = CONCESSIONS_DATA.flatMap(c => c.items).reduce((acc, snack) => acc + (selectedSnacks[snack.id] || 0) * snack.price, 0);
   const finalTotalAmount = baseAmt + taxes.cgst + taxes.sgst + snacksTotal;
 
   const handleSnackChange = (id, delta) => {
@@ -167,45 +194,80 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
     } catch (err) { isRedirectingToPayment.current = false; setIsPaying(false); }
   };
 
+  const activeSnackList = CONCESSIONS_DATA.find(c => c.category === activeCategory)?.items || [];
+
   const SnacksMenu = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {snacksList.map((snack) => {
-        const qty = selectedSnacks[snack.id] || 0;
-        return (
-          <div key={snack.id} className={`p-5 border transition-all duration-500 relative overflow-hidden ${qty > 0 ? 'bg-slate-900 border-white/20' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}>
-            {qty > 0 && <div className="absolute top-0 left-0 w-1 h-full bg-white/40"></div>}
-            <div className="flex items-start justify-between mb-4">
-                <div>
-                    <h4 className="text-xs font-bold text-slate-100 uppercase tracking-[0.2em] mb-1">{snack.name}</h4>
-                    <p className="text-[9px] text-slate-500 uppercase tracking-widest leading-relaxed">{snack.desc}</p>
+    <div className="w-full">
+      {/* Category Pills */}
+      <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4 mb-4 select-none">
+        {CONCESSIONS_DATA.map((cat) => (
+          <button
+            key={cat.category}
+            onClick={() => setActiveCategory(cat.category)}
+            className={`px-5 py-2 rounded-full poppins-semibold text-xs tracking-widest uppercase transition-all whitespace-nowrap border ${
+              activeCategory === cat.category
+                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {cat.category}
+          </button>
+        ))}
+      </div>
+
+      {/* Slider Format for Products */}
+      <div className="flex gap-6 overflow-x-auto snap-x custom-scrollbar pb-6 select-none">
+        {activeSnackList.map((snack) => {
+          const qty = selectedSnacks[snack.id] || 0;
+          return (
+            <div
+              key={snack.id}
+              className={`snap-start min-w-[240px] md:min-w-[280px] p-4 rounded-3xl border transition-all duration-300 flex flex-col justify-between ${
+                qty > 0 ? 'bg-[#111] border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'bg-[#0a0a0a] border-white/5 hover:border-white/20 hover:bg-[#111]'
+              }`}
+            >
+              <div>
+                <div className="w-full h-40 rounded-2xl overflow-hidden mb-4 bg-[#050505] border border-white/5">
+                  <img src={snack.image} alt={snack.name} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-500" />
                 </div>
-                <span className="text-2xl opacity-80">{snack.emoji}</span>
-            </div>
-            <div className="flex items-center justify-between mt-6">
-              <span className="text-sm font-mono font-bold text-slate-100">₹{snack.price.toFixed(2)}</span>
-              <div className="flex items-center border border-slate-800 bg-slate-950">
-                  <button onClick={() => handleSnackChange(snack.id, -1)} className="p-2 hover:bg-slate-900 text-slate-500 transition-colors"><FaMinus size={8}/></button>
-                  <span className="w-8 text-center text-[10px] font-bold text-white font-mono">{qty}</span>
-                  <button onClick={() => handleSnackChange(snack.id, 1)} className="p-2 hover:bg-slate-900 text-slate-500 transition-colors"><FaPlus size={8}/></button>
+                <h4 className="text-sm poppins-bold text-white uppercase tracking-widest mb-1 line-clamp-1">{snack.name}</h4>
+                <p className="text-[10px] text-white/50 poppins-light uppercase tracking-widest line-clamp-2 min-h-[30px]">{snack.desc}</p>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 border-t border-white/5 pt-4">
+                <span className="text-sm font-mono font-bold text-white">&#x20B9;{snack.price.toFixed(2)}</span>
+
+                {qty > 0 ? (
+                  <div className="flex items-center bg-[#050505] border border-white/10 rounded-full p-1">
+                    <button onClick={() => handleSnackChange(snack.id, -1)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-white transition-colors active:scale-95"><FaMinus size={10}/></button>
+                    <span className="w-8 text-center text-[12px] font-bold text-white font-mono">{qty}</span>
+                    <button onClick={() => handleSnackChange(snack.id, 1)} className="w-8 h-8 rounded-full flex items-center justify-center bg-white text-black hover:bg-neutral-300 transition-colors active:scale-95"><FaPlus size={10}/></button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleSnackChange(snack.id, 1)}
+                    className="px-5 py-2 text-[10px] poppins-bold uppercase tracking-widest rounded-full border border-white/20 hover:bg-white text-white hover:text-black transition-all active:scale-95"
+                  >
+                    Add
+                  </button>
+                )}
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-screen bg-slate-950 text-slate-300 font-sans selection:bg-slate-800">
-
+    <div className="flex flex-col lg:flex-row w-full min-h-screen bg-[#050505] text-white font-poppins selection:bg-white/20">
       {/* NAVBAR */}
-      <div className="fixed top-0 left-0 w-full h-16 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 z-50 flex items-center justify-between px-8">
-        <button onClick={handleBack} className="flex items-center gap-2 text-slate-500 hover:text-white uppercase tracking-[0.3em] text-[10px] font-bold transition-all">
+      <div className="fixed top-0 left-0 w-full h-16 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 z-50 flex items-center justify-between px-6 md:px-12 select-none">
+        <button onClick={handleBack} className="flex items-center gap-2 text-white/50 hover:text-white uppercase tracking-[0.3em] text-[10px] poppins-bold transition-all active:scale-95">
           <FaChevronLeft size={10} /> Back
         </button>
-
-        <div className={`flex items-center gap-4 px-6 py-1.5 border transition-all duration-700 ${isTimeCritical ? 'border-red-500/50 text-red-500 bg-red-500/5 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-slate-800 text-slate-400'}`}>
-           <span className="text-[9px] font-bold tracking-[0.2em] uppercase hidden sm:block">Session Timeout</span>
+        <div className={`flex items-center gap-4 px-6 py-1.5 border rounded-full transition-all duration-700 ${isTimeCritical ? 'border-red-500/50 text-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-white/10 text-white/60 bg-[#111]'}`}>
+           <span className="text-[9px] poppins-bold tracking-[0.2em] uppercase hidden sm:block">Session Timeout</span>
            <div className="flex items-center gap-2 font-mono text-base font-bold tracking-tighter">
               <FaClock size={12} className={isTimeCritical ? 'animate-pulse' : 'opacity-40'} />
               <span>{String(min).padStart(2, '0')}:{String(sec).padStart(2, '0')}</span>
@@ -213,101 +275,102 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
         </div>
       </div>
 
-      {/* LEFT: CONCESSIONS */}
-      <div className="hidden lg:block w-3/5 pt-28 px-16 pb-12 overflow-y-auto custom-scrollbar">
-        <div className="max-w-3xl mx-auto">
-          <header className="mb-12">
-            <h1 className="text-3xl font-bold uppercase tracking-[0.3em] text-white mb-2 poppins-bold">Concessions</h1>
-            <div className="w-12 h-1 bg-white/20 mb-4"></div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">Curate your in-theatre dining experience</p>
+      {/* LEFT: CONCESSIONS (Bento-Box Styled) */}
+      <div className="hidden lg:block w-3/5 pt-28 px-12 xl:px-20 pb-12 overflow-y-auto custom-scrollbar">
+        <div className="max-w-4xl mx-auto">
+          <header className="mb-10 select-none">
+            <h1 className="text-3xl poppins-bold uppercase tracking-[0.2em] text-white mb-2">Concessions</h1>
+            <p className="text-[10px] text-white/50 uppercase tracking-[0.2em] poppins-medium">Curate your in-theatre dining experience</p>
           </header>
           <SnacksMenu />
         </div>
       </div>
 
-      {/* RIGHT: SUMMARY (The "Receipt" Dashboard) */}
-      <div className="w-full lg:w-2/5 pt-28 px-8 pb-32 lg:pb-12 lg:border-l border-slate-900 bg-slate-900/20 flex flex-col h-screen lg:sticky lg:top-0">
+      {/* RIGHT: SUMMARY (The Receipt Dashboard) */}
+      <div className="w-full lg:w-2/5 pt-28 px-6 md:px-12 pb-32 lg:pb-12 lg:border-l border-white/5 bg-[#0a0a0a] flex flex-col h-screen lg:sticky lg:top-0 select-none">
         <div className="flex-1 flex flex-col w-full max-w-md mx-auto">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500 mb-8 border-b border-slate-900 pb-4">Order Intelligence</h2>
+          <h2 className="text-[10px] poppins-bold uppercase tracking-[0.4em] text-white/50 mb-8 border-b border-white/5 pb-4">Order Intelligence</h2>
 
-          <div className="flex-1 overflow-y-auto space-y-8 pb-4 custom-scrollbar">
-            {/* Movie Info Card */}
-            <div className="flex gap-6 p-1 border-b border-slate-900 pb-8">
-               <img src={movie.poster} className="w-24 h-32 object-cover border border-slate-800 grayscale-[0.3] hover:grayscale-0 transition-all duration-700 shadow-2xl" />
+          <div className="flex-1 overflow-y-auto space-y-8 pb-4 custom-scrollbar pr-2">
+
+            {/* Movie Info Card (Bento style) */}
+            <div className="flex gap-6 p-4 bg-[#111] border border-white/5 rounded-3xl shadow-lg">
+               <img src={movie.poster} className="w-24 h-32 object-cover rounded-xl border border-white/10 shadow-md" alt={movie.title} />
                <div className="flex flex-col justify-center">
-                  <h3 className="text-xl font-bold text-white uppercase tracking-wider leading-tight mb-3 poppins-bold">{movie.title}</h3>
-                  <div className="flex gap-2 mb-4">
-                     <span className="px-2 py-0.5 border border-slate-800 text-[8px] font-bold uppercase tracking-widest">{movie.certification?.replace("CERTIFICATION_", "") || "U/A"}</span>
-                     <span className="px-2 py-0.5 border border-slate-800 bg-slate-900 text-[8px] font-bold uppercase tracking-widest">{movie.formats}</span>
+                  <h3 className="text-lg poppins-bold text-white uppercase tracking-wider leading-tight mb-2 line-clamp-2">{movie.title}</h3>
+                  <div className="flex gap-2 mb-3">
+                     <span className="px-2 py-0.5 border border-white/20 text-[9px] poppins-bold uppercase tracking-widest rounded">{movie.certification?.replace("CERTIFICATION_", "") || "U/A"}</span>
+                     <span className="px-2 py-0.5 border border-white/10 bg-white/5 text-[9px] poppins-bold uppercase tracking-widest rounded">{movie.formats}</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mb-1">{updatedScreen.sname}</div>
-                  <div className="text-[10px] text-slate-600 font-medium uppercase tracking-widest">{selectedDate} — {selectedShow?.start}</div>
+                  <div className="text-[10px] text-white/50 poppins-semibold tracking-[0.1em] uppercase mb-1">{updatedScreen.sname}</div>
+                  <div className="text-[10px] text-white/70 poppins-medium uppercase tracking-widest">{selectedDate} &bull; {selectedShow?.start}</div>
                </div>
             </div>
 
             {/* Tactical Detail Bar */}
-            <div className="grid grid-cols-2 gap-4 border-b border-slate-900 pb-8">
-                <div>
-                   <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest block mb-1">Assigned Seats</span>
-                   <span className="text-xs text-slate-200 font-mono tracking-widest uppercase">{selectedData.seatsId.join(", ")}</span>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-8">
+                <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex flex-col justify-center items-center text-center">
+                   <span className="text-[9px] poppins-semibold text-white/40 uppercase tracking-widest mb-2 block">Assigned Seats</span>
+                   <span className="text-sm text-white font-mono tracking-widest uppercase">{selectedData.seatsId.join(", ")}</span>
                 </div>
-                <div className="text-right">
-                   <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest block mb-1">Ticket Class</span>
-                   <span className="text-xs text-slate-200 font-bold uppercase tracking-widest">{selectedData.tierName}</span>
+                <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex flex-col justify-center items-center text-center">
+                   <span className="text-[9px] poppins-semibold text-white/40 uppercase tracking-widest mb-2 block">Ticket Class</span>
+                   <span className="text-sm text-white poppins-bold uppercase tracking-widest">{selectedData.tierName}</span>
                 </div>
             </div>
 
             {/* Mobile Snacks Action */}
-            <button onClick={() => setIsSnackModalOpen(true)} className="lg:hidden w-full flex items-center justify-between p-5 border border-slate-800 bg-slate-950/40 text-slate-400 hover:text-white transition-all group">
+            <button onClick={() => setIsSnackModalOpen(true)} className="lg:hidden w-full flex items-center justify-between p-5 border border-white/10 rounded-2xl bg-[#111] text-white/60 hover:text-white transition-all group active:scale-[0.98]">
                <div className="flex items-center gap-4">
-                  <FaHamburger className="opacity-40 group-hover:opacity-100 transition-opacity" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Add Concessions</span>
+                  <FaHamburger className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] poppins-bold uppercase tracking-[0.2em]">Add Concessions</span>
                </div>
-               <FaPlus size={10} />
+               <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                 <FaPlus size={10} />
+               </div>
             </button>
 
             {/* Financials */}
-            <div className="space-y-4">
-               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            <div className="space-y-4 bg-[#111] border border-white/5 p-5 rounded-3xl">
+               <div className="flex justify-between text-[10px] poppins-bold uppercase tracking-widest text-white/60">
                   <span>Base Tickets</span>
-                  <span className="text-slate-300 font-mono">₹{baseAmt.toFixed(2)}</span>
+                  <span className="text-white font-mono">&#x20B9;{baseAmt.toFixed(2)}</span>
                </div>
                {snacksTotal > 0 && (
-                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                 <div className="flex justify-between text-[10px] poppins-bold uppercase tracking-widest text-white/60">
                     <span>Add-on Concessions</span>
-                    <span className="text-slate-300 font-mono">₹{snacksTotal.toFixed(2)}</span>
+                    <span className="text-white font-mono">&#x20B9;{snacksTotal.toFixed(2)}</span>
                  </div>
                )}
-               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600 border-t border-slate-900 pt-4">
+               <div className="flex justify-between text-[10px] poppins-bold uppercase tracking-widest text-white/40 border-t border-white/5 pt-4">
                   <span>Service Tax (GST 18%)</span>
-                  <span className="font-mono">₹{(taxes.cgst + taxes.sgst).toFixed(2)}</span>
+                  <span className="font-mono">&#x20B9;{(taxes.cgst + taxes.sgst).toFixed(2)}</span>
                </div>
             </div>
           </div>
 
           {/* Grand Total & Final Action */}
-          <div className="mt-auto pt-8 border-t border-slate-900">
-             <div className="flex justify-between items-end mb-8">
+          <div className="mt-auto pt-6 border-t border-white/5">
+             <div className="flex justify-between items-end mb-6">
                 <div>
-                   <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white block mb-1">Final Payable</span>
-                   <span className="text-[8px] text-slate-600 uppercase tracking-widest">Secure encrypted checkout</span>
+                   <span className="text-[10px] poppins-bold uppercase tracking-[0.3em] text-white block mb-1">Final Payable</span>
+                   <span className="text-[8px] text-white/40 uppercase tracking-widest">Secure encrypted checkout</span>
                 </div>
-                <span className="text-4xl font-bold text-white tracking-tighter font-mono">₹{finalTotalAmount.toFixed(2)}</span>
+                <span className="text-3xl font-bold text-white tracking-tighter font-mono">&#x20B9;{finalTotalAmount.toFixed(2)}</span>
              </div>
-
              <button
                onClick={handlePayNow}
                disabled={isPaying || timeRemaining <= 0}
-               className="w-full py-5 bg-white text-slate-950 font-bold uppercase tracking-[0.3em] text-[10px] hover:bg-slate-200 disabled:opacity-30 transition-all flex justify-center items-center gap-3 active:scale-[0.98]"
+               className="w-full py-5 rounded-2xl bg-white text-black poppins-bold uppercase tracking-[0.2em] text-[12px] hover:bg-neutral-300 disabled:opacity-30 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)] flex justify-center items-center gap-3 active:scale-[0.98]"
              >
                {isPaying ? (
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 border-2 border-slate-950 border-t-transparent animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                     VERIFYING...
                   </div>
                ) : (
                   <>
-                    <FaShieldAlt size={12} className="opacity-40" />
+                    <FaShieldAlt size={14} className="opacity-60" />
                     CONFIRM & PAY NOW
                   </>
                )}
@@ -317,14 +380,14 @@ const BookingReview = ({ fallback = "/all-shows" }) => {
       </div>
 
       {/* MOBILE CONCESSIONS MODAL */}
-      <div className={`fixed inset-0 z-[100] flex items-end lg:hidden transition-all duration-500 ${isSnackModalOpen ? 'visible bg-slate-950/95' : 'invisible bg-transparent pointer-events-none'}`}>
-        <div className={`w-full max-h-[85vh] bg-slate-950 border-t border-white/10 p-8 z-10 transition-transform duration-500 ease-out ${isSnackModalOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-           <div className="flex justify-between items-center mb-10 pb-4 border-b border-slate-900">
-             <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-white">Concessions Menu</h2>
-             <button onClick={() => setIsSnackModalOpen(false)} className="text-slate-500 hover:text-white transition-colors"><FaTimes size={16}/></button>
+      <div className={`fixed inset-0 z-[100] flex items-end lg:hidden transition-all duration-500 ${isSnackModalOpen ? 'visible bg-black/95 backdrop-blur-sm' : 'invisible bg-transparent pointer-events-none'} select-none`}>
+        <div className={`w-full max-h-[90vh] bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl p-6 z-10 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${isSnackModalOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+           <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+             <h2 className="text-xs poppins-bold uppercase tracking-[0.3em] text-white">Concessions Menu</h2>
+             <button onClick={() => setIsSnackModalOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-colors active:scale-95"><FaTimes size={12}/></button>
            </div>
-           <div className="overflow-y-auto max-h-[60vh] custom-scrollbar"><SnacksMenu /></div>
-           <button onClick={() => setIsSnackModalOpen(false)} className="w-full py-5 mt-8 bg-slate-900 text-white font-bold uppercase tracking-[0.2em] text-[10px] border border-slate-800">Confirm Additions</button>
+           <div className="overflow-y-auto max-h-[65vh] custom-scrollbar pb-6"><SnacksMenu /></div>
+           <button onClick={() => setIsSnackModalOpen(false)} className="w-full py-4 mt-2 bg-white text-black rounded-2xl poppins-bold uppercase tracking-[0.2em] text-[10px] active:scale-[0.98] transition-transform">Confirm Additions</button>
         </div>
       </div>
     </div>
