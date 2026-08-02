@@ -3,6 +3,9 @@ import React, { useEffect, useRef, useState } from "react";
 import RecentMovies from "./RecentMovies.jsx";
 import ExploreGeneres from "./ExploreGeneres.jsx";
 import Experiences from "./Experiences.jsx";
+import CinematicGenres from "./CinematicGenres.jsx"
+import CinephileClub from "./CinephileClub.jsx"
+import PremiumExperiences from "./PremiumExperiences.jsx"
 import Footer from "../Footer.jsx";
 
 const Home = () => {
@@ -43,13 +46,30 @@ const Home = () => {
       <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-8"></div>
 
       {/* Genres */}
-      <div className="bg-black relative z-20">
+      {/*<div className="bg-black relative z-20">
         <ExploreGeneres />
-      </div>
+      </div>*/}
 
       {/* Experiences */}
-      <div className="bg-black relative z-20 pb-12">
+      {/*<div className="bg-black relative z-20 pb-12">
         <Experiences />
+      </div> */}
+
+      <div className="w-full max-w-[95rem] mx-auto h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-8"></div>
+
+      {/* Replaced ExploreGeneres with CinematicGenres */}
+      <div className="bg-[#050505] relative z-20">
+        <CinematicGenres />
+      </div>
+
+      {/* Replaced Experiences with Premium Bento Box */}
+      <div className="bg-[#050505] relative z-20 pt-16 pb-12">
+        <PremiumExperiences />
+      </div>
+
+      {/* New Live CTA Section */}
+      <div className="bg-[#050505] relative z-20 pb-20">
+        <CinephileClub />
       </div>
 
       <Footer />
