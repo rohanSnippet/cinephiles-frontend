@@ -4,17 +4,20 @@ import { FaChevronLeft, FaChevronRight, FaPlay } from "react-icons/fa";
 import { MdOutlineKeyboardArrowDown } from "react-icons/md";
 import useAxiosPublic from "../Hooks/AxiosPublic";
 import { locationHierarchy } from "../Services/Locations";
+import fallbackMovies from "../../assets/fallbackMovies.json";
 
 // Curated 4K cinematic placeholder images for the dreamish infinite scroll
 const FALLBACK_POSTERS = [
-  "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=800&auto=format&fit=crop",
   "https://stat4.bollywoodhungama.in/wp-content/uploads/2016/03/Dangal-1.jpg?q=80&w=800&auto=format&fit=crop",
-  "https://wallpaperaccess.com/full/16701612.jpg?q=80&w=800&auto=format&fit=crop",
+  // "https://wallpaperaccess.com/full/16701612.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://i0.wp.com/ocdtimes.in/wp-content/uploads/2025/07/Ramayana-Wallpaper-4.jpg?resize=554%2C1200&ssl=1",
   "https://posterspy.com/wp-content/uploads/2023/11/Dune-Part-II.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1xib-t5_Z0pj8CgsUN5_eFeZnQ_Lxl7sW2OwSN-jpbHcpK-mnCIAbKNaCl6Dg_6Z9noyc&s=10",
   "https://tse2.mm.bing.net/th/id/OIP.pzHzXKTcOWnvKPz1Tfyp0QHaLH?rs=1&pid=ImgDetMain&o=7&rm=3?q=80&w=800&auto=format&fit=crop",
   "https://s3.amazonaws.com/nightjarprod/content/uploads/sites/130/2021/08/19085635/gEU2QniE6E77NI6lCU6MxlNBvIx-scaled.jpg?q=80&w=800&auto=format&fit=crop",
   "https://wallpapercave.com/wp/wp4027523.jpg?q=80&w=800&auto=format&fit=crop",
+  "https://i.redd.it/4xcitk12vdeh1.jpeg",
+  "https://m.media-amazon.com/images/I/91EmWoPK3+L._AC_UF894,1000_QL80_.jpg"
 ];
 
 const Carousal = ({ onDownArrowClick, showArrow }) => {
@@ -113,15 +116,20 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
 
   if (loading) return <div className="w-full h-[65vh] md:h-[85vh] bg-[#050505]"></div>;
 
-  // ==========================================
-  // PREMIUM DREAMISH FALLBACK UI
+// ==========================================
+  // PREMIUM DREAMISH FALLBACK UI (UNIQUE STRIPES)
   // ==========================================
   if (slides.length === 0) {
-    const doubledPosters = [...FALLBACK_POSTERS, ...FALLBACK_POSTERS];
+    // Utility to shuffle the master list of posters so every row looks unique
+    const getShuffledRow = () => {
+      const shuffled = [...fallbackMovies.posters].sort(() => Math.random() - 0.5);
+      // Double the array horizontally: [A, B, C] -> [A, B, C, A, B, C]
+      // This is mathematically required for the 100% to -50% infinite CSS scroll to loop seamlessly
+      return [...shuffled, ...shuffled];
+    };
 
     return (
       <div className="relative w-full h-[65vh] md:h-[85vh] bg-[#050505] overflow-hidden">
-
         {/* Hardware-accelerated CSS animations */}
         <style>{`
           @keyframes scrollLeft {
@@ -136,55 +144,60 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
             0% { opacity: 0; transform: translateY(30px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-          .animate-scroll-left { animation: scrollLeft 45s linear infinite; will-change: transform; }
-          .animate-scroll-right { animation: scrollRight 45s linear infinite; will-change: transform; }
+          .animate-scroll-left { animation: scrollLeft 90s linear infinite; will-change: transform; }
+          .animate-scroll-right { animation: scrollRight 90s linear infinite; will-change: transform; }
           .animate-fade-in-up { animation: fadeInUpFade 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         `}</style>
-
+        
         <div className="absolute top-0 left-0 w-full z-50">
           <Header />
         </div>
 
         {/* --- 3D INFINITE SCROLL LAYER --- */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vh] flex flex-col gap-6 transform -rotate-12 scale-110 justify-center">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250vw] h-[150vh] flex flex-col gap-3 sm:gap-4 transform -rotate-12 scale-110 justify-center">
+            
+            {/* Generate 12 unique stripes */}
+            {[...Array(12)].map((_, rowIndex) => {
+              const isEven = rowIndex % 2 === 0;
+              const animationClass = isEven ? "animate-scroll-left" : "animate-scroll-right";
+              const offsetClass = isEven ? `ml-[-${(rowIndex * 7) % 25}%]` : `ml-[-${(rowIndex * 9) % 25 + 15}%]`;
+              
+              // Generate a uniquely shuffled array just for this specific row
+              const rowImages = getShuffledRow();
 
-            <div className="flex w-max animate-scroll-left gap-6">
-              {doubledPosters.map((img, i) => (
-                <img key={`r1-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
-              ))}
-            </div>
-
-            <div className="flex w-max animate-scroll-right gap-6 ml-[-20%]">
-              {doubledPosters.reverse().map((img, i) => (
-                <img key={`r2-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
-              ))}
-            </div>
-
-            <div className="flex w-max animate-scroll-left gap-6 ml-[-10%]">
-              {doubledPosters.reverse().map((img, i) => (
-                <img key={`r3-${i}`} src={img} className="w-48 sm:w-64 h-72 sm:h-96 object-cover rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.9)]" alt="" loading="lazy" />
-              ))}
-            </div>
+              return (
+                <div key={rowIndex} className={`flex w-max ${animationClass} gap-3 sm:gap-4 ${offsetClass}`}>
+                  {rowImages.map((img, i) => (
+                    <img 
+                      key={`r${rowIndex}-${i}`} 
+                      src={img} 
+                      className="w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-48 object-cover rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.9)]" 
+                      alt="Movie Poster" 
+                      loading="lazy" 
+                    />
+                  ))}
+                </div>
+              );
+            })}
 
           </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent z-10 shadow-3xl shadow-black"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/40 to-transparent w-full md:w-3/4 z-10"></div>
+
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10 shadow-3xl shadow-black"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-[#050505]/50 to-transparent w-full md:w-3/4 z-10"></div>
+        
         <div className="absolute bottom-16 md:bottom-28 left-6 md:left-16 lg:left-24 z-20 max-w-4xl pr-6">
           <div className="animate-fade-in-up">
-
             <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded text-white text-xs poppins-medium uppercase tracking-widest mb-4 inline-block shadow-lg">
               Welcome to Cinephiles
             </span>
             <h1 className="text-5xl sm:text-7xl md:text-[5.5rem] poppins-bold text-white tracking-tighter leading-none mb-4 drop-shadow-2xl uppercase">
               {rawCity}
             </h1>
-
             <p className="text-sm md:text-lg poppins-light text-neutral-300 max-w-2xl leading-relaxed drop-shadow-md mb-8">
               Experience the magic of cinema. Discover the best movies, explore top-rated blockbusters, and secure your tickets today.
             </p>
-
             {showArrow && (
               <button
                 onClick={onDownArrowClick}
@@ -193,7 +206,6 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
                 Explore Movies <MdOutlineKeyboardArrowDown size={18} className="mt-0.5"/>
               </button>
             )}
-
           </div>
         </div>
       </div>
