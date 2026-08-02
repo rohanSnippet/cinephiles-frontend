@@ -12,8 +12,6 @@ const CommentInput = ({ movieId, parentId = null, repliedToUsername = null, onCo
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  console.log(session)
-
   const handleSubmit = async () => {
     if (!content.trim()) return;
     if (!userData) {
