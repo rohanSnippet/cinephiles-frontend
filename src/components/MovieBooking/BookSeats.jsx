@@ -4,17 +4,29 @@ import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import useAxiosSecure from "../Hooks/AxiosSecure";
 import { IoIosArrowBack } from "react-icons/io";
+import Loading from "../Common/Loading.jsx"
 import { MdOutlineEdit, MdZoomIn, MdZoomOut, MdOutlineFitScreen } from "react-icons/md";
 
 const BookSeats = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const username = localStorage.getItem("username");
-  const { selectedShow, movie, theatre, selectedDate } = location.state;
   const axiosSecure = useAxiosSecure();
 
+ const [pageData, setPageData] = useState(() => {
+         if (location.state && location.state.selectedShow) {
+           sessionStorage.setItem("bookSeatsData", JSON.stringify(location.state));
+           return location.state;
+         }
+         const cachedData = sessionStorage.getItem("bookSeatsData");
+         if (cachedData) {
+           return JSON.parse(cachedData);
+         }
+         return null;
+   });
+
   const [updatedScreen, setUpdatedScreen] = useState(null);
-  const [show, setShow] = useState(selectedShow);
+  const [show, setShow] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [tickets, setTickets] = useState(2);
   const [loading, setLoading] = useState(true);
@@ -33,6 +45,23 @@ const BookSeats = () => {
     showId: null,
     tierName: "",
   });
+
+ useEffect(() => {
+       if (!pageData) {
+         navigate("/all-shows", { replace: true });
+       }
+   }, [pageData, navigate]);
+
+   // 3. EARLY RETURN TO PREVENT CRASHES
+   if (!pageData) return null;
+
+   // 4. SAFELY DESTRUCTURE EVERYTHING HERE
+   const { selectedShow, movie, selectedDate, theatre } = pageData;
+
+   // 5. HYDRATE THE 'show' STATE IF IT IS NULL
+   if (!show) {
+       setShow(selectedShow);
+   }
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numberOfTickets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -233,9 +262,7 @@ const BookSeats = () => {
 
   if (loading || !updatedScreen) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
-        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-      </div>
+      <Loading/>
     );
   }
 
@@ -271,7 +298,7 @@ const BookSeats = () => {
       <div className="shrink-0 z-40 bg-gradient-to-br from-black/90 via-slate-900 to-black/90 border-b border-white/10 shadow-lg px-4 md:px-8 py-3 m-2 rounded-xl flex items-center justify-between ring-1 ring-white/10">
 
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors border border-white/10">
+          <button onClick={() => navigate("/all-shows", { state: { item: movie } })} className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors border border-white/10">
             <IoIosArrowBack size={20} />
           </button>
 
@@ -311,7 +338,7 @@ const BookSeats = () => {
           <button onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
             <MdZoomOut size={22} />
           </button>
-          <div className="w-12 text-center poppins-medium text-white/80 text-xs">
+          <div className="w-12 select-none text-center poppins-medium text-white/80 text-xs">
             {Math.round(zoom * 100)}%
           </div>
           <button onClick={() => setZoom(z => Math.min(z + 0.1, 1.5))} className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
@@ -345,8 +372,8 @@ const BookSeats = () => {
                   <div className="w-[90%] md:w-[80%] flex items-center gap-4 mb-6">
                     <div className="h-px bg-white/20 flex-1"></div>
                     <div className="flex flex-col items-center">
-                      <span className="poppins-regular tracking-wider text-sm text-white/80">{tier.tiername}</span>
-                      <span className="text-white/50 text-xs poppins-light">₹{tier.price}</span>
+                      <span className="poppins-regular tracking-wider text-sm text-white/80 select-none">{tier.tiername}</span>
+                      <span className="text-white/50 text-xs poppins-light select-none" >₹{tier.price}</span>
                     </div>
                     <div className="h-px bg-white/20 flex-1"></div>
                   </div>
@@ -357,7 +384,7 @@ const BookSeats = () => {
                       const rowLetter = getRowLabel(globalRowIndex++);
                       return (
                         <div key={rIdx} className="flex items-center gap-4 md:gap-6">
-                          <div className="w-4 text-right text-white/40 poppins-medium text-xs shrink-0 select-none">
+                          <div className="select-none w-4 text-right text-white/40 poppins-medium text-xs shrink-0 select-none">
                             {rowLetter}
                           </div>
 
@@ -412,7 +439,7 @@ const BookSeats = () => {
           {/* The Screen Curve (U-Shape) */}
           <div className="w-full h-12 border-b-[6px] border-white/20 rounded-b-[100%] shadow-[0_-20px_60px_rgba(255,255,255,0.03)] flex justify-center items-end relative">
             {/* Text Pill breaking the bottom line */}
-            <span className="text-white/60 poppins-medium tracking-[0.6em] text-[10px] uppercase translate-y-[60%] px-6 py-1.5 bg-[#0a0a0a] backdrop-blur-xl border border-white/10 rounded-full h-fit shadow-lg">
+            <span className="select-none text-white/60 poppins-medium tracking-[0.6em] text-[10px] uppercase translate-y-[60%] px-6 py-1.5 bg-[#0a0a0a] backdrop-blur-xl border border-white/10 rounded-full h-fit shadow-lg">
               All eyes this way
             </span>
           </div>
