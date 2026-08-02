@@ -36,6 +36,13 @@ const AllShows = () => {
     return `${year}-${month}-${day}`;
   }
 
+//     useEffect(() => {
+//        console.log("All Shows Page: ", location.pathname)
+//        localStorage.setItem("oauth_redirect_state", JSON.stringify(location.state));
+//        localStorage.setItem("oauth_redirect_path", location.pathname);
+//
+//     }, [])
+
   useEffect(() => {
     if (!item) {
       const bookingData = sessionStorage.getItem("bookingData");
@@ -152,8 +159,26 @@ const AllShows = () => {
     };
 
     if (!username) {
-      navigate("/login", { ...payload, state: { ...payload.state, path: location.pathname, nextPath: "/bookSeats" }});
+      // 1. Serialize and save the exact state payload the seat layout needs
+      const redirectState = {
+        ...payload.state,
+        path: location.pathname // optionally keep track of where they came from
+      };
+
+      // 2. Set them in localStorage immediately
+      localStorage.setItem("oauth_redirect_path", "/bookSeats");
+      localStorage.setItem("oauth_redirect_state", JSON.stringify(redirectState));
+
+      // 3. Navigate to login (you can still pass it in React Router state if needed for non-OAuth login)
+      navigate("/login", {
+        ...payload,
+        state: {
+          ...redirectState,
+          nextPath: "/bookSeats"
+        }
+      });
     } else {
+      // User is logged in, proceed directly
       navigate("/bookSeats", payload);
     }
   };
