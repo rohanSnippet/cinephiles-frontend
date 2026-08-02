@@ -109,7 +109,7 @@ const Login = () => {
                 replace: true, 
                 state: { selectedShow, movie, theatre, selectedDate },
               });
-            }, 1000);
+            }, 500);
 
         } catch(fetchErr) {
             console.error("Error fetching user details", fetchErr);
@@ -133,6 +133,8 @@ const Login = () => {
   const handleGoogleLogin = () => {
     googleSignUp();
   };
+
+   console.log(location)
 
   const handleEye = () => setVisible(!visible);
 
