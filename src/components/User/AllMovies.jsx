@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Loading from "../Common/Loading";
 import LiveFireIcon from "../Common/LiveFireIcon"
+import {baseURL} from "../Services/URL.js"
 
 // Framer Motion Variants
 const containerVariants = {
@@ -49,21 +50,59 @@ const AllMovies = () => {
     }
   };
 
-  useEffect(() => {
-      const fetchTrending = async () => {
-        setIsTrendingLoading(true);
-        try {
-          const res = await axiosSecure.get(`/movie/trending?window=${trendingWindow}`);
-          console.log(res)
-          setTrendingMovies(res.data);
-        } catch (error) {
-          console.error("Error fetching trending movies:", error);
-        } finally {
-          setIsTrendingLoading(false);
+//   useEffect(() => {
+//       const fetchTrending = async () => {
+//         setIsTrendingLoading(true);
+//         try {
+//           const res = await axiosSecure.get(`/movie/trending?window=${trendingWindow}`);
+//           console.log(res)
+//           setTrendingMovies(res.data);
+//         } catch (error) {
+//           console.error("Error fetching trending movies:", error);
+//         } finally {
+//           setIsTrendingLoading(false);
+//         }
+//       };
+//       fetchTrending();
+//     }, [trendingWindow, axiosSecure]);
+
+useEffect(() => {
+    // 1. Fetch initial data instantly on load or when window changes
+    const fetchTrending = async () => {
+      setIsTrendingLoading(true);
+      try {
+        const res = await axiosSecure.get(`/movie/trending?window=${trendingWindow}`);
+        setTrendingMovies(res.data);
+      } catch (error) {
+        console.error("Error fetching trending movies:", error);
+      } finally {
+        setIsTrendingLoading(false);
+      }
+    };
+    fetchTrending();
+
+    // 2. Open the live SSE connection to listen for background updates
+    // (Ensure your backend controller maps to this endpoint)
+    const token = localStorage.getItem("token");
+    const eventSource = new EventSource(`${baseURL}/trending/stream?window=${trendingWindow}&token=${token}`);
+
+    eventSource.addEventListener('trending-update', (event) => {
+      try {
+        const newLeaderboard = JSON.parse(event.data);
+        // Only update if the backend actually sent data to prevent wiping the UI
+        if (newLeaderboard && newLeaderboard.length > 0) {
+          setTrendingMovies(newLeaderboard);
         }
-      };
-      fetchTrending();
-    }, [trendingWindow, axiosSecure]);
+      } catch (err) {
+        console.error("Failed to parse live trending update", err);
+      }
+    });
+
+    // 3. Clean up the connection when the component unmounts or window toggles
+    return () => {
+      eventSource.close();
+    };
+  }, [trendingWindow, axiosSecure]);
 
   // Fetch movies from the backend using Pagination AND Sorting
   const fetchMovies = useCallback(async (currentPage, currentSort) => {
@@ -157,81 +196,90 @@ const AllMovies = () => {
       <div className="max-w-[95rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* Sidebar - Trending Movies */}
-        <motion.div
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="hidden lg:block lg:w-1/4 xl:w-1/5"
-                  >
-                    <div className="sticky top-24 bg-gradient-to-br from-slate-900/80 to-black/80 backdrop-blur-xl border border-white/5 rounded-2xl h-auto min-h-[50vh] p-5 shadow-2xl flex flex-col">
+          {/* Trending Movies - Horizontal Slider on Mobile, Sticky Sidebar on Desktop */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      className="w-full lg:w-1/4 xl:w-1/5 mb-4 lg:mb-0"
+                    >
+                      <div className="relative lg:sticky top-[90px] bg-gradient-to-br from-slate-900/80 to-black/80 backdrop-blur-xl border border-white/5 rounded-2xl p-4 lg:p-5 shadow-2xl flex flex-col">
 
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2">
-{/*                           <BsFire className="text-orange-500" size={20} /> */}
-<LiveFireIcon />
-                          <h2 className="text-white poppins-bold tracking-wide">Trending</h2>
-                        </div>
-                        {/* Time Window Toggle */}
-                        <div className="flex bg-slate-800/50 rounded-lg p-1 border border-white/10">
-                          <button
-                            onClick={() => setTrendingWindow("24h")}
-                            className={`px-3 py-1 text-xs poppins-medium rounded-md transition-all ${trendingWindow === "24h" ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'}`}
-                          >
-                            24H
-                          </button>
-                          <button
-                            onClick={() => setTrendingWindow("7d")}
-                            className={`px-3 py-1 text-xs poppins-medium rounded-md transition-all ${trendingWindow === "7d" ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'}`}
-                          >
-                            7D
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Leaderboard List */}
-                      <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
-                        {isTrendingLoading ? (
-                          <div className="flex justify-center items-center h-full">
-                            <span className="text-slate-500 text-sm poppins-medium animate-pulse">Loading charts...</span>
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4 lg:mb-6">
+                          <div className="flex items-center gap-2">
+                            <LiveFireIcon />
+                            <h2 className="text-white poppins-bold tracking-wide text-lg lg:text-xl">Trending</h2>
                           </div>
-                        ) : trendingMovies.length > 0 ? (
-                          trendingMovies.map((movie, index) => (
-                            <motion.div
-                              key={movie.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.1 }}
-                              onClick={() => navigate(`/movie/${movie.id}`)}
-                              className="flex items-center gap-4 bg-slate-800/30 hover:bg-slate-700/50 p-2.5 rounded-xl border border-white/5 cursor-pointer transition-colors group"
+                          {/* Time Window Toggle */}
+                          <div className="flex bg-slate-800/50 rounded-lg p-1 border border-white/10 shrink-0">
+                            <button
+                              onClick={() => setTrendingWindow("24h")}
+                              className={`px-3 py-1 text-xs poppins-medium rounded-md transition-all ${trendingWindow === "24h" ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'}`}
                             >
-                              {/* Rank Number */}
-                              <span className={`poppins-bold text-xl w-6 text-center ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                {index + 1}
-                              </span>
-
-                              {/* Mini Poster */}
-                              <img
-                                src={movie.poster}
-                                alt={movie.title}
-                                className="w-12 h-16 object-cover rounded-lg shadow-md group-hover:scale-105 transition-transform"
-                              />
-
-                              {/* Details */}
-                              <div className="flex flex-col overflow-hidden">
-                                <span className="text-sm text-white poppins-semibold truncate">{movie.title}</span>
-                                <span className="text-xs text-slate-400 truncate">{movie.genre?.join(", ")}</span>
-                              </div>
-                            </motion.div>
-                          ))
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-center">
-                            <span className="text-slate-500 text-sm poppins-medium">No sales data yet</span>
+                              24H
+                            </button>
+                            <button
+                              onClick={() => setTrendingWindow("7d")}
+                              className={`px-3 py-1 text-xs poppins-medium rounded-md transition-all ${trendingWindow === "7d" ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                            >
+                              7D
+                            </button>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Leaderboard List - Horizontal on Mobile, Vertical on Desktop */}
+                        <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden pb-2 lg:pb-0 pr-0 lg:pr-2 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] lg:custom-scrollbar">
+
+                          {isTrendingLoading ? (
+                            <div className="flex justify-center items-center w-full py-4 lg:h-full">
+                              <span className="text-slate-500 text-sm poppins-medium animate-pulse">Loading charts...</span>
+                            </div>
+                          ) : trendingMovies.length > 0 ? (
+                            <AnimatePresence>
+                              {trendingMovies.map((movie, index) => (
+                                <motion.div
+                                  key={movie.id || movie._id}
+                                  layout
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.9 }}
+                                  transition={{
+                                    layout: { type: "spring", stiffness: 300, damping: 30 },
+                                    opacity: { duration: 0.2 }
+                                  }}
+                                  onClick={() => navigate(`/movie/${movie.id}`)}
+                                  // Fixed width for mobile cards to enable horizontal scrolling, full width on desktop
+                                  className="snap-start shrink-0 w-[240px] lg:w-full flex items-center gap-3 lg:gap-4 bg-slate-800/30 hover:bg-slate-700/50 p-2 lg:p-2.5 rounded-xl border border-white/5 cursor-pointer transition-colors group"
+                                >
+                                  {/* Rank Number */}
+                                  <span className={`poppins-bold text-lg lg:text-xl w-5 lg:w-6 text-center shrink-0 ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                    {index + 1}
+                                  </span>
+
+                                  {/* Mini Poster */}
+                                  <img
+                                    src={movie.poster}
+                                    alt={movie.title}
+                                    className="w-10 h-14 lg:w-12 lg:h-16 object-cover rounded-md lg:rounded-lg shadow-md group-hover:scale-105 transition-transform shrink-0"
+                                  />
+
+                                  {/* Details */}
+                                  <div className="flex flex-col overflow-hidden w-full">
+                                    <span className="text-sm text-white poppins-semibold truncate">{movie.title}</span>
+                                    <span className="text-xs text-slate-400 truncate">{movie.genre?.join(", ")}</span>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          ) : (
+                            <div className="flex items-center justify-center w-full py-4 lg:h-full text-center">
+                              <span className="text-slate-500 text-sm poppins-medium">No sales data yet</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
 
           {/* Main Content */}
           <div className="w-full lg:w-3/4 xl:w-4/5 flex flex-col gap-6">
