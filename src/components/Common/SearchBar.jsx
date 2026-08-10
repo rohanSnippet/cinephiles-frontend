@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { IoSearchOutline, IoClose } from "react-icons/io5";
 import { Link } from "react-router-dom";
-import useAxiosSecure from "../Hooks/AxiosSecure";
+import useAxiosPublic from "../Hooks/AxiosPublic"
+import useAxiosSecure from "../Hooks/AxiosSecure"
 import {baseURL} from "../Services/URL.js"
 import axios from "axios";
 
@@ -11,6 +12,7 @@ const SearchBar = ({ isMobile = false, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const axiosSecure = useAxiosSecure();
+  const axiosPublic = useAxiosPublic();
   const searchRef = useRef(null);
 
   // ... (Keep existing useEffects and functions identical) ...
@@ -44,7 +46,7 @@ const SearchBar = ({ isMobile = false, onClose }) => {
     const performSearch = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`${baseURL}/movie/search?query=${query}&limit=5`);
+        const response = await axiosPublic.get(`${baseURL}/movie/search?query=${query}&limit=5`);
         console.log(response)
         setResults(response.data);
         setShowResults(true);
