@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { FaPlay } from "react-icons/fa";
 
 const genres = [
@@ -13,6 +14,7 @@ const genres = [
 
 const CinematicGenres = () => {
   const [hoveredIndex, setHoveredIndex] = useState(0);
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-[95rem] mx-auto px-4 lg:px-10 py-12">
@@ -61,6 +63,12 @@ const CinematicGenres = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // If it's "Explore More", default to "All", otherwise pass the genre title
+                        const category = genre.title === "Explore More" ? "All" : genre.title;
+                        navigate(`/genre?category=${encodeURIComponent(category)}`);
+                      }}
                       className="mt-4 flex items-center gap-2 text-xs poppins-semibold uppercase tracking-widest text-white hover:text-indigo-400 transition-colors"
                     >
                       <FaPlay size={10} /> Explore Genre

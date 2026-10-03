@@ -158,7 +158,7 @@ const Carousal = ({ onDownArrowClick, showArrow }) => {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250vw] h-[150vh] flex flex-col gap-3 sm:gap-4 transform -rotate-12 scale-110 justify-center">
             
             {/* Generate 12 unique stripes */}
-            {[...Array(12)].map((_, rowIndex) => {
+            {[...Array(5)].map((_, rowIndex) => {
               const isEven = rowIndex % 2 === 0;
               const animationClass = isEven ? "animate-scroll-left" : "animate-scroll-right";
               const offsetClass = isEven ? `ml-[-${(rowIndex * 7) % 25}%]` : `ml-[-${(rowIndex * 9) % 25 + 15}%]`;
