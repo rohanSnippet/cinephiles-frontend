@@ -5,6 +5,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Cinephiles Carousel Animations
+   ============================================================ */
+
+@keyframes cineScrollLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes cineScrollRight {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cineFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cineKenburns {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes cineBounceSubtle {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-50%, 5px, 0);
+  }
+}
+
+
+/* ============================================================
+   Background poster animations
+   ============================================================ */
+
+.animate-cine-scroll-left {
+  animation: cineScrollLeft 100s linear infinite;
+}
+
+.animate-cine-scroll-right {
+  animation: cineScrollRight 110s linear infinite;
+}
+
+
+/* ============================================================
+   Hero animation
+   ============================================================ */
+
+.animate-kenburns {
+  animation: cineKenburns 20s ease-out forwards;
+}
+
+
+/* ============================================================
+   Fallback entrance
+   ============================================================ */
+
+.animate-fade-in-up {
+  animation: cineFadeInUp 900ms cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
+}
+
+
+/* ============================================================
+   Down arrow
+   ============================================================ */
+
+.animate-bounce-subtle {
+  animation: cineBounceSubtle 2.2s ease-in-out infinite;
+}
+
+
+/* ============================================================
+   Accessibility / Performance
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cine-scroll-left,
+  .animate-cine-scroll-right,
+  .animate-kenburns,
+  .animate-fade-in-up,
+  .animate-bounce-subtle {
+    animation: none !important;
+  }
+}
+
 .show-AVAILABLE {
   background: linear-gradient(to bottom right, #18e43746, #1a97483a, #1c5f3413);
   color: rgba(28, 188, 28, 0.941);
@@ -413,4 +526,24 @@ input[type="radio"]:checked + .radio-button {
 }
 .animate-shine {
   animation: shine 3s ease-in-out infinite;
+}
+
+/* Global SweetAlert2 Theme */
+.swal2-popup, .swal2-toast {
+  background: #111 !important;
+  color: #fff !important;
+}
+.swal2-title, .swal2-html-container {
+  color: #fff !important;
+}
+.swal2-confirm {
+  background-color: #e50914 !important;
+  color: #fff !important;
+}
+.swal2-cancel {
+  background-color: #333 !important;
+  color: #fff !important;
+}
+.swal2-timer-progress-bar {
+  background-color: #e50914 !important;
 }

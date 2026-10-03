@@ -42,6 +42,7 @@ import Confirmation from "./components/MovieBooking/Confirmation";
 import PaymentSuccess from "./components/MovieBooking/PaymentSuccess";
 import Popstate2 from "./components/User/Popstate2";
 import FeaturedMovieManager from "./components/Admin/Commercials/FeaturedMovieManager"
+import Genere from "./components/User/Genere";
 
 const router = createBrowserRouter([
   {
@@ -111,6 +112,10 @@ const router = createBrowserRouter([
       {
         path: "/All-Movies",
         element: <AllMovies />,
+      },
+      {
+        path: "/genre",
+        element: <Genere />,
       },
       {
         path: "/booking-confirmation",
@@ -209,6 +214,18 @@ const router = createBrowserRouter([
 ]);
 
 const queryClient = new QueryClient();
+
+// Fix for stale Service Workers breaking the dev server:
+// If a previous build registered a Workbox SW, it caches the old HTML
+// and breaks Vite's preamble injection. This clears it out.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+      console.log('Unregistered stale service worker.');
+    }
+  });
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

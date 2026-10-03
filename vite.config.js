@@ -13,4 +13,17 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom', 
+      '@mui/material', 
+      '@mui/joy', 
+      'framer-motion', 
+      'sweetalert2', 
+      'axios',
+      '@tanstack/react-query'
+    ]
+  }
 })
