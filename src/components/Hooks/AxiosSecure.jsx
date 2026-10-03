@@ -31,11 +31,20 @@ const useAxiosSecure = () => {
       (response) => response,
       async (error) => {
         const status = error.response ? error.response.status : null;
+        const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred.";
 
         // When your backend throws a 401 Unauthorized, handle the logout
         if (status === 401) {
           if (signOut) signOut();
           navigate("/login");
+        } else if (status) {
+            import("../Common/SwalUtils").then(({ Toast }) => {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: errorMessage
+                });
+            });
         }
         return Promise.reject(error);
       }
