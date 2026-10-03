@@ -2,7 +2,7 @@ import React from "react";
 
 const EnGCard = ({ genere, experiences }) => {
   return (
-    <div className="relative rounded-xl w-full h-0 pb-[71%]"> {/* 71% = (30/42)*100 for aspect ratio */}
+    <div className="relative rounded-xl w-full h-0 pb-[71%]" > {/* 71% = (30/42)*100 for aspect ratio */}
       {genere ? (
         <div
           className="z-10 text-white/80 hover:transform hover:-translate-y-2 hover:scale-[1.05] transition-all duration-300 ease-in-out absolute top-0 left-0 h-full w-full text-center hover:text-white rounded-xl overflow-hidden"

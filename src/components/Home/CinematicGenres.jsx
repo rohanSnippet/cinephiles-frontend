@@ -33,6 +33,12 @@ const CinematicGenres = () => {
             <motion.div
               key={genre.id}
               onMouseEnter={() => setHoveredIndex(index)}
+               onClick={(e) => {
+                        e.stopPropagation();
+                        // If it's "Explore More", default to "All", otherwise pass the genre title
+                        const category = genre.title === "Explore More" ? "All" : genre.title;
+                        navigate(`/genre?category=${encodeURIComponent(category)}`);
+                      }}
               className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]
                 ${isActive ? "md:flex-[4] flex-[2]" : "md:flex-[1] flex-1"}
               `}
