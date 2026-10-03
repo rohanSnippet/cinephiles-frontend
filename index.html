@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      // Force unregister any lingering Workbox/PWA Service Workers before they break the React Dev Server
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          let hasSW = false;
+          for (let registration of registrations) {
+            registration.unregister();
+            hasSW = true;
+          }
+          if (hasSW) {
+            window.location.reload(true);
+          }
+        });
+      }
+    </script>
     <meta charset="UTF-8" />
 <!--    <link rel="icon" type="image/svg+xml" href="https://res.cloudinary.com/cinephiles-app/image/upload/v1756125350/20250825_1803_Cinephile_Favicon_Design_simple_compose_01k3gkcvcwekmsanw54raw9nz7-removebg-preview_d0tzrj.png" />-->
     <link rel="icon" type="image/svg+xml" href="https://res.cloudinary.com/cinephiles-app/image/upload/v1773469438/ChatGPT_Image_Mar_14_2026_11_50_05_AM_zgodqo.png" />
